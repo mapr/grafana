@@ -1,0 +1,18 @@
+Changes:
+
+Init.d scripts, defaults scripts, warden and grafana config files have had 
+an  __INSTALL__ prefix added to file paths, so that when the package gets made 
+grafana will look in the right place after installed. 
+
+If you are trying to run the grafana server straigh out of a local build that 
+didn't use the private-pkg wrappers, it will not work unless you substitute 
+something useful for the the __INSTALL__ prefix.
+
+
+Modified build.go to take three additional parameters:
+-pacakgeDir
+-installRoot
+-pkgType
+
+that are used by the private-pkg/jenkins environments to ensure that that mapr
+pcackage is built as we want it.

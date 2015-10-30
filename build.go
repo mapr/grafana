@@ -30,7 +30,10 @@ var (
 	linuxPackageVersion   string = "v1"
 	linuxPackageIteration string = ""
 	race                  bool
+	pkgType               string
 	workingDir            string
+	installRoot           string
+	packageDir            string
 	serverBinaryName      string = "grafana-server"
 )
 
@@ -47,6 +50,9 @@ func main() {
 
 	flag.StringVar(&goarch, "goarch", runtime.GOARCH, "GOARCH")
 	flag.StringVar(&goos, "goos", runtime.GOOS, "GOOS")
+	flag.StringVar(&installRoot, "installRoot", installRoot, "Prefix this path to packaged files")
+	flag.StringVar(&packageDir, "packageDir", packageDir, "use a specific directory as the package directory")
+	flag.StringVar(&pkgType, "pkgType", pkgType, "Type of pkg to build")
 	flag.BoolVar(&race, "race", race, "Use race detector")
 	flag.Parse()
 
@@ -148,7 +154,8 @@ type linuxPackageOptions struct {
 }
 
 func createLinuxPackages() {
-	createPackage(linuxPackageOptions{
+
+	debOptions := linuxPackageOptions{
 		packageType:            "deb",
 		homeDir:                "/usr/share/grafana",
 		binPath:                "/usr/sbin/grafana-server",
@@ -166,9 +173,10 @@ func createLinuxPackages() {
 		systemdFileSrc: "packaging/deb/systemd/grafana-server.service",
 
 		depends: []string{"adduser", "libfontconfig"},
-	})
+	}
+        
 
-	createPackage(linuxPackageOptions{
+	rpmOptions := linuxPackageOptions{
 		packageType:            "rpm",
 		homeDir:                "/usr/share/grafana",
 		binPath:                "/usr/sbin/grafana-server",
@@ -186,11 +194,31 @@ func createLinuxPackages() {
 		systemdFileSrc: "packaging/rpm/systemd/grafana-server.service",
 
 		depends: []string{"initscripts", "fontconfig"},
-	})
+	}
+
+	if (pkgType == "deb") {
+           createPackage(debOptions)
+        } else if (pkgType == "rpm") {
+           createPackage(rpmOptions)
+        } else {
+           createPackage(debOptions)
+           createPackage(rpmOptions)
+        }
 }
 
 func createPackage(options linuxPackageOptions) {
-	packageRoot, _ := ioutil.TempDir("", "grafana-linux-pack")
+	var packageRoot string
+	if (packageDir == "") { 
+		packageRoot, _ = ioutil.TempDir("", "grafana-linux-pack")
+	} else {
+		packageRoot = packageDir
+		log.Printf("packageRoot=", packageRoot)
+	}
+
+	if (installRoot != "" )  {
+		packageRoot = filepath.Join(packageRoot, installRoot)
+		log.Printf("packageRoot=", packageRoot)
+        } 
 
 	// create directories
 	runPrint("mkdir", "-p", filepath.Join(packageRoot, options.homeDir))
