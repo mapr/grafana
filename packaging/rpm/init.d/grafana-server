@@ -3,8 +3,8 @@
 # chkconfig: 2345 80 05
 # description: Grafana web server & backend
 # processname: grafana
-# config: /etc/grafana/grafana.ini
-# pidfile: /var/run/grafana.pid
+# config: __INSTALL__/etc/grafana/grafana.ini
+# pidfile: __INSTALL__/var/run/grafana.pid
 
 ### BEGIN INIT INFO
 # Provides:          grafana
@@ -23,9 +23,9 @@ PATH=/bin:/usr/bin:/sbin:/usr/sbin
 NAME=grafana-server
 DESC="Grafana Server"
 
-GRAFANA_USER=grafana
-GRAFANA_GROUP=grafana
-GRAFANA_HOME=__INSTALL__/share/grafana
+GRAFANA_USER=mapr
+GRAFANA_GROUP=mapr
+GRAFANA_HOME=__INSTALL__/usr/share/grafana
 CONF_DIR=__INSTALL__/etc/grafana
 WORK_DIR=$GRAFANA_HOME
 DATA_DIR=__INSTALL__/var/lib/grafana
@@ -33,7 +33,7 @@ LOG_DIR=__INSTALL__/var/log/grafana
 CONF_FILE=$CONF_DIR/grafana.ini
 MAX_OPEN_FILES=10000
 PID_FILE=__INSTALL__/var/run/$NAME.pid
-DAEMON=__INSTALL__/sbin/$NAME
+DAEMON=__INSTALL__/usr/sbin/$NAME
 
 if [ `id -u` -ne 0 ]; then
   echo "You need root privileges to run this script"
