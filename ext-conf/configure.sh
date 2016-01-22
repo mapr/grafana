@@ -31,22 +31,28 @@
 # The last one has to verify that grafana is running
 # 
 # The script may have to be called in two phases 
-# phase 1 - change config ${PACKAGE_INSTALL_DIR}/etc/grafana.ini
+# phase 1 - change config ${PACKAGE_INSTALL_DIR}/etc/grafana/grafana.ini
 # phase 2 (after it has been started) - setup datasource
 
 # This gets fillled out at package time
 PACKAGE_INSTALL_DIR="__INSTALL__"
 PACKAGE_WARDEN_FILE="${PACKAGE_INSTALL_DIR}/etc/conf/warden.grafana.conf"
-PACKAGE_CONFIG_FILE="${PACKAGE_INSTALL_DIR}/etc/grafana.ini"
+PACKAGE_CONFIG_FILE="${PACKAGE_INSTALL_DIR}/etc/grfana/grafana.ini"
 
 function changePort() {
  # $1 is port number
  # $2 is config file
 
  # Verify options
- # update config file
- # use sed to do the work
- # verify return code
+ if [ $1 -ne 0 -a -w $2 ]
+   then
+   # update config file
+   # use sed to do the work
+   sed -i 's/(http_port = )[0-9]+/\1$1/g' $2
+   return 0
+ else
+   return 1
+ fi
 }
 
 
@@ -56,9 +62,15 @@ function changeInterface() {
 
 
  # Verify options
- # update config file
- # use sed to do the work
- #verify return code
+ if [ ! -z $1 -a -w $2 ]
+   then
+   # update config file
+   # use sed to do the work
+   sed -i 's/(http_addr = ).*/\1$1/g' $2
+   return 0
+ else
+   return 1
+ fi
 }
 
 
@@ -86,6 +98,30 @@ function setupOpenTsdbDataSource() {
   curl 'http://admin:admin@${grafan_ip}:${grafana_port}/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"localOpenTSDB","type":"opentsdb","url":"http://${openTsdb_ip}:${openTsdb_port}","access":"proxy","isDefault":true,"database":"spyglass"}'
  
   #verify return code
+  return 0
+}
+
+function pickOpenTSDBHost() {
+  # $1 is opentsdb nodes count
+  # $2 is opentsdb nodes list
+ 
+  # Verify options
+  openTsdb_hosts_count=$1
+  openTsdb_hosts=$2
+
+  IFS=',' read -r -a otArray <<< "$2"
+  hosts_count=${#otArray[@]}
+
+  # Validate the arguments
+  if [ ${hosts_count} -ne ${openTsdb_hosts_count} ]
+    then
+    return 1
+  fi
+
+  # For now pick the first one
+  echo ${otArray[0]}
+  
+  return 0
 }
 
 
@@ -94,16 +130,47 @@ function setupOpenTsdbDataSource() {
 # Verify the options to the script
 #
 # 
+# Check if there are command line arguments
 
-GRAFANA_PORT=${gdDefaultPort}
-GRAFANA_IP=${gdInterfaceHostName}
+if [ $# -eq 5 ]
+then  
+  OT_NODES_COUNT=$1
+  OT_PORT=$2
+  OT_NODES_LIST=$3
+  GRAFANA_PORT=$4
+  GRAFANA_IP=$5
+else
+  OT_NODES_COUNT=${otNodesCount}
+  OT_PORT=${otPort}
+  OT_NODES_LIST=${otNodesList}
+  GRAFANA_PORT=${gdDefaultPort}
+  GRAFANA_IP=${gdInterfaceHostName}  
+fi
 
-OPENTSDB_HOST=`pickOpenTSDBHost(${otNodesCount}, ${otNodesList})`
+OPENTSDB_HOST=`pickOpenTSDBHost ${OT_NODES_COUNT} ${OT_NODES_LIST}`
 
-changePort(${GRAFANA_PORT}, ${PACKAGE_CONFIG_FILE})
-changeInterface(${GRAFANA_IP}, ${PACKAGE_CONFIG_FILE})
-setupWardenConfFileAndStart()
+changePort ${GRAFANA_PORT} ${PACKAGE_CONFIG_FILE}
+if [ $? -ne 0] 
+  then
+  return 1
+fi
 
-setupOpenTsdbDataSource(${GRAFANA_IP}, ${GRAFANA_PORT}, ${OPENTSDB_HOST}, ${otPort}))
+changeInterface ${GRAFANA_IP} ${PACKAGE_CONFIG_FILE}
+if [ $? -ne 0] 
+  then
+  return 1
+fi
+
+setupWardenConfFileAndStart
+if [ $? -ne 0] 
+  then
+  return 1
+fi
+
+setupOpenTsdbDataSource ${GRAFANA_IP} ${GRAFANA_PORT} ${OPENTSDB_HOST} ${OT_PORT}
+if [ $? -ne 0] 
+  then
+  return 1
+fi
 
 return 0
