@@ -37,7 +37,7 @@
 # This gets fillled out at package time
 PACKAGE_INSTALL_DIR="__INSTALL__"
 PACKAGE_WARDEN_FILE="${PACKAGE_INSTALL_DIR}/etc/conf/warden.grafana.conf"
-PACKAGE_CONFIG_FILE="${PACKAGE_INSTALL_DIR}/etc/grfana/grafana.ini"
+PACKAGE_CONFIG_FILE="${PACKAGE_INSTALL_DIR}/etc/grafana/grafana.ini"
 
 function changePort() {
  # $1 is port number
