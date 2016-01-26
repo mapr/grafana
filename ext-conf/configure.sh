@@ -150,10 +150,12 @@ OPENTSDB_HOST=`pickOpenTSDBHost ${OT_NODES_COUNT} ${OT_NODES_LIST}`
 if [ $? -ne 0 ]; then
   return 2 2> /dev/null || exit 2
 fi
+
 changePort ${GRAFANA_PORT} ${PACKAGE_CONFIG_FILE}
 if [ $? -ne 0 ]; then 
   return 2 2> /dev/null || exit 2
 fi
+
 #changeInterface ${GRAFANA_IP} ${PACKAGE_CONFIG_FILE}
 
 setupWardenConfFileAndStart
