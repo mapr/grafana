@@ -48,7 +48,7 @@ function changePort() {
  if [ ! -z $1 -a -w $2 ]; then
    # update config file
    # use sed to do the work
-   sed -i 's/\(;http_port = \).*/\1'$1'/g' $2
+   sed -i 's/;\(http_port = \).*/\1'$1'/g' $2
    return 0
  else
    return 1
@@ -93,8 +93,7 @@ function setupOpenTsdbDataSource() {
   openTsdb_port=$4
   
   #this needs testing was taken from an example for graphite
-  curl 'http://admin:admin@${grafana_ip}:${grafana_port}/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"localOpenTSDB","type":"opentsdb","url":"http://${openTsdb_ip}:${openTsdb_port}","access":"proxy","isDefault":true,"database":"spyglass"}'
- 
+  curl 'http://admin:admin@'"${grafana_ip}":"${grafana_port}"'/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"localOpenTSDB","type":"opentsdb","url":"http://${openTsdb_ip}:${openTsdb_port}","access":"proxy","isDefault":true,"database":"spyglass"}' 
   #verify return code
   return 0
 }
