@@ -37,11 +37,9 @@
 # phase 2 (after it has been started) - setup datasource
 
 # This gets fillled out at package time
-#PACKAGE_INSTALL_DIR="__INSTALL__"
-PACKAGE_INSTALL_DIR="/opt/mapr/grafana/grafana-2.5.0"
+PACKAGE_INSTALL_DIR="__INSTALL__"
 PACKAGE_WARDEN_FILE="${PACKAGE_INSTALL_DIR}/etc/conf/warden.grafana.conf"
 PACKAGE_CONFIG_FILE="${PACKAGE_INSTALL_DIR}/etc/grafana/grafana.ini"
-MAPR_HOME="/opt/mapr"
 
 function changePort() {
  # $1 is port number
@@ -93,11 +91,6 @@ function setupOpenTsdbDataSource() {
   grafana_port=$2
   openTsdb_ip=$3
   openTsdb_port=$4
-  
-  echo ${grafana_ip}
-  echo ${grafana_port}
-  echo ${openTsdb_ip}
-  echo ${openTsdb_port}
   
   #this needs testing was taken from an example for graphite
   curl 'http://admin:admin@${grafana_ip}:${grafana_port}/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"localOpenTSDB","type":"opentsdb","url":"http://${openTsdb_ip}:${openTsdb_port}","access":"proxy","isDefault":true,"database":"spyglass"}'
