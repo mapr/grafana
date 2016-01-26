@@ -75,7 +75,7 @@ function changeInterface() {
 
 function setupWardenConfFileAndStart() {
   # Install warden file
-  cp ${PACKAGE_WARDEN_FILE} ${MAPR_HOME}/conf/conf.d
+  cp ${PACKAGE_WARDEN_FILE} /opt/mapr/conf/conf.d
   sleep 5
   # XXX TODO: run mapcli command in loop to wait for it to start
  return 0
