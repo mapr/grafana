@@ -75,9 +75,11 @@ case "$1" in
       exit 0
     fi
 
-    # Prepare environment
-    mkdir -p "$LOG_DIR" "$DATA_DIR" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$LOG_DIR" "$DATA_DIR"
-    touch "$PID_FILE" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$PID_FILE"
+    if [ "${GRAFANA_USER}" != "`whoami`" ] ; then
+       # Prepare environment
+       mkdir -p "$LOG_DIR" "$DATA_DIR" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$LOG_DIR" "$DATA_DIR"
+       touch "$PID_FILE" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$PID_FILE"
+    fi
 
     if [ -n "$MAX_OPEN_FILES" ]; then
       ulimit -n $MAX_OPEN_FILES
@@ -85,7 +87,11 @@ case "$1" in
 
     # Start Daemon
     cd $GRAFANA_HOME
-    su -s /bin/sh -c "nohup ${DAEMON} ${DAEMON_OPTS} >> /dev/null 3>&1 &" $GRAFANA_USER 2> /dev/null
+    if [ "${GRAFANA_USER}" != "`whoami`" ] ; then
+       su -s /bin/sh -c "nohup ${DAEMON} ${DAEMON_OPTS} >> /dev/null 3>&1 &" $GRAFANA_USER 2> /dev/null
+    else
+       nohup ${DAEMON} ${DAEMON_OPTS} >> /dev/null 2>&1 &
+    fi
     return=$?
     if [ $return -eq 0 ]
     then
