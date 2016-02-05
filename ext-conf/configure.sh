@@ -78,7 +78,8 @@ function setupWardenConfFileAndStart() {
   cp ${PACKAGE_WARDEN_FILE} /opt/mapr/conf/conf.d
   sleep 5
   # XXX TODO: run mapcli command in loop to wait for it to start
- return 0
+  maprcli node services -nodes ${GRAFANA_IP} -name grafana -action start
+  return 0
 }
 
 function setupOpenTsdbDataSource() {
@@ -90,10 +91,24 @@ function setupOpenTsdbDataSource() {
   grafana_ip=$1
   grafana_port=$2
   openTsdb_ip=$3
+  count=1
+  while [ $count -le 5 ]
+  do
+    is_running=`netstat -lnt| awk '{ if($6 == "LISTEN" && $4 ~ ".'${grafana_port}'") { print 0}; }'`
+    if [ -z "${is_running}" ]
+    then
+      sleep 15
+    elif [ "${is_running}" == "0" ]
+    then 
+      curl 'http://admin:admin@'"${grafana_ip}":"${grafana_port}"'/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"localOpenTSDB","type":"opentsdb","url":"http://'${openTsdb_ip}'","access":"proxy","isDefault":true,"database":"spyglass"}'
+      if [ $? -eq 0 ] 
+      then 
+        break
+      fi 
+   fi
+   (( count++ ))
+  done
   
-  #this needs testing was taken from an example for graphite
-  curl 'http://admin:admin@'"${grafana_ip}":"${grafana_port}"'/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"localOpenTSDB","type":"opentsdb","url":"http://'${openTsdb_ip}'","access":"proxy","isDefault":true,"database":"spyglass"}' 
-  #verify return code
   return 0
 }
 
@@ -155,7 +170,6 @@ if [ $? -ne 0 ]; then
 fi
 
 #changeInterface ${GRAFANA_IP} ${PACKAGE_CONFIG_FILE}
-
 setupWardenConfFileAndStart
 if [ $? -ne 0 ]; then
   return 2 2> /dev/null || exit 2
