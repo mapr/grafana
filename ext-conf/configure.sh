@@ -170,7 +170,6 @@ if [ $? -ne 0 ]; then
 fi
 
 #changeInterface ${GRAFANA_IP} ${PACKAGE_CONFIG_FILE}
-set -x
 setupWardenConfFileAndStart
 if [ $? -ne 0 ]; then
   return 2 2> /dev/null || exit 2
