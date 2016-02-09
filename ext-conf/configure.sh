@@ -94,7 +94,7 @@ function setupOpenTsdbDataSource() {
   count=1
   while [ $count -le 5 ]
   do
-    is_running=`netstat -lnt| awk '{ if($6 == "LISTEN" && $4 ~ ".'${grafana_port}'") { print 0}; }'`
+    is_running=`lsof -i :${grafana_port}| grep LISTEN | awk '{if ($10 == "(LISTEN)") {print 0}; }'`
     if [ -z "${is_running}" ]
     then
       sleep 15
