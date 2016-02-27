@@ -40,6 +40,8 @@
 PACKAGE_INSTALL_DIR="__INSTALL__"
 PACKAGE_WARDEN_FILE="${PACKAGE_INSTALL_DIR}/etc/conf/warden.grafana.conf"
 PACKAGE_CONFIG_FILE="${PACKAGE_INSTALL_DIR}/etc/grafana/grafana.ini"
+MAPR_HOME=${MAPR_HOME:-/opt/mapr}
+MAPR_CONF_DIR="${MAPR_HOME}/conf/conf.d"
 
 function changePort() {
  # $1 is port number
@@ -74,11 +76,16 @@ function changeInterface() {
 
 
 function setupWardenConfFileAndStart() {
+  # make sure warden conf directory exist
+  if ! [ -d ${MAPR_CONF_DIR} ]; then
+    mkdir -p ${MAPR_CONF_DIR} > /dev/null 2>&1
+  fi
   # Install warden file
-  cp ${PACKAGE_WARDEN_FILE} /opt/mapr/conf/conf.d
+  cp ${PACKAGE_WARDEN_FILE} ${MAPR_CONF_DIR}
+
   sleep 5
   # XXX TODO: run mapcli command in loop to wait for it to start
-  maprcli node services -nodes ${GRAFANA_IP} -name grafana -action start
+  maprcli node services -nodes ${GRAFANA_IP} -name grafana -action start 
   return 0
 }
 
