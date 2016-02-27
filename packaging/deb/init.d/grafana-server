@@ -24,9 +24,9 @@ NAME=grafana-server
 DESC="Grafana Server"
 DEFAULT=/etc/default/$NAME
 
-GRAFANA_USER=grafana
-GRAFANA_GROUP=grafana
-GRAFANA_HOME=__INSTALL__/share/grafana
+GRAFANA_USER=mapr
+GRAFANA_GROUP=mapr
+GRAFANA_HOME=__INSTALL__/usr/share/grafana
 CONF_DIR=__INSTALL__/etc/grafana
 WORK_DIR=$GRAFANA_HOME
 DATA_DIR=__INSTALL__/var/lib/grafana
@@ -74,12 +74,17 @@ case "$1" in
 	mkdir -p "$LOG_DIR" "$DATA_DIR" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$LOG_DIR" "$DATA_DIR"
 	touch "$PID_FILE" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$PID_FILE"
 
-  if [ -n "$MAX_OPEN_FILES" ]; then
-		ulimit -n $MAX_OPEN_FILES
+        if [ -n "$MAX_OPEN_FILES" -a $MAX_OPEN_FILES -lt $(ulimit -n) ]; then
+          if [ `id -u` -eq 0 ] ; then
+            ulimit -n $MAX_OPEN_FILES 
+          else
+            log_failure_msg "$DESC needs higher open files ulimit - exiting"
+            exit 1
+          fi
 	fi
 
 	# Start Daemon
-	start-stop-daemon --start -b --chdir "$WORK_DIR" --user "$GRAFANA_USER" -c "$GRAFANA_USER" --pidfile "$PID_FILE" --exec $DAEMON -- $DAEMON_OPTS
+	/sbin/start-stop-daemon --start -b --chdir "$WORK_DIR" --user "$GRAFANA_USER" -c "$GRAFANA_USER" --pidfile "$PID_FILE" --exec $DAEMON -- $DAEMON_OPTS
 	return=$?
 	if [ $return -eq 0 ]
 	then
