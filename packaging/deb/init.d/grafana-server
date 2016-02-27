@@ -43,7 +43,9 @@ if [ ! -x $DAEMON ]; then
   exit 5
 fi
 
-. /lib/lsb/init-functions
+if [ -f /lib/lsb/init-functions ]; then
+        . /lib/lsb/init-functions
+fi
 
 if [ -r /etc/default/rcS ]; then
 	. /etc/default/rcS
