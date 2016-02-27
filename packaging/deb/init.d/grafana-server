@@ -34,7 +34,7 @@ LOG_DIR=__INSTALL__/var/log/grafana
 CONF_FILE=$CONF_DIR/grafana.ini
 MAX_OPEN_FILES=10000
 PID_FILE=__INSTALL__/var/run/$NAME.pid
-DAEMON=__INSTALL__/sbin/$NAME
+DAEMON=__INSTALL__/usr/sbin/$NAME
 
 umask 0027
 
