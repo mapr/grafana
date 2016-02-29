@@ -207,8 +207,14 @@ func createRpmPackages() {
 }
 
 func createLinuxPackages() {
-	createDebPackages()
-	createRpmPackages()
+	if (pkgType == "deb") {
+		createDebPackages()
+	} else if (pkgType == "rpm") {
+		createRpmPackages()
+	} else {
+		createDebPackages()
+		createRpmPackages()
+	}
 }
 
 func createPackage(options linuxPackageOptions) {
