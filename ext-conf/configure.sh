@@ -99,7 +99,6 @@ function setupOpenTsdbDataSource() {
   count=1
   while [ $count -le 5 ]
   do
-    #is_running=`lsof -i :${grafana_port}| grep LISTEN | awk '{if ($10 == "(LISTEN)") {print 0}; }'`
     curl http://admin:admin@${grafana_ip}:${grafana_port}/api/org > /dev/null 2>&1
     is_running=$?
     if [ ${is_running} -eq 0 ]; then 
