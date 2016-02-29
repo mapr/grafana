@@ -3,8 +3,8 @@
 # chkconfig: 2345 80 05
 # description: Grafana web server & backend
 # processname: grafana
-# config: /etc/grafana/grafana.ini
-# pidfile: /var/run/grafana.pid
+# config: __INSTALL__/etc/grafana/grafana.ini
+# pidfile: __INSTALL__/var/run/grafana.pid
 
 ### BEGIN INIT INFO
 # Provides:          grafana
@@ -23,22 +23,18 @@ PATH=/bin:/usr/bin:/sbin:/usr/sbin
 NAME=grafana-server
 DESC="Grafana Server"
 
-GRAFANA_USER=grafana
-GRAFANA_GROUP=grafana
-GRAFANA_HOME=/usr/share/grafana
-CONF_DIR=/etc/grafana
+GRAFANA_USER=mapr
+GRAFANA_GROUP=mapr
+GRAFANA_HOME=__INSTALL__/usr/share/grafana
+CONF_DIR=__INSTALL__/etc/grafana
 WORK_DIR=$GRAFANA_HOME
-DATA_DIR=/var/lib/grafana
-LOG_DIR=/var/log/grafana
+DATA_DIR=__INSTALL__/var/lib/grafana
+LOG_DIR=__INSTALL__/var/log/grafana
 CONF_FILE=$CONF_DIR/grafana.ini
 MAX_OPEN_FILES=10000
-PID_FILE=/var/run/$NAME.pid
-DAEMON=/usr/sbin/$NAME
+PID_FILE=__INSTALL__/var/run/$NAME.pid
+DAEMON=__INSTALL__/usr/sbin/$NAME
 
-if [ `id -u` -ne 0 ]; then
-  echo "You need root privileges to run this script"
-  exit 4
-fi
 
 if [ ! -x $DAEMON ]; then
   echo "Program not installed or not executable"
@@ -63,7 +59,7 @@ fi
 # overwrite settings from default file
 [ -e /etc/sysconfig/$NAME ] && . /etc/sysconfig/$NAME
 
-DAEMON_OPTS="--pidfile=${PID_FILE} --config=${CONF_FILE} cfg:default.paths.data=${DATA_DIR} cfg:default.paths.logs=${LOG_DIR}"
+DAEMON_OPTS="--pidfile=${PID_FILE} --config=${CONF_FILE}  --homepath=${GRAFANA_HOME} cfg:default.paths.data=${DATA_DIR} cfg:default.paths.logs=${LOG_DIR}"
 
 function isRunning() {
   status -p $PID_FILE $NAME > /dev/null 2>&1
@@ -79,9 +75,11 @@ case "$1" in
       exit 0
     fi
 
-    # Prepare environment
-    mkdir -p "$LOG_DIR" "$DATA_DIR" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$LOG_DIR" "$DATA_DIR"
-    touch "$PID_FILE" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$PID_FILE"
+    if [ "${GRAFANA_USER}" != "`whoami`" ] ; then
+       # Prepare environment
+       mkdir -p "$LOG_DIR" "$DATA_DIR" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$LOG_DIR" "$DATA_DIR"
+       touch "$PID_FILE" && chown "$GRAFANA_USER":"$GRAFANA_GROUP" "$PID_FILE"
+    fi
 
     if [ -n "$MAX_OPEN_FILES" ]; then
       ulimit -n $MAX_OPEN_FILES
@@ -89,7 +87,11 @@ case "$1" in
 
     # Start Daemon
     cd $GRAFANA_HOME
-    su -s /bin/sh -c "nohup ${DAEMON} ${DAEMON_OPTS} >> /dev/null 3>&1 &" $GRAFANA_USER 2> /dev/null
+    if [ "${GRAFANA_USER}" != "`whoami`" ] ; then
+       su -s /bin/sh -c "nohup ${DAEMON} ${DAEMON_OPTS} >> /dev/null 3>&1 &" $GRAFANA_USER 2> /dev/null
+    else
+       nohup ${DAEMON} ${DAEMON_OPTS} >> /dev/null 2>&1 &
+    fi
     return=$?
     if [ $return -eq 0 ]
     then
