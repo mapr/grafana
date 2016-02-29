@@ -42,6 +42,7 @@ PACKAGE_WARDEN_FILE="${PACKAGE_INSTALL_DIR}/etc/conf/warden.grafana.conf"
 PACKAGE_CONFIG_FILE="${PACKAGE_INSTALL_DIR}/etc/grafana/grafana.ini"
 MAPR_HOME=${MAPR_HOME:-/opt/mapr}
 MAPR_CONF_DIR="${MAPR_HOME}/conf/conf.d"
+GRAFANA_RETRY_DELAY=15
 
 function changePort() {
  # $1 is port number
@@ -83,9 +84,6 @@ function setupWardenConfFileAndStart() {
   # Install warden file
   cp ${PACKAGE_WARDEN_FILE} ${MAPR_CONF_DIR}
 
-  sleep 5
-  # XXX TODO: run mapcli command in loop to wait for it to start
-  maprcli node services -nodes ${GRAFANA_IP} -name grafana -action start 
   return 0
 }
 
@@ -101,19 +99,17 @@ function setupOpenTsdbDataSource() {
   count=1
   while [ $count -le 5 ]
   do
-    is_running=`lsof -i :${grafana_port}| grep LISTEN | awk '{if ($10 == "(LISTEN)") {print 0}; }'`
-    if [ -z "${is_running}" ]
-    then
-      sleep 15
-    elif [ "${is_running}" == "0" ]
-    then 
+    curl http://admin:admin@${grafana_ip}:${grafana_port}/api/org > /dev/null 2>&1
+    is_running=$?
+    if [ ${is_running} -eq 0 ]; then 
       curl 'http://admin:admin@'"${grafana_ip}":"${grafana_port}"'/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"localOpenTSDB","type":"opentsdb","url":"http://'${openTsdb_ip}'","access":"proxy","isDefault":true,"database":"spyglass"}'
-      if [ $? -eq 0 ] 
-      then 
+      if [ $? -eq 0 ]; then 
         break
       fi 
-   fi
-   (( count++ ))
+    else
+      sleep $GRAFANA_RETRY_DELAY
+    fi
+    (( count++ ))
   done
   
   return 0
