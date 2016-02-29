@@ -202,16 +202,8 @@ func createRpmPackages() {
 		systemdFileSrc: "packaging/rpm/systemd/grafana-server.service",
 
 		depends: []string{"initscripts", "fontconfig"},
-	}
+	})
 
-	if (pkgType == "deb") {
-           createPackage(debOptions)
-        } else if (pkgType == "rpm") {
-           createPackage(rpmOptions)
-        } else {
-           createPackage(debOptions)
-           createPackage(rpmOptions)
-        }
 }
 
 func createLinuxPackages() {
