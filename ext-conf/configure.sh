@@ -203,7 +203,7 @@ if [ -z "$nodeport" -o -z "$nodelist" -o -z "$nodecount" -o -z "$grafanaport" ] 
 fi
 
 GRAFANA_IP=`hostname -I`
-OPENTSDB_HOST=`pickOpenTSDBHost ${OT_NODES_COUNT} ${OT_NODES_LIST}`
+OPENTSDB_HOST=`pickOpenTSDBHost ${nodecount} ${nodelist}`
 if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
     if [ $? -ne 0 ]; then
       return 2 2> /dev/null || exit 2
