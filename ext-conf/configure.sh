@@ -43,6 +43,12 @@ PACKAGE_CONFIG_FILE="${PACKAGE_INSTALL_DIR}/etc/grafana/grafana.ini"
 MAPR_HOME=${MAPR_HOME:-/opt/mapr}
 MAPR_CONF_DIR="${MAPR_HOME}/conf/conf.d"
 GRAFANA_RETRY_DELAY=15
+LOAD_DATA_SOURCE_ONLY=0
+
+nodecount=""
+nodeport=""
+grafanaport=""
+nodelist=""
 
 function changePort() {
  # $1 is port number
@@ -102,7 +108,7 @@ function setupOpenTsdbDataSource() {
     curl http://admin:admin@${grafana_ip}:${grafana_port}/api/org > /dev/null 2>&1
     is_running=$?
     if [ ${is_running} -eq 0 ]; then 
-      curl 'http://admin:admin@'"${grafana_ip}":"${grafana_port}"'/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"localOpenTSDB","type":"opentsdb","url":"http://'${openTsdb_ip}'","access":"proxy","isDefault":true,"database":"spyglass"}'
+      curl 'http://admin:admin@'"${grafana_ip}":"${grafana_port}"'/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"http://'${openTsdb_ip}'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
       if [ $? -eq 0 ]; then 
         break
       fi 
@@ -140,45 +146,82 @@ function pickOpenTSDBHost() {
 
 ## Main
 
-# Verify the options to the script
+# typically called from master configure.sh with the following arguments
 #
-# 
-# Check if there are command line arguments
+# configure.sh  -nodeCount ${otNodesCount} -OT "${otNodesList}" 
+#               -nodePort ${otPort} -grafanaPort $gdPort
+#
+# we need will use the roles file to know if this node is a RM. If this RM
+# is not the active one, we will be getting 0s for the stats.
+#
 
-# Parse the arguments
-while [ $# -gt 0 ]
-do
-  case "$1" in
-  -nodeCount) shift;
-              OT_NODES_COUNT=$1;;
-  -nodePort) shift;
-             OT_PORT=$1;;
-  -OT) shift;
-      OT_NODES_LIST=$1;;
-  -grafanaPort) shift;
-               GRAFANA_PORT=$1;;
-  esac
-  shift
-done
+usage="usage: $0 -nodeCount <cnt> -OT \"ip:port,ip1:port,\" -nodePort <port> -grafanaPort <port> [-loadDataSourceOnly]"
+if [ ${#} -gt 1 ] ; then
+   # we have arguments - run as as standalone - need to get params and
+   # XXX why do we need the -o to make this work?
+   OPTS=`getopt -a -o h -l nodeCount: -l nodePort: -l OT: -l grafanaPort: -l loadDataSourceOnly -- "$@"`
+   if [ $? != 0 ] ; then
+      echo ${usage}
+      return 2 2>/dev/null || exit 2
+   fi
+   eval set -- "$OPTS"
 
-GRAFANA_IP=`hostname -i`
+   for i ; do
+      case "$i" in
+         --nodeCount) 
+              nodecount="$2";
+              shift 2;;
+         --OT)
+              nodelist="$2"; 
+              shift 2;;
+         --nodePort)
+              nodeport="$2"; 
+              shift 2;;
+         --grafanaPort)
+              grafanaport="$2"; 
+              shift 2;;
+         --loadDataSourceOnly)
+              LOAD_DATA_SOURCE_ONLY=1
+              shift ;;
+         -h)
+              echo ${usage}
+              return 2 2>/dev/null || exit 2
+              ;;
+         --)
+              shift;;
+      esac
+   done
+
+else
+   echo "${usage}"
+   return 2 2>/dev/null || exit 2
+fi
+
+if [ -z "$nodeport" -o -z "$nodelist" -o -z "$nodecount" -o -z "$grafanaport" ] ; then
+    echo "${usage}"
+   return 2 2>/dev/null || exit 2
+fi
+
+GRAFANA_IP=`hostname -I`
 OPENTSDB_HOST=`pickOpenTSDBHost ${OT_NODES_COUNT} ${OT_NODES_LIST}`
-if [ $? -ne 0 ]; then
-  return 2 2> /dev/null || exit 2
+if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
+    if [ $? -ne 0 ]; then
+      return 2 2> /dev/null || exit 2
+    fi
+    
+    changePort ${grafanaport} ${PACKAGE_CONFIG_FILE}
+    if [ $? -ne 0 ]; then 
+      return 2 2> /dev/null || exit 2
+    fi
+    
+    #changeInterface ${GRAFANA_IP} ${PACKAGE_CONFIG_FILE}
+    setupWardenConfFileAndStart
+    if [ $? -ne 0 ]; then
+      return 2 2> /dev/null || exit 2
+    fi
 fi
 
-changePort ${GRAFANA_PORT} ${PACKAGE_CONFIG_FILE}
-if [ $? -ne 0 ]; then 
-  return 2 2> /dev/null || exit 2
-fi
-
-#changeInterface ${GRAFANA_IP} ${PACKAGE_CONFIG_FILE}
-setupWardenConfFileAndStart
-if [ $? -ne 0 ]; then
-  return 2 2> /dev/null || exit 2
-fi
-
-setupOpenTsdbDataSource ${GRAFANA_IP} ${GRAFANA_PORT} ${OPENTSDB_HOST}
+setupOpenTsdbDataSource ${GRAFANA_IP} ${grafanaport} ${OPENTSDB_HOST}
 if [ $? -ne 0 ]; then
   return 2 2> /dev/null || exit 2
 fi
