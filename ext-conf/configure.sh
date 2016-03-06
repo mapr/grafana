@@ -42,7 +42,8 @@ PACKAGE_WARDEN_FILE="${PACKAGE_INSTALL_DIR}/etc/conf/warden.grafana.conf"
 PACKAGE_CONFIG_FILE="${PACKAGE_INSTALL_DIR}/etc/grafana/grafana.ini"
 MAPR_HOME=${MAPR_HOME:-/opt/mapr}
 MAPR_CONF_DIR="${MAPR_HOME}/conf/conf.d"
-GRAFANA_RETRY_DELAY=15
+GRAFANA_RETRY_DELAY=24
+GRAFANA_RETRY_CNT=5
 LOAD_DATA_SOURCE_ONLY=0
 
 nodecount=""
@@ -103,9 +104,9 @@ function setupOpenTsdbDataSource() {
   grafana_port=$2
   openTsdb_ip=$3
   count=1
-  while [ $count -le 5 ]
+  while [ $count -le $GRAFANA_RETRY_CNT ]
   do
-    curl http://admin:admin@${grafana_ip}:${grafana_port}/api/org > /dev/null 2>&1
+    curl -s http://admin:admin@${grafana_ip}:${grafana_port}/api/org > /dev/null 2>&1
     is_running=$?
     if [ ${is_running} -eq 0 ]; then 
       curl 'http://admin:admin@'"${grafana_ip}":"${grafana_port}"'/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"http://'${openTsdb_ip}'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
