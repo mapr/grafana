@@ -130,6 +130,8 @@ function pickOpenTSDBHost() {
   openTsdb_hosts_count=$1
   openTsdb_hosts=$2
 
+  local host_count=0
+
   IFS=',' read -r -a otArray <<< "$2"
   hosts_count=${#otArray[@]}
   if [ $host_count -eq 0 ]; then
