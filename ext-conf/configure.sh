@@ -127,19 +127,18 @@ function pickOpenTSDBHost() {
   # $2 is opentsdb nodes list
  
   # Verify options
-  openTsdb_hosts_count=$1
-  openTsdb_hosts=$2
-
+  local openTsdb_hosts_count=$1
+  local openTsdb_hosts=$2
   local host_count=0
 
   IFS=',' read -r -a otArray <<< "$2"
-  hosts_count=${#otArray[@]}
+  host_count=${#otArray[@]}
   if [ $host_count -eq 0 ]; then
     return 1
   fi
 
   # Validate the arguments
-  if [ ${hosts_count} -ne ${openTsdb_hosts_count} ]; then
+  if [ ${host_count} -ne ${openTsdb_hosts_count} ]; then
     return 1
   fi
 
