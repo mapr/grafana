@@ -1,0 +1,7 @@
+influxdb11:
+  #image: tutum/influxdb:0.11.0
+  build: blocks/influxdb11
+  ports:
+    - "2004:2004"
+    - "9083:9083"
+    - "9086:9086"
