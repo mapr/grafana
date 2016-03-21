@@ -22,6 +22,7 @@ export class InfluxQueryCtrl extends QueryCtrl {
   selectMenu: any;
   measurementSegment: any;
   removeTagFilterSegment: any;
+  datasource: any;
 
   /** @ngInject **/
   constructor($scope, $injector, private templateSrv, private $q, private uiSegmentSrv) {
@@ -206,7 +207,7 @@ export class InfluxQueryCtrl extends QueryCtrl {
       return this.$q.when([this.uiSegmentSrv.newSegment('AND'), this.uiSegmentSrv.newSegment('OR')]);
     }
     if (segment.type === 'operator') {
-      var nextValue = this.tagSegments[index+1].value;
+      var nextValue = this.tagSegments[index + 1].value;
       if (/^\/.*\/$/.test(nextValue)) {
         return this.$q.when(this.uiSegmentSrv.newOperators(['=~', '!~']));
       } else {
@@ -218,20 +219,20 @@ export class InfluxQueryCtrl extends QueryCtrl {
     if (segment.type === 'key' || segment.type === 'plus-button') {
       query = this.queryBuilder.buildExploreQuery('TAG_KEYS');
       addTemplateVars = false;
-    } else if (segment.type === 'value')  {
-      query = this.queryBuilder.buildExploreQuery('TAG_VALUES', this.tagSegments[index-2].value);
+    } else if (segment.type === 'value') {
+      query = this.queryBuilder.buildExploreQuery('TAG_VALUES', this.tagSegments[index - 2].value);
       addTemplateVars = true;
     }
 
     return this.datasource.metricFindQuery(query)
-    .then(this.transformToSegments(addTemplateVars))
-    .then(results => {
-      if (segment.type === 'key') {
-        results.splice(0, 0, angular.copy(this.removeTagFilterSegment));
-      }
-      return results;
-    })
-    .catch(this.handleQueryError.bind(this));
+      .then(this.transformToSegments(addTemplateVars))
+      .then(results => {
+        if (segment.type === 'key') {
+          results.splice(0, 0, angular.copy(this.removeTagFilterSegment));
+        }
+        return results;
+      })
+      .catch(this.handleQueryError.bind(this));
   }
 
   getFieldSegments() {

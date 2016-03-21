@@ -120,7 +120,11 @@ export function InfluxDatasource(instanceSettings, $q, backendSrv, templateSrv) 
       var series = influxResults.series[0];
       return _.map(series.values, function(value) {
         if (_.isArray(value)) {
-          return { text: value[0] };
+          if (value.length > 1) {
+            return { text: value[1] };
+          } else {
+            return { text: value[0] };
+          }
         } else {
           return { text: value };
         }
