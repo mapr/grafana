@@ -221,7 +221,7 @@ if [ -z "$nodeport" -o -z "$nodelist" -o -z "$nodecount" -o -z "$grafanaport" ];
     return 2 2>/dev/null || exit 2
 fi
 
-GRAFANA_IP=`hostname -I`
+GRAFANA_IP=`hostname -i`
 GRAFANA_DEFAULT_DATASOURCE=`pickOpenTSDBHost ${nodecount} ${nodelist}`
 if [ $? -ne 0 ]; then
     echo "WARNING: Failed to pick default data source host"
