@@ -35,6 +35,8 @@
 #
 # Set APP_ROTATES_OWN_LOG_FILE=1 if this app has its own way of rotating logs
 #
+# Set APP_CREATE_MAPR_PID_SYMLINK=1 if you want a symlink to the pid file created in $MAPR_HOME/pid
+#
 # **********************  PLEASE READ CAREFULLY ****************
 # Set APP_ENABLE_GROUPLEADER=1 if you want use a hammer to make sure the daemon
 # and all its children go away. It does not allow the daemon to manage this on his own.
@@ -68,6 +70,7 @@ APP_DAEMONIZES=1
 APP_DOES_NOT_MANAGE_PID_FILE=0
 APP_ROTATES_OWN_LOG_FILE=1
 APP_ENABLE_GROUPLEADER=1
+APP_CREATE_MAPR_PID_SYMLINK=1
 
 
 if [ $APP_ENABLE_GROUPLEADER -eq 1 ]; then
@@ -99,6 +102,7 @@ MAPR_HOME="${MAPR_HOME:-${ACTUAL_LOCATION%/*/*/etc/init.d/${ACTUAL_SCRIPT_NAME}}
 APP_HOME_DIR="${ACTUAL_LOCATION%/etc/init.d/${ACTUAL_SCRIPT_NAME}}"
 APP_DATA_DIR_PERM=0700
 APP_WARDEN_DAEMON_CONF_FILE="$MAPR_HOME/conf/daemon.conf"
+MAPR_APP_PID_FILE="$MAPR_HOME/pid/$APP.pid"
 
 # APP_SYSTEM_PARAMS: Set to fit app
 APP_ULIMIT_MAX_OPEN_FILES="10000"
@@ -232,9 +236,10 @@ check() {
                 grep -q $APP_MAIN $file && return
             fi
         fi
-        if [ $APP_DOES_NOT_MANAGE_PID_FILE -eq 0 ]; then
+        if [ $APP_DOES_NOT_MANAGE_PID_FILE -eq 1 ]; then
             rm -f $APP_PID_FILE
         fi
+        rm -f $MAPR_APP_PID_FILE
     fi
     false
 }
@@ -282,7 +287,6 @@ createDirectoriesAndFiles() {
                 else
                     chown -R $euid:$egid "$APP_DATA_DIR" "$APP_LOG_DIR" "$APP_PID_DIR"
                 fi
-                chmod $APP_DATA_DIR_PERM "$APP_DATA_DIR"
             fi
     esac
 }
@@ -354,6 +358,9 @@ start() {
             if [ $APP_SELF_CONTAINED -o "$uid" = "root" ]; then
                 [ -d "$LOCK_DIR" ] && touch "$APP_LOCK_FILE"
             fi
+            if [ $APP_CREATE_MAPR_PID_SYMLINK -eq 1 ]; then
+                ln -s $APP_PID_FILE $MAPR_APP_PID_FILE > /dev/null 2>&1
+            fi
             true && return
         fi
         i=$((i+1))
@@ -361,7 +368,7 @@ start() {
     check TERM && sleep 2 && check KILL
     wait $APP_PID
     echo "$APP ($APP_PID) start failed ($?). See $APP_LOG_START_FILE for details"
-    rm -f $APP_PID_FILE
+    rm -f $APP_PID_FILE $MAPR_APP_PID_FILE
     false
 }
 
