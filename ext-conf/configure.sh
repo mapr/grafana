@@ -258,10 +258,11 @@ if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 ]; then
     fi
 fi
 
-setupOpenTsdbDataSource ${GRAFANA_IP} ${grafanaport} ${GRAFANA_DEFAULT_DATASOURCE}
-if [ $? -ne 0 ]; then
-
-    echo "NOTE: Failed to install grafana default data source config - do it manually when you run grafana"
+if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 -o $LOAD_DATA_SOURCE_ONLY -eq 1 ]; then
+    setupOpenTsdbDataSource ${GRAFANA_IP} ${grafanaport} ${GRAFANA_DEFAULT_DATASOURCE}
+    if [ $? -ne 0 ]; then
+        echo "NOTE: Failed to install grafana default data source config - do it manually when you run grafana"
+    fi
 fi
 
 true
