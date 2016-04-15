@@ -40,7 +40,7 @@
 # phase 2 (after it has been started) - setup datasource
 
 # This gets fillled out at package time
-GRAFANA_HOME="__INSTALL__"
+GRAFANA_HOME="${GRAFANA_HOME:-__INSTALL__}"
 GRAFANA_WARDEN_FILE="${GRAFANA_HOME}/etc/conf/warden.grafana.conf"
 GRAFANA_CONF_FILE="${GRAFANA_CONF_FILE:-${GRAFANA_HOME}/etc/grafana/grafana.ini}"
 NEW_GRAFANA_CONF_FILE="${NEW_GRAFANA_CONF_FILE:-${GRAFANA_CONF_FILE}.progress}"
@@ -51,8 +51,8 @@ GRAFANA_RETRY_CNT=5
 LOAD_DATA_SOURCE_ONLY=0
 GRAFANA_CONF_ASSUME_RUNNING_CORE=${isOnlyRoles:-0}
 
-nodecount=""
-nodeport=""
+nodecount=0
+nodeport=4242
 grafanaport="3000"
 nodelist=""
 
