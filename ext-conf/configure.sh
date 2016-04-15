@@ -53,7 +53,7 @@ GRAFANA_CONF_ASSUME_RUNNING_CORE=${isOnlyRoles:-0}
 
 nodecount=""
 nodeport=""
-grafanaport=""
+grafanaport="3000"
 nodelist=""
 
 function changePort() {
@@ -174,7 +174,7 @@ function pickOpenTSDBHost() {
 # is not the active one, we will be getting 0s for the stats.
 #
 
-grafana_usage="usage: $0 -nodeCount <cnt> -OT \"ip:port,ip1:port,\" -nodePort <port> -grafanaPort <port> [-loadDataSourceOnly]"
+grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>] [-loadDataSourceOnly] -OT \"ip:port,ip1:port,\" "
 if [ ${#} -gt 1 ]; then
     # we have arguments - run as as standalone - need to get params and
     # XXX why do we need the -o to make this work?
@@ -216,7 +216,8 @@ else
     return 2 2>/dev/null || exit 2
 fi
 
-if [ -z "$nodeport" -o -z "$nodelist" -o -z "$nodecount" -o -z "$grafanaport" ]; then
+if [ -z "$nodelist" ]; then
+    echo "-OT is required"
     echo "${grafana_usage}"
     return 2 2>/dev/null || exit 2
 fi
