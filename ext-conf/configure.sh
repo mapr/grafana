@@ -40,7 +40,7 @@
 # phase 2 (after it has been started) - setup datasource
 
 # This gets fillled out at package time
-GRAFANA_HOME="__INSTALL__"
+GRAFANA_HOME="${GRAFANA_HOME:-__INSTALL__}"
 GRAFANA_WARDEN_FILE="${GRAFANA_HOME}/etc/conf/warden.grafana.conf"
 GRAFANA_CONF_FILE="${GRAFANA_CONF_FILE:-${GRAFANA_HOME}/etc/grafana/grafana.ini}"
 NEW_GRAFANA_CONF_FILE="${NEW_GRAFANA_CONF_FILE:-${GRAFANA_CONF_FILE}.progress}"
@@ -51,9 +51,9 @@ GRAFANA_RETRY_CNT=5
 LOAD_DATA_SOURCE_ONLY=0
 GRAFANA_CONF_ASSUME_RUNNING_CORE=${isOnlyRoles:-0}
 
-nodecount=""
-nodeport=""
-grafanaport=""
+nodecount=0
+nodeport=4242
+grafanaport="3000"
 nodelist=""
 
 function changePort() {
@@ -174,7 +174,7 @@ function pickOpenTSDBHost() {
 # is not the active one, we will be getting 0s for the stats.
 #
 
-grafana_usage="usage: $0 -nodeCount <cnt> -OT \"ip:port,ip1:port,\" -nodePort <port> -grafanaPort <port> [-loadDataSourceOnly]"
+grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>] [-loadDataSourceOnly] -OT \"ip:port,ip1:port,\" "
 if [ ${#} -gt 1 ]; then
     # we have arguments - run as as standalone - need to get params and
     # XXX why do we need the -o to make this work?
@@ -216,7 +216,8 @@ else
     return 2 2>/dev/null || exit 2
 fi
 
-if [ -z "$nodeport" -o -z "$nodelist" -o -z "$nodecount" -o -z "$grafanaport" ]; then
+if [ -z "$nodelist" ]; then
+    echo "-OT is required"
     echo "${grafana_usage}"
     return 2 2>/dev/null || exit 2
 fi
