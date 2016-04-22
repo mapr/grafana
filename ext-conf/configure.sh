@@ -45,6 +45,8 @@ GRAFANA_WARDEN_FILE="${GRAFANA_HOME}/etc/conf/warden.grafana.conf"
 GRAFANA_CONF_FILE="${GRAFANA_CONF_FILE:-${GRAFANA_HOME}/etc/grafana/grafana.ini}"
 NEW_GRAFANA_CONF_FILE="${NEW_GRAFANA_CONF_FILE:-${GRAFANA_CONF_FILE}.progress}"
 MAPR_HOME=${MAPR_HOME:-/opt/mapr}
+MAPR_USER=${MAPR_USER:-mapr}
+MAPR_GROUP=${MAPR_GROUP:-mapr}
 MAPR_CONF_DIR="${MAPR_HOME}/conf/conf.d"
 GRAFANA_RETRY_DELAY=24
 GRAFANA_RETRY_CNT=5
@@ -93,6 +95,7 @@ function setupWardenConfFileAndStart() {
     fi
     # Install warden file
     cp ${GRAFANA_WARDEN_FILE} ${MAPR_CONF_DIR}
+    chown ${MAPR_USER}:${MAPR_GROUP} ${MAPR_CONF_DIR}/warden.grafana.conf
     return $?
 }
 
@@ -112,6 +115,13 @@ function setupOpenTsdbDataSource() {
     openTsdb_ip=$3
     count=1
     rc=1
+
+    # If warden isn't running, then assume we are being uninstalled
+    # core-internal, mapr-cldb, mapr-fileserver, mapr-gateway, mapr-jobtracker, mapr-nfs, mapr-tasktracker, mapr-webserver, mapr-zookeeper
+    # all run configure.sh -R when being uninstalled
+    if ! ${MAPR_HOME}/initscripts/mapr-warden status > /dev/null 2>&1 ; then
+        return 0
+    fi
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
         curl -s http://admin:admin@${grafana_ip}:${grafana_port}/api/org > /dev/null 2>&1
