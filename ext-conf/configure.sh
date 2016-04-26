@@ -161,8 +161,8 @@ function pickOpenTSDBHost() {
         return 1
     fi
 
-    # Validate the arguments
-    if [ ${host_count} -ne ${openTsdb_hosts_count} ]; then
+    # Validate the arguments only if we were given a nodecount to validate against
+    if [ ${openTsdb_host_count} -gt 0 -a ${host_count} -ne ${openTsdb_hosts_count} ]; then
         return 1
     fi
 
