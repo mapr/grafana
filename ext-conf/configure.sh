@@ -239,6 +239,11 @@ if [ $? -ne 0 ]; then
     return 2 2> /dev/null || exit 2
 fi
 
+# check to see if we have a port
+if ! echo "$GRAFANA_DEFAULT_DATASOURCE" | fgrep ':' > /dev/null 2>&1 ; then
+    GRAFANA_DEFAULT_DATASOURCE="$GRAFANA_DEFAULT_DATASOURCE:$nodeport"
+fi
+
 if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
     cp -p ${GRAFANA_CONF_FILE} ${NEW_GRAFANA_CONF_FILE}
     if [ $? -ne 0 ]; then
