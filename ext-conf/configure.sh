@@ -236,7 +236,7 @@ fi
 GRAFANA_IP=`hostname -i`
 GRAFANA_DEFAULT_DATASOURCE=`pickOpenTSDBHost ${nodecount} ${nodelist}`
 if [ $? -ne 0 ]; then
-    echo "WARNING: Failed to pick default data source host"
+    echo "ERROR: Failed to pick default data source host"
     return 2 2> /dev/null || exit 2
 fi
 
@@ -248,13 +248,13 @@ fi
 if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
     cp -p ${GRAFANA_CONF_FILE} ${NEW_GRAFANA_CONF_FILE}
     if [ $? -ne 0 ]; then
-        echo "WARNING: Failed to create scratch config file"
+        echo "ERROR: Failed to create scratch config file"
         return 2 2> /dev/null || exit 2
     fi
 
     changePort ${grafanaport} ${NEW_GRAFANA_CONF_FILE}
     if [ $? -ne 0 ]; then
-        echo "WARNING: Failed to change the port"
+        echo "ERROR: Failed to change the port"
         return 2 2> /dev/null || exit 2
     fi
 
@@ -270,7 +270,7 @@ fi
 if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 ]; then
     setupWardenConfFileAndStart
     if [ $? -ne 0 ]; then
-        echo "WARNING: Failed to install grafana warden config file"
+        echo "ERROR: Failed to install grafana warden config file"
         return 2 2> /dev/null || exit 2
     fi
 fi
