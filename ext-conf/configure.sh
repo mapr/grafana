@@ -53,12 +53,37 @@ GRAFANA_RETRY_DELAY=24
 GRAFANA_RETRY_CNT=5
 LOAD_DATA_SOURCE_ONLY=0
 GRAFANA_CONF_ASSUME_RUNNING_CORE=${isOnlyRoles:-0}
-
 nodecount=0
 nodeport=4242
 grafanaport="3000"
 nodelist=""
+secureCluster=0
+# isSecure is set in server/configure.sh
+if [ -n "$isSecure" ]; then
+    if [ "$isSecure" == "true" ]; then
+        secureCluster=1
+    fi
+fi
 
+#############################################################################
+# Function to log messages
+#
+# if $logFile is set the message gets logged there too
+#
+#############################################################################
+function logMsg() {
+    local msg
+    msg="$(date): $1"
+    echo $msg
+    if [ -n "$logFile" ] ; then
+        echo $msg >> $logFile
+    fi
+}
+
+#############################################################################
+# Function to change the port number configuration
+# 
+#############################################################################
 function changePort() {
     # $1 is port number
     # $2 is config file
@@ -74,6 +99,10 @@ function changePort() {
 }
 
 
+#############################################################################
+# Function to change the interface configuration
+# 
+#############################################################################
 function changeInterface() {
     # $1 is the interface Ip/hostname
     # $2 is the config file
@@ -88,7 +117,33 @@ function changeInterface() {
     fi
 }
 
+#############################################################################
+# Function to enable ssl communication between kibana server and browser
+# 
+#############################################################################
+function configureSslBrowsing() {
+    # $1 is the config file
 
+    if [ $secureCluster -eq 1 ]; then
+        ${GRAFANA_HOME}/bin/export_cert.sh ${GRAFANA_HOME}/etc/grafana
+        if [ $? -eq 0 ]; then
+            sed -i 's/\(\;\)*\(protocol =\).*/\2 https/;s@\(\;\)*\(cert_file =\).*@\2'" ${GRAFANA_HOME}/etc/grafana/cert.pem"'@g;s@\(\;\)*\(cert_key =\).*@\2'" ${GRAFANA_HOME}/etc/grafana/key.pem"'@g' $1
+            if [ $? -ne 0 ]; then
+                return 1
+            fi
+        else
+            return 1
+        fi
+    fi
+    return 0
+}
+
+
+
+#############################################################################
+# Function to enable warden to manage us
+# 
+#############################################################################
 function setupWardenConfFileAndStart() {
     # make sure warden conf directory exist
     if ! [ -d ${MAPR_CONF_DIR} ]; then
@@ -100,6 +155,10 @@ function setupWardenConfFileAndStart() {
     return $?
 }
 
+#############################################################################
+# Function to configure teh defautl data source
+# 
+#############################################################################
 function setupOpenTsdbDataSource() {
     # $1 is the interface Ip/hostname for grafana
     # $2 is the port number for grafana
@@ -185,11 +244,11 @@ function pickOpenTSDBHost() {
 # is not the active one, we will be getting 0s for the stats.
 #
 
-grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>] [-loadDataSourceOnly] -OT \"ip:port,ip1:port,\" "
+grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>] [-secureCluster] [-loadDataSourceOnly] -OT \"ip:port,ip1:port,\" "
 if [ ${#} -gt 1 ]; then
     # we have arguments - run as as standalone - need to get params and
     # XXX why do we need the -o to make this work?
-    OPTS=`getopt -a -o h -l nodeCount: -l nodePort: -l OT: -l grafanaPort: -l loadDataSourceOnly -- "$@"`
+    OPTS=`getopt -a -o h -l nodeCount: -l nodePort: -l OT: -l grafanaPort: -l secureCluster -l loadDataSourceOnly -- "$@"`
     if [ $? != 0 ]; then
         echo ${grafana_usage}
         return 2 2>/dev/null || exit 2
@@ -210,6 +269,9 @@ if [ ${#} -gt 1 ]; then
             --grafanaPort)
                   grafanaport="$2";
                   shift 2;;
+            --secureCluster)
+                  secureCluster=1;
+                  shift 1;;
             --loadDataSourceOnly)
                   LOAD_DATA_SOURCE_ONLY=1
                   shift ;;
@@ -228,7 +290,7 @@ else
 fi
 
 if [ -z "$nodelist" ]; then
-    echo "-OT is required"
+    logMsg "-OT is required"
     echo "${grafana_usage}"
     return 2 2>/dev/null || exit 2
 fi
@@ -236,7 +298,7 @@ fi
 GRAFANA_IP=`hostname -i`
 GRAFANA_DEFAULT_DATASOURCE=`pickOpenTSDBHost ${nodecount} ${nodelist}`
 if [ $? -ne 0 ]; then
-    echo "ERROR: Failed to pick default data source host"
+    logMsg "ERROR: Failed to pick default data source host"
     return 2 2> /dev/null || exit 2
 fi
 
@@ -248,13 +310,19 @@ fi
 if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
     cp -p ${GRAFANA_CONF_FILE} ${NEW_GRAFANA_CONF_FILE}
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to create scratch config file"
+        logMsg "ERROR: Failed to create scratch config file"
         return 2 2> /dev/null || exit 2
     fi
 
     changePort ${grafanaport} ${NEW_GRAFANA_CONF_FILE}
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to change the port"
+        logMsg "ERROR: Failed to change the port"
+        return 2 2> /dev/null || exit 2
+    fi
+
+    configureSslBrowsing ${NEW_GRAFANA_CONF_FILE}
+    if [ $? -ne 0 ]; then
+        logMsg "ERROR: Failed to configure ssl for grafana"
         return 2 2> /dev/null || exit 2
     fi
 
@@ -270,7 +338,7 @@ fi
 if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 ]; then
     setupWardenConfFileAndStart
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to install grafana warden config file"
+        logMsg "ERROR: Failed to install grafana warden config file"
         return 2 2> /dev/null || exit 2
     fi
 fi
@@ -278,7 +346,7 @@ fi
 if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 -o $LOAD_DATA_SOURCE_ONLY -eq 1 ]; then
     setupOpenTsdbDataSource ${GRAFANA_IP} ${grafanaport} ${GRAFANA_DEFAULT_DATASOURCE}
     if [ $? -ne 0 ]; then
-        echo "NOTE: Failed to install grafana default data source config - do it manually when you run grafana"
+        logMsg "NOTE: Failed to install grafana default data source config - do it manually when you run grafana"
     fi
 fi
 
