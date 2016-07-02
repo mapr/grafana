@@ -169,12 +169,17 @@ function setupOpenTsdbDataSource() {
     local grafana_port
     local openTsdb_ip
     local count
+    local protocol="http"
     local rc
     grafana_ip=$1
     grafana_port=$2
     openTsdb_ip=$3
     count=1
     rc=1
+
+    if [ $secureCluster -eq 1 ]; then
+        protocol="https"
+    fi
 
     # If warden isn't running, then assume we are being uninstalled
     # core-internal, mapr-cldb, mapr-fileserver, mapr-gateway, mapr-jobtracker, mapr-nfs, mapr-tasktracker, mapr-webserver, mapr-zookeeper
@@ -184,11 +189,11 @@ function setupOpenTsdbDataSource() {
     fi
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
-        curl -s http://admin:admin@${grafana_ip}:${grafana_port}/api/org > /dev/null 2>&1
+        curl -s "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/org" > /dev/null 2>&1
         is_running=$?
         if [ ${is_running} -eq 0 ]; then
-            if ! curl -s -XGET 'http://admin:admin@'"${grafana_ip}":"${grafana_port}"'/api/datasources' | fgrep MaprMonitoring > /dev/null 2>&1 ; then
-                curl 'http://admin:admin@'"${grafana_ip}":"${grafana_port}"'/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"http://'${openTsdb_ip}'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
+            if ! curl -s -XGET "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" | fgrep MaprMonitoring > /dev/null 2>&1 ; then
+                curl "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
                 if [ $? -eq 0 ]; then
                     rc=0
                     break
@@ -244,11 +249,11 @@ function pickOpenTSDBHost() {
 # is not the active one, we will be getting 0s for the stats.
 #
 
-grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>] [-secureCluster] [-loadDataSourceOnly] -OT \"ip:port,ip1:port,\" "
+grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>] [-secureCluster] [-loadDataSourceOnly] [-R] -OT \"ip:port,ip1:port,\" "
 if [ ${#} -gt 1 ]; then
     # we have arguments - run as as standalone - need to get params and
     # XXX why do we need the -o to make this work?
-    OPTS=`getopt -a -o h -l nodeCount: -l nodePort: -l OT: -l grafanaPort: -l secureCluster -l loadDataSourceOnly -- "$@"`
+    OPTS=`getopt -a -o h -l nodeCount: -l nodePort: -l OT: -l grafanaPort: -l secureCluster -l loadDataSourceOnly -l R -- "$@"`
     if [ $? != 0 ]; then
         echo ${grafana_usage}
         return 2 2>/dev/null || exit 2
@@ -275,7 +280,10 @@ if [ ${#} -gt 1 ]; then
             --loadDataSourceOnly)
                   LOAD_DATA_SOURCE_ONLY=1
                   shift ;;
-            -h)
+            --R)
+                  GRAFANA_CONF_ASSUME_RUNNING_CORE=1
+                  shift ;;
+            --h)
                   echo ${grafana_usage}
                   return 2 2>/dev/null || exit 2
                   ;;
