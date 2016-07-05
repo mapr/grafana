@@ -170,6 +170,7 @@ function setupOpenTsdbDataSource() {
     local openTsdb_ip
     local count
     local protocol="http"
+    local no_cert_ver=""
     local rc
     grafana_ip=$1
     grafana_port=$2
@@ -179,6 +180,7 @@ function setupOpenTsdbDataSource() {
 
     if [ $secureCluster -eq 1 ]; then
         protocol="https"
+        no_cert_ver="-k"
     fi
 
     # If warden isn't running, then assume we are being uninstalled
@@ -189,11 +191,11 @@ function setupOpenTsdbDataSource() {
     fi
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
-        curl -s "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/org" > /dev/null 2>&1
+        curl -s ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/org" > /dev/null 2>&1
         is_running=$?
         if [ ${is_running} -eq 0 ]; then
-            if ! curl -s -XGET "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" | fgrep MaprMonitoring > /dev/null 2>&1 ; then
-                curl "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
+            if ! curl -s ${no_cert_ver} -XGET "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" | fgrep MaprMonitoring > /dev/null 2>&1 ; then
+                curl ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
                 if [ $? -eq 0 ]; then
                     rc=0
                     break
