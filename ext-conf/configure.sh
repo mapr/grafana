@@ -170,6 +170,7 @@ function setupOpenTsdbDataSource() {
     local openTsdb_ip
     local count
     local protocol="http"
+    local ot_protocol="http"
     local no_cert_ver=""
     local rc
     grafana_ip=$1
@@ -180,6 +181,7 @@ function setupOpenTsdbDataSource() {
 
     if [ $secureCluster -eq 1 ]; then
         protocol="https"
+        #ot_protocol="https" # commented out until we support the proxy
         no_cert_ver="-k"
     fi
 
@@ -195,7 +197,7 @@ function setupOpenTsdbDataSource() {
         is_running=$?
         if [ ${is_running} -eq 0 ]; then
             if ! curl -s ${no_cert_ver} -XGET "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" | fgrep MaprMonitoring > /dev/null 2>&1 ; then
-                curl ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
+                curl ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${ot_protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
                 if [ $? -eq 0 ]; then
                     rc=0
                     break
