@@ -30,8 +30,12 @@ var (
 	linuxPackageVersion   string = "v1"
 	linuxPackageIteration string = ""
 	race                  bool
+	pkgType               string
 	workingDir            string
 	binaries              []string = []string{"grafana-server", "grafana-cli"}
+	installRoot           string
+	packageDir            string
+	serverBinaryName      string = "grafana-server"
 )
 
 const minGoVersion = 1.3
@@ -47,6 +51,9 @@ func main() {
 
 	flag.StringVar(&goarch, "goarch", runtime.GOARCH, "GOARCH")
 	flag.StringVar(&goos, "goos", runtime.GOOS, "GOOS")
+	flag.StringVar(&installRoot, "installRoot", installRoot, "Prefix this path to packaged files")
+	flag.StringVar(&packageDir, "packageDir", packageDir, "use a specific directory as the package directory")
+	flag.StringVar(&pkgType, "pkgType", pkgType, "Type of pkg to build")
 	flag.BoolVar(&race, "race", race, "Use race detector")
 	flag.Parse()
 
@@ -202,15 +209,33 @@ func createRpmPackages() {
 
 		depends: []string{"initscripts", "fontconfig"},
 	})
+
 }
 
 func createLinuxPackages() {
-	createDebPackages()
-	createRpmPackages()
+	if (pkgType == "deb") {
+		createDebPackages()
+	} else if (pkgType == "rpm") {
+		createRpmPackages()
+	} else {
+		createDebPackages()
+		createRpmPackages()
+	}
 }
 
 func createPackage(options linuxPackageOptions) {
-	packageRoot, _ := ioutil.TempDir("", "grafana-linux-pack")
+	var packageRoot string
+	if (packageDir == "") { 
+		packageRoot, _ = ioutil.TempDir("", "grafana-linux-pack")
+	} else {
+		packageRoot = packageDir
+		log.Printf("packageRoot=", packageRoot)
+	}
+
+	if (installRoot != "" )  {
+		packageRoot = filepath.Join(packageRoot, installRoot)
+		log.Printf("packageRoot=", packageRoot)
+        } 
 
 	// create directories
 	runPrint("mkdir", "-p", filepath.Join(packageRoot, options.homeDir))
