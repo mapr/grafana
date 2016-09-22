@@ -295,6 +295,39 @@ function pickOpenTSDBHost() {
     return 0
 }
 
+#############################################################################
+# Function to fix fluentd config file
+# 
+#############################################################################
+function fixFluentdConf() {
+
+    cat << 'EOF' > /tmp/fix_grafana_$$.awk
+/^# grafana/		{ found_gf_section=1; print; next}
+/^# 3.1.1/ 		{ if (found_gf_section == 1 ) found_gf_section=0 }
+/^#/      		{ if (found_gf_section == 1 ) {print "# 3.1.1 format";
+                          print "#t=2016-09-21T17:35:27-0700 lvl=eror msg=\"Request Completed\" logger=context userId=1 orgId=1 uname=admin method=POST path=/api/dashboards/import status=500 remote_addr=10.10.10.73 time_ns=53ns size=0"; next }}
+/ format_firstline/     { if (found_gf_section == 1) {print "  format_firstline /^t=\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}/"; next }}
+/ format1/              { if (found_gf_section == 1 ) {print "  format1 /^t=(?<my_event_time>[^ ]*) lvl=(?<level>[^ ]*) msg=(?<message>.*)$/";  found_gf_section=0; next }}
+                        { print }
+EOF
+   
+    FD_CONF=(/opt/mapr/fluentd/fluentd*/etc/fluentd/fluentd.conf)
+    for fd_f in $FD_CONF ; do
+        if [ -f "$fd_f" ]; then
+            fd_f_gf_sv="$(dirname $fd_f)/fluentd.conf.grafana_sv"
+            if [ ! -f "$fd_f_gf_sv" ]; then
+                cp "$fd_f" "$fd_f_gf_sv"
+            fi
+            cat $fd_f | awk -f /tmp/fix_grafana_$$.awk > /tmp/fd.conf
+            if [ $? -eq 0 ]; then
+                mv /tmp/fd.conf $fd_f
+                rm -f /tmp/fd.conf /tmp/fix_grafana_$$.awk
+            fi
+        fi
+    done
+    
+}
+
 
 ## Main
 
@@ -400,6 +433,8 @@ if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
     rm -f ${NEW_GRAFANA_CONF_FILE}
 
 fi
+
+fixFluentdConf
 
 if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 ]; then
     setupWardenConfFileAndStart
