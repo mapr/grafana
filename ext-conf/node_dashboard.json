@@ -1,7 +1,48 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_MAPRMONITORINGOPENTSDB",
+      "label": "MaprMonitoringOpenTSDB",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "opentsdb",
+      "pluginName": "OpenTSDB"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "text",
+      "name": "Text",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "singlestat",
+      "name": "Singlestat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "graph",
+      "name": "Graph",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "3.1.1"
+    },
+    {
+      "type": "datasource",
+      "id": "opentsdb",
+      "name": "OpenTSDB",
+      "version": "1.0.0"
+    }
+  ],
   "id": null,
   "title": "Node Dashboard",
-  "originalTitle": "Node Dashboard",
   "tags": [
     "Demo"
   ],
@@ -50,7 +91,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "format": "percent",
@@ -108,7 +149,25 @@
               "value": "null"
             }
           ],
-          "valueName": "current"
+          "valueName": "current",
+          "mappingTypes": [
+            {
+              "name": "value to text",
+              "value": 1
+            },
+            {
+              "name": "range to text",
+              "value": 2
+            }
+          ],
+          "rangeMaps": [
+            {
+              "from": "null",
+              "to": "null",
+              "text": "N/A"
+            }
+          ],
+          "mappingType": 1
         },
         {
           "cacheTimeout": null,
@@ -119,7 +178,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(50, 172, 45, 0.97)"
           ],
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "format": "bytes",
@@ -176,7 +235,25 @@
               "value": "null"
             }
           ],
-          "valueName": "avg"
+          "valueName": "avg",
+          "mappingTypes": [
+            {
+              "name": "value to text",
+              "value": 1
+            },
+            {
+              "name": "range to text",
+              "value": 2
+            }
+          ],
+          "rangeMaps": [
+            {
+              "from": "null",
+              "to": "null",
+              "text": "N/A"
+            }
+          ],
+          "mappingType": 1
         },
         {
           "cacheTimeout": null,
@@ -187,7 +264,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "format": "none",
@@ -245,7 +322,25 @@
               "value": "null"
             }
           ],
-          "valueName": "avg"
+          "valueName": "avg",
+          "mappingTypes": [
+            {
+              "name": "value to text",
+              "value": 1
+            },
+            {
+              "name": "range to text",
+              "value": 2
+            }
+          ],
+          "rangeMaps": [
+            {
+              "from": "null",
+              "to": "null",
+              "text": "N/A"
+            }
+          ],
+          "mappingType": 1
         }
       ],
       "showTitle": true,
@@ -259,7 +354,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -391,7 +486,8 @@
           "tooltip": {
             "msResolution": true,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -428,7 +524,7 @@
             "Memory free": "#1F78C1"
           },
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -510,7 +606,8 @@
           "tooltip": {
             "msResolution": true,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -556,7 +653,7 @@
             "Out": "#629E51"
           },
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -607,8 +704,7 @@
               "refId": "A",
               "shouldComputeRate": true,
               "tags": {
-                "fqdn": "$fqdn",
-                "interface_name": "eth0"
+                "fqdn": "$fqdn"
               }
             },
             {
@@ -623,8 +719,7 @@
               "refId": "B",
               "shouldComputeRate": true,
               "tags": {
-                "fqdn": "$fqdn",
-                "interface_name": "eth0"
+                "fqdn": "$fqdn"
               },
               "target": ""
             }
@@ -635,7 +730,8 @@
           "tooltip": {
             "msResolution": true,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -669,7 +765,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -749,7 +845,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -792,7 +889,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -871,7 +968,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -905,7 +1003,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -983,7 +1081,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -1026,7 +1125,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -1104,7 +1203,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -1138,7 +1238,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -1215,7 +1315,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -1258,7 +1359,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -1359,7 +1460,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -1393,7 +1495,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -1495,7 +1597,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -1538,7 +1641,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -1613,7 +1716,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -1627,7 +1731,7 @@
           ],
           "yaxes": [
             {
-              "format": "mbytes",
+              "format": "gbytes",
               "label": null,
               "logBase": 1,
               "max": null,
@@ -1647,7 +1751,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -1719,7 +1823,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -1753,7 +1858,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": null,
+          "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -1814,7 +1919,8 @@
           "tooltip": {
             "msResolution": false,
             "shared": true,
-            "value_type": "cumulative"
+            "value_type": "cumulative",
+            "sort": 0
           },
           "type": "graph",
           "x-axis": true,
@@ -1889,33 +1995,14 @@
     "list": [
       {
         "allFormat": "glob",
-        "current": {
-          "text": "spy-96.qa.lab",
-          "value": "spy-96.qa.lab"
-        },
-        "datasource": null,
+        "current": {},
+        "datasource": "${DS_MAPRMONITORINGOPENTSDB}",
         "hide": 0,
         "includeAll": false,
         "multi": false,
         "multiFormat": "glob",
         "name": "fqdn",
-        "options": [
-          {
-            "text": "spy-96.qa.lab",
-            "value": "spy-96.qa.lab",
-            "selected": true
-          },
-          {
-            "text": "spy-97.qa.lab",
-            "value": "spy-97.qa.lab",
-            "selected": false
-          },
-          {
-            "text": "spy-98.qa.lab",
-            "value": "spy-98.qa.lab",
-            "selected": false
-          }
-        ],
+        "options": [],
         "query": "tag_values(cpu.percent,fqdn)",
         "refresh": 1,
         "refresh_on_load": false,
@@ -1928,7 +2015,7 @@
   },
   "refresh": "15m",
   "schemaVersion": 12,
-  "version": 5,
+  "version": 2,
   "links": [
     {
       "asDropdown": true,
@@ -1939,5 +2026,6 @@
       "title": "Demo Dashboards",
       "type": "dashboards"
     }
-  ]
+  ],
+  "gnetId": null
 }
