@@ -53,6 +53,13 @@ GRAFANA_RETRY_DELAY=24
 GRAFANA_RETRY_CNT=5
 LOAD_DATA_SOURCE_ONLY=0
 GRAFANA_CONF_ASSUME_RUNNING_CORE=${isOnlyRoles:-0}
+GRAFANA_DEFAULT_DASHBOARDS="cldb_dashboard.json node_dashboard.json"
+GRAFANA_DASHBOARD_PREFIX='{ "dashboard": '
+GRAFANA_DASHBOARD_POSTFIX=', "overwrite": true, "inputs": [{ "name": "DS_MAPRMONITORINGOPENTSDB", "type": "datasource", "pluginId": "opentsdb", "value": "MaprMonitoringOpenTSDB" }] }'
+GRAFANA_DASHBOARD_TMP_FILE="/tmp/gf_dashboard_$$.json"
+#GRAFANA_CURL_DEBUG="-v -S"
+GRAFANA_CURL_DEBUG=""
+
 nodecount=0
 nodeport=4242
 grafanaport="3000"
@@ -178,6 +185,7 @@ function setupOpenTsdbDataSource() {
     openTsdb_ip=$3
     count=1
     rc=1
+    curl_dbg="$GRAFANA_CURL_DEBUG"
 
     if [ $secureCluster -eq 1 ]; then
         protocol="https"
@@ -215,6 +223,52 @@ function setupOpenTsdbDataSource() {
     return $rc
 }
 
+#############################################################################
+# Function to load a  dashboard
+# 
+#############################################################################
+function loadDashboard() {
+    # $1 is the interface Ip/hostname for grafana
+    # $2 is the port number for grafana
+    # $3 is the json file to load
+
+    local grafana_ip
+    local grafana_port
+    local protocol="http"
+    local no_cert_ver=""
+    local count
+    local rc
+    grafana_ip=$1
+    grafana_port=$2
+    dashboard_file=$3
+    curl_dbg="$GRAFANA_CURL_DEBUG"
+    count=1
+    rc=1
+
+    if [ $secureCluster -eq 1 ]; then
+        protocol="https"
+        #ot_protocol="https" # commented out until we support the proxy
+        no_cert_ver="-k"
+    fi
+    while [ $count -le $GRAFANA_RETRY_CNT ]
+    do
+        curl ${curl_dbg} ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file
+        if [ $? -eq 0 ]; then
+            rc=0
+            break
+        else
+            sleep $GRAFANA_RETRY_DELAY
+        fi
+        (( count++ ))
+    done
+
+    return $rc
+}
+
+#############################################################################
+# Function to pick the opneTsdb host to connect to
+# 
+#############################################################################
 function pickOpenTSDBHost() {
     # $1 is opentsdb nodes count
     # $2 is opentsdb nodes list
@@ -359,6 +413,19 @@ if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 -o $LOAD_DATA_SOURCE_ONLY -eq 1 ]; 
     setupOpenTsdbDataSource ${GRAFANA_IP} ${grafanaport} ${GRAFANA_DEFAULT_DATASOURCE}
     if [ $? -ne 0 ]; then
         logMsg "NOTE: Failed to install grafana default data source config - do it manually when you run grafana"
+    else
+        for df in $GRAFANA_DEFAULT_DASHBOARDS; do
+            DB_JSON=$( cat ${GRAFANA_HOME}/etc/conf/$df )
+            echo "$GRAFANA_DASHBOARD_PREFIX" > $GRAFANA_DASHBOARD_TMP_FILE
+            cat ${GRAFANA_HOME}/etc/conf/$df >> $GRAFANA_DASHBOARD_TMP_FILE
+            echo "$GRAFANA_DASHBOARD_POSTFIX" >> $GRAFANA_DASHBOARD_TMP_FILE
+            loadDashboard ${GRAFANA_IP} ${grafanaport} $GRAFANA_DASHBOARD_TMP_FILE
+            if [ $? -ne 0 ]; then
+                logMsg "NOTE: Failed to load dashboard $df - do it manually when you run grafana"
+            else
+                rm -f $GRAFANA_DASHBOARD_TMP_FILE
+            fi
+        done
     fi
 fi
 
