@@ -205,7 +205,7 @@ function setupOpenTsdbDataSource() {
         is_running=$?
         if [ ${is_running} -eq 0 ]; then
             if ! curl -s ${no_cert_ver} -XGET "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" | fgrep MaprMonitoring > /dev/null 2>&1 ; then
-                curl ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${ot_protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
+                curl -s ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${ot_protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
                 if [ $? -eq 0 ]; then
                     rc=0
                     break
@@ -252,7 +252,7 @@ function loadDashboard() {
     fi
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
-        curl ${curl_dbg} ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file
+        curl -s ${curl_dbg} ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file
         if [ $? -eq 0 ]; then
             rc=0
             break

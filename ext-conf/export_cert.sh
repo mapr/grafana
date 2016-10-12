@@ -9,7 +9,7 @@ tempKeystore="/tmp/keystore.$$.p12"
 manageSSL="${MAPR_HOME}/server/manageSSLKeys.sh"
 storeFormat=JKS
 storePass="$(fgrep storePass $manageSSL | head -1 |cut -d'=' -f2 )"
-CLUSTERNAME=$(cat /opt/mapr/conf/mapr-clusters.conf | awk '{print $1}')
+CLUSTERNAME=$(cat /opt/mapr/conf/mapr-clusters.conf | awk '{print $1}' | head -n 1)
 KEYTOOL=$(which keytool)
 
 if [ -z "$KEYTOOL" ]; then
