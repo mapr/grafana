@@ -394,7 +394,7 @@ if [ -z "$nodelist" ]; then
     return 2 2>/dev/null || exit 2
 fi
 
-GRAFANA_IP=`hostname -i`
+GRAFANA_IP=$(hostname -i | head -n 1)
 GRAFANA_DEFAULT_DATASOURCE=`pickOpenTSDBHost ${nodecount} ${nodelist}`
 if [ $? -ne 0 ]; then
     logMsg "ERROR: Failed to pick default data source host"
