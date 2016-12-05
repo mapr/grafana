@@ -252,7 +252,7 @@ function loadDashboard() {
     fi
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
-        curl -s ${curl_dbg} ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file
+        OUTPUT=$(curl -s ${curl_dbg} ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file 2>&1)
         if [ $? -eq 0 ]; then
             rc=0
             break
@@ -261,6 +261,9 @@ function loadDashboard() {
         fi
         (( count++ ))
     done
+    if [ $rc -ne 0 ]; then
+        logMsg "NOTE: Failed to load dashboard - output = $OUTPUT"
+    fi
 
     return $rc
 }
@@ -394,7 +397,7 @@ if [ -z "$nodelist" ]; then
     return 2 2>/dev/null || exit 2
 fi
 
-GRAFANA_IP=$(hostname -i | head -n 1)
+GRAFANA_IP=$(hostname -i | head -n 1 | cut -d' ' -f1)
 GRAFANA_DEFAULT_DATASOURCE=`pickOpenTSDBHost ${nodecount} ${nodelist}`
 if [ $? -ne 0 ]; then
     logMsg "ERROR: Failed to pick default data source host"
