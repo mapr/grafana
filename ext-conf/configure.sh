@@ -197,7 +197,7 @@ function setupOpenTsdbDataSource() {
     # core-internal, mapr-cldb, mapr-fileserver, mapr-gateway, mapr-jobtracker, mapr-nfs, mapr-tasktracker, mapr-webserver, mapr-zookeeper
     # all run configure.sh -R when being uninstalled
     if ! ${MAPR_HOME}/initscripts/mapr-warden status > /dev/null 2>&1 ; then
-        return 0
+        return 1
     fi
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
