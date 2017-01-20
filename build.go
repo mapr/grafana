@@ -371,8 +371,6 @@ func gruntBuildArg(task string) []string {
 
 func setup() {
 	runPrint("go", "get", "-v", "github.com/kardianos/govendor")
-	runPrint("go", "get", "-v", "golang.org/x/sync/errgroup")
-	runPrint("go", "get", "-v", "gopkg.in/macaron.v1")
 	runPrint("go", "install", "-v", "./pkg/cmd/grafana-server")
 }
 
