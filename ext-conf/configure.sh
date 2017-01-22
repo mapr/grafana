@@ -204,8 +204,12 @@ function setupOpenTsdbDataSource() {
         curl -s ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/org" > /dev/null 2>&1
         is_running=$?
         if [ ${is_running} -eq 0 ]; then
-            if ! curl -s ${no_cert_ver} -XGET "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" | fgrep MaprMonitoring > /dev/null 2>&1 ; then
-                curl -s ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${ot_protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring"}'
+            if ! curl -s ${no_cert_ver} -XGET "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" | \
+                fgrep MaprMonitoring > /dev/null 2>&1 ; then
+
+                curl -s ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" \
+                   -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary \
+                   '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${ot_protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring","jsonData":{"tsdbResolution":1,"tsdbVersion":3}}'
                 if [ $? -eq 0 ]; then
                     rc=0
                     break
