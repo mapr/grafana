@@ -10,6 +10,8 @@ export class PlaylistEditCtrl {
   filteredTags: any = [];
   searchQuery = '';
   loading = false;
+  searchQuery: '';
+  loading: false;
   playlist: any = {
     interval: '5m',
   };
