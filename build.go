@@ -194,6 +194,7 @@ type linuxPackageOptions struct {
 	serverBinPath          string
 	cliBinPath             string
 	configDir              string
+	configFilePath         string
 	ldapFilePath           string
 	etcDefaultPath         string
 	etcDefaultFilePath     string
@@ -214,6 +215,8 @@ func createDebPackages() {
 		homeDir:                "/usr/share/grafana",
 		binPath:                "/usr/sbin",
 		configDir:              "/etc/grafana",
+		configFilePath:         "/etc/grafana/grafana.ini",
+		ldapFilePath:           "/etc/grafana/ldap.toml",
 		etcDefaultPath:         "/etc/default",
 		etcDefaultFilePath:     "/etc/default/grafana-server",
 		initdScriptFilePath:    "/etc/init.d/grafana-server",
@@ -234,6 +237,8 @@ func createRpmPackages() {
 		homeDir:                "/usr/share/grafana",
 		binPath:                "/usr/sbin",
 		configDir:              "/etc/grafana",
+		configFilePath:         "/etc/grafana/grafana.ini",
+		ldapFilePath:           "/etc/grafana/ldap.toml",
 		etcDefaultPath:         "/etc/sysconfig",
 		etcDefaultFilePath:     "/etc/sysconfig/grafana-server",
 		initdScriptFilePath:    "/etc/init.d/grafana-server",
@@ -296,6 +301,10 @@ func createPackage(options linuxPackageOptions) {
 	runPrint("cp", "-a", filepath.Join(workingDir, "tmp")+"/.", filepath.Join(packageRoot, options.homeDir))
 	// remove bin path
 	runPrint("rm", "-rf", filepath.Join(packageRoot, options.homeDir, "bin"))
+	// copy sample ini file to /etc/grafana
+	runPrint("cp", "conf/sample.ini", filepath.Join(packageRoot, options.configFilePath))
+	// copy sample ldap toml config file to /etc/grafana/ldap.toml
+	runPrint("cp", "conf/ldap.toml", filepath.Join(packageRoot, options.ldapFilePath))
 
 	args := []string{
 		"-s", "dir",
@@ -305,6 +314,8 @@ func createPackage(options linuxPackageOptions) {
 		"--url", "https://grafana.com",
 		"--license", "\"Apache 2.0\"",
 		"--maintainer", "contact@grafana.com",
+		"--config-files", options.configFilePath,
+		"--config-files", options.ldapFilePath,
 		"--config-files", options.initdScriptFilePath,
 		"--config-files", options.etcDefaultFilePath,
 		"--config-files", options.systemdServiceFilePath,
