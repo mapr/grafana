@@ -46,9 +46,6 @@ GRAFANA_CONF_FILE="${GRAFANA_CONF_FILE:-${GRAFANA_HOME}/etc/grafana/grafana.ini}
 NEW_GRAFANA_CONF_FILE="${NEW_GRAFANA_CONF_FILE:-${GRAFANA_CONF_FILE}.progress}"
 NOW=`date "+%Y%m%d_%H%M%S"`
 MAPR_HOME=${MAPR_HOME:-/opt/mapr}
-MAPR_USER=${MAPR_USER:-mapr}
-MAPR_GROUP=${MAPR_GROUP:-mapr}
-MAPR_CONF_DIR="${MAPR_HOME}/conf/conf.d"
 GRAFANA_RETRY_DELAY=24
 GRAFANA_RETRY_CNT=5
 LOAD_DATA_SOURCE_ONLY=0
@@ -65,27 +62,13 @@ nodeport=4242
 grafanaport="3000"
 nodelist=""
 secureCluster=0
-# isSecure is set in server/configure.sh
-if [ -n "$isSecure" ]; then
-    if [ "$isSecure" == "true" ]; then
-        secureCluster=1
-    fi
-fi
 
-#############################################################################
-# Function to log messages
-#
-# if $logFile is set the message gets logged there too
-#
-#############################################################################
-function logMsg() {
-    local msg
-    msg="$(date): $1"
-    echo $msg
-    if [ -n "$logFile" ] ; then
-        echo $msg >> $logFile
-    fi
-}
+if [ -e "${MAPR_HOME}/server/common-ecosystem.sh" ]; then
+    . "${MAPR_HOME}/server/common-ecosystem.sh"
+else
+   echo "Failed to source common-ecosystem.sh"
+   exit 0
+fi
 
 #############################################################################
 # Function to change the port number configuration
@@ -141,6 +124,9 @@ function configureSslBrowsing() {
         else
             return 1
         fi
+    else
+        sed -i 's/\(\;\)*\(protocol =\).*/\2 http/;s@\(cert_file =\).*@\;\1@g;s@\(cert_key =\).*@\;\1@g' $1
+        rm -f ${GRAFANA_HOME}/etc/grafana/cert.pem ${GRAFANA_HOME}/etc/grafana/key.pem
     fi
     return 0
 }
@@ -148,8 +134,16 @@ function configureSslBrowsing() {
 
 
 #############################################################################
+# Function to change ownership of our files to $MAPR_USER
+#
+#############################################################################
+function adjustOwnerShip() {
+    chown -R "$MAPR_USER":"$MAPR_GROUP" "$GRAFANA_HOME"
+}
+
+#############################################################################
 # Function to enable warden to manage us
-# 
+#
 #############################################################################
 function setupWardenConfFileAndStart() {
     # make sure warden conf directory exist
@@ -163,7 +157,26 @@ function setupWardenConfFileAndStart() {
 }
 
 #############################################################################
-# Function to configure teh defautl data source
+# Function to check and register port availablilty
+#
+#############################################################################
+function registerGrafanaPort() {
+    local nodeport=$1
+    if checkNetworkPortAvailability $nodeport ; then
+        registerNetworkPort grafana $nodeport
+        if [ $? -ne 0 ]; then
+            logWarn "grafana - Failed to register port"
+        fi
+    else
+        service=$(whoHasNetworkPort $nodeport)
+        if [ "$service" != "grafana" ]; then
+            logWarn "grafana - port $nodeport in use by $service service"
+        fi
+    fi
+}
+
+#############################################################################
+# Function to configure the default data source
 # 
 #############################################################################
 function setupOpenTsdbDataSource() {
@@ -266,7 +279,7 @@ function loadDashboard() {
         (( count++ ))
     done
     if [ $rc -ne 0 ]; then
-        logMsg "NOTE: Failed to load dashboard - output = $OUTPUT"
+        logInfo "grafana - NOTE: Failed to load dashboard - output = $OUTPUT"
     fi
 
     return $rc
@@ -346,20 +359,47 @@ EOF
 # we need will use the roles file to know if this node is a RM. If this RM
 # is not the active one, we will be getting 0s for the stats.
 #
+#sets MAPR_USER/MAPR_GROUP/logfile
+initCfgEnv
 
-grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>] [-secureCluster] [-loadDataSourceOnly] [-R] -OT \"ip:port,ip1:port,\" "
+grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>]\n\t[-loadDataSourceOnly] [-customSecure] [-secure] [-unsecure] [-EC <commonEcoOpts>]\n\t[-R] -OT \"ip:port,ip1:port,\" "
 if [ ${#} -gt 1 ]; then
     # we have arguments - run as as standalone - need to get params and
     # XXX why do we need the -o to make this work?
-    OPTS=`getopt -a -o h -l nodeCount: -l nodePort: -l OT: -l grafanaPort: -l secureCluster -l loadDataSourceOnly -l R -- "$@"`
+    OPTS=`getopt -a -o h -l nodeCount: -l nodePort: -l EC: -l OT: -l grafanaPort: -l loadDataSourceOnly -l secure -l customSecure -l unsecure -l R -- "$@"`
     if [ $? != 0 ]; then
-        echo ${grafana_usage}
+        echo -e ${grafana_usage}
         return 2 2>/dev/null || exit 2
     fi
     eval set -- "$OPTS"
 
-    for i ; do
-        case "$i" in
+    while true ; do
+        case "$1" in
+            --EC)
+                #Parse Common options
+                #Ingore ones we don't care about
+                eval ecOpts=$2
+                shift 2
+                restOpts="$*"
+                eval set -- "$ecOpts --"
+                while true ; do
+                    case "$1" in
+                        --OT|-OT)
+                            nodelist="$2"
+                            shift 2;;
+                        --R)
+                            GRAFANA_CONF_ASSUME_RUNNING_CORE=1
+                            shift 1 ;;
+                        --) shift
+                            break;;
+                        *)
+                            #Ignoring common option $1"
+                            shift 1;;
+                    esac
+                done
+                shift 2 
+                eval set -- "$restOpts"
+                ;;
             --nodeCount)
                   nodecount="$2";
                   shift 2;;
@@ -372,9 +412,26 @@ if [ ${#} -gt 1 ]; then
             --grafanaPort)
                   grafanaport="$2";
                   shift 2;;
-            --secureCluster)
-                  secureCluster=1;
-                  shift 1;;
+            --customSecure)
+                if [ -f "$GRAFANA_HOME/etc/.not_configured_yet" ]; then
+                    # grafan added after secure 5.x grafan upgraded to customSecure
+                    # 6.0 cluster. Deal with this by assuming a regular --secure path
+                    :
+                else 
+                    # this is a little tricky. It either means a simpel configure.sh -R run
+                    # or it means that grafan was part of the 5.x to 6.0 upgrade
+                    # At the moment grafan knows of no other security settings besides
+                    # the certs used for its web browser
+                    :
+                fi
+                secureCluster=1;
+                shift 1;;
+            --secure)
+                secureCluster=1;
+                shift 1;;
+            --unsecure)
+                secureCluster=0;
+                shift 1;;
             --loadDataSourceOnly)
                   LOAD_DATA_SOURCE_ONLY=1
                   shift ;;
@@ -382,29 +439,30 @@ if [ ${#} -gt 1 ]; then
                   GRAFANA_CONF_ASSUME_RUNNING_CORE=1
                   shift ;;
             --h)
-                  echo ${grafana_usage}
+                  echo -e ${grafana_usage}
                   return 2 2>/dev/null || exit 2
                   ;;
             --)
-                  shift;;
+                  shift
+                  break;;
         esac
     done
 
 else
-    echo "${grafana_usage}"
+    echo -e "${grafana_usage}"
     return 2 2>/dev/null || exit 2
 fi
 
 if [ -z "$nodelist" ]; then
-    logMsg "-OT is required"
-    echo "${grafana_usage}"
+    logErr "grafana - -OT is required"
+    echo -e "${grafana_usage}"
     return 2 2>/dev/null || exit 2
 fi
 
 GRAFANA_IP=$(hostname -i | head -n 1 | cut -d' ' -f1)
 GRAFANA_DEFAULT_DATASOURCE=`pickOpenTSDBHost ${nodecount} ${nodelist}`
 if [ $? -ne 0 ]; then
-    logMsg "ERROR: Failed to pick default data source host"
+    logErr "grafana - Failed to pick default data source host"
     return 2 2> /dev/null || exit 2
 fi
 
@@ -413,22 +471,23 @@ if ! echo "$GRAFANA_DEFAULT_DATASOURCE" | fgrep ':' > /dev/null 2>&1 ; then
     GRAFANA_DEFAULT_DATASOURCE="$GRAFANA_DEFAULT_DATASOURCE:$nodeport"
 fi
 
+adjustOwnerShip
 if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
     cp -p ${GRAFANA_CONF_FILE} ${NEW_GRAFANA_CONF_FILE}
     if [ $? -ne 0 ]; then
-        logMsg "ERROR: Failed to create scratch config file"
+        logErr "grafana -  Failed to create scratch config file"
         return 2 2> /dev/null || exit 2
     fi
 
     changePort ${grafanaport} ${NEW_GRAFANA_CONF_FILE}
     if [ $? -ne 0 ]; then
-        logMsg "ERROR: Failed to change the port"
+        logErr "grafana - Failed to change the port"
         return 2 2> /dev/null || exit 2
     fi
-
+    registerGrafanaPort "$grafanaport"
     configureSslBrowsing ${NEW_GRAFANA_CONF_FILE}
     if [ $? -ne 0 ]; then
-        logMsg "ERROR: Failed to configure ssl for grafana"
+        logErr "grafana - Failed to configure ssl for grafana"
         return 2 2> /dev/null || exit 2
     fi
 
@@ -442,19 +501,16 @@ if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
 fi
 
 fixFluentdConf
-
-if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 ]; then
-    setupWardenConfFileAndStart
-    if [ $? -ne 0 ]; then
-        logMsg "ERROR: Failed to install grafana warden config file"
-        return 2 2> /dev/null || exit 2
-    fi
+setupWardenConfFileAndStart
+if [ $? -ne 0 ]; then
+    logErr "grafana - Failed to install grafana warden config file"
+    return 2 2> /dev/null || exit 2
 fi
 
-if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 -o $LOAD_DATA_SOURCE_ONLY -eq 1 ]; then
+if [ $LOAD_DATA_SOURCE_ONLY -eq 1 ]; then
     setupOpenTsdbDataSource ${GRAFANA_IP} ${grafanaport} ${GRAFANA_DEFAULT_DATASOURCE}
     if [ $? -ne 0 ]; then
-        logMsg "NOTE: Failed to install grafana default data source config - do it manually when you run grafana"
+        logInfo "grafana - NOTE: Failed to install grafana default data source config - do it manually when you run grafana"
     else
         for df in $GRAFANA_DEFAULT_DASHBOARDS; do
             DB_JSON=$( cat ${GRAFANA_HOME}/etc/conf/$df )
@@ -463,7 +519,7 @@ if [ $GRAFANA_CONF_ASSUME_RUNNING_CORE -eq 1 -o $LOAD_DATA_SOURCE_ONLY -eq 1 ]; 
             echo "$GRAFANA_DASHBOARD_POSTFIX" >> $GRAFANA_DASHBOARD_TMP_FILE
             loadDashboard ${GRAFANA_IP} ${grafanaport} $GRAFANA_DASHBOARD_TMP_FILE
             if [ $? -ne 0 ]; then
-                logMsg "NOTE: Failed to load dashboard $df - do it manually when you run grafana"
+                logInfo "grafana - NOTE: Failed to load dashboard $df - do it manually when you run grafana"
             else
                 rm -f $GRAFANA_DASHBOARD_TMP_FILE
             fi
