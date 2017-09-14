@@ -147,12 +147,12 @@ function adjustOwnerShip() {
 #############################################################################
 function setupWardenConfFileAndStart() {
     # make sure warden conf directory exist
-    if ! [ -d ${MAPR_CONF_DIR} ]; then
-        mkdir -p ${MAPR_CONF_DIR} > /dev/null 2>&1
+    if ! [ -d ${MAPR_CONF_DIR}/conf.d ]; then
+        mkdir -p ${MAPR_CONF_DIR}/conf.d > /dev/null 2>&1
     fi
     # Install warden file
-    cp ${GRAFANA_WARDEN_FILE} ${MAPR_CONF_DIR}
-    chown ${MAPR_USER}:${MAPR_GROUP} ${MAPR_CONF_DIR}/warden.grafana.conf
+    cp ${GRAFANA_WARDEN_FILE} ${MAPR_CONF_DIR}/conf.d/
+    chown ${MAPR_USER}:${MAPR_GROUP} ${MAPR_CONF_DIR}/conf.d/warden.grafana.conf
     return $?
 }
 
