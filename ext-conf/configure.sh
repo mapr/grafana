@@ -373,17 +373,17 @@ if [ ${#} -gt 1 ]; then
     fi
     eval set -- "$OPTS"
 
-    while true ; do
-        case "$1" in
+    for i in "$@" ; do
+        case "$i" in
             --EC)
                 #Parse Common options
                 #Ingore ones we don't care about
-                eval "ecOpts=($2)"
+                ecOpts=($2)
                 shift 2
-                restOpts="$*"
+                restOpts="$@"
                 eval set -- "${ecOpts[@]} --"
-                while true ; do
-                    case "$1" in
+                for j in "$@" ; do
+                    case "$j" in
                         --OT|-OT)
                             nodelist="$2"
                             shift 2;;
@@ -393,7 +393,7 @@ if [ ${#} -gt 1 ]; then
                         --) shift
                             break;;
                         *)
-                            #Ignoring common option $1"
+                            #echo "Ignoring common option $j"
                             shift 1;;
                     esac
                 done
