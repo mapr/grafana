@@ -185,7 +185,7 @@ fi
 
 APP_MAIN="$APP_HOME_DIR/usr/sbin/$APP"
 
-function getGrafanaPort() {
+getGrafanaPort() {
     local port=""
     port=$(grep http_port "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
     if [ -z "$port" ]; then
@@ -194,7 +194,7 @@ function getGrafanaPort() {
     echo "$port"
 }
 
-function isGrafanaSecured() {
+isGrafanaSecured() {
     local protocol="http"
     prot=$(grep http_protocol "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
     if [ -z "$prot" ]; then
@@ -208,7 +208,7 @@ function isGrafanaSecured() {
     return 0
 }
 
-function setupOpenTsdbDataSource() {
+setupOpenTsdbDataSource() {
     # $1 is the interface Ip/hostname for grafana
     # $2 is the port number for grafana
     # $3 is the interface of the opentsdb server
@@ -267,7 +267,7 @@ function setupOpenTsdbDataSource() {
 # Function to load a  dashboard
 # 
 #############################################################################
-function loadDashboard() {
+loadDashboard() {
     # $1 is the interface Ip/hostname for grafana
     # $2 is the port number for grafana
     # $3 is the json file to load
