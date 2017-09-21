@@ -21,7 +21,7 @@ if [ -f /etc/redhat-release ]; then
 #EOF
 #
 #
-#yum -y install devtoolset-3-gcc-c++-4.9.2
+yum -y install devtoolset-4
 
   :
 else
