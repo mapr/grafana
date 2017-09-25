@@ -199,7 +199,7 @@ isGrafanaSecured() {
     local protocol="http"
     local prot=""
     local isSecured=1
-    prot=$(grep http_protocol "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
+    prot=$(grep protocol "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
     if [ -z "$prot" ]; then
         prot=$protocol
     fi
