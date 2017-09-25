@@ -170,6 +170,7 @@ GRAFANA_DASHBOARD_TMP_FILE="/tmp/gf_dashboard_$$.json"
 #GRAFANA_CURL_DEBUG="-v -S"
 GRAFANA_CURL_DEBUG=""
 GRAFANA_CONF_FILE="${GRAFANA_CONF_FILE:-${APP_HOME_DIR}/etc/grafana/grafana.ini}" 
+MONITORING_CONF_FILE="${MAPR_HOME}/conf/mapr-monitoring.conf"
 
 # CHOOSE BEHAVOR: Set to fit app
 if [ $APP_REQUIRE_JAVA -eq 1 -a $APP_STARTS_WITH_JAVA -eq 1 ]; then
@@ -196,15 +197,86 @@ getGrafanaPort() {
 
 isGrafanaSecured() {
     local protocol="http"
+    local prot=""
+    local isSecured=1
     prot=$(grep http_protocol "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
     if [ -z "$prot" ]; then
-        port=$protocol
+        prot=$protocol
     fi
     if [ "$prot" = "https" ]; then
-        return 1
+        isSecured=0
     elif [ "$prot" = "http" ] ; then
-        return 0
+        isSecured=1
     fi
+    return $isSecured
+}
+
+getOpenTsdbNodesList() {
+    local nodesList=""
+    local rc=1
+    if [ -f "$MONITORING_CONF_FILE" ]; then
+        nodesList=$(cat $MONITORING_CONF_FILE | fgrep '<openTsdbServers>' | sed -e 's/<openTsdbServers> //')
+        if [ -n "$nodesList" ]; then
+            rc=0
+        fi
+    fi
+    echo "$nodesList"
+    return $rc
+}
+
+countOpenTsdbNodes() {
+    local nodesList=$1
+    local rc=1
+    local rc1=0
+    if [ -n "$nodesList" ]; then
+        rc1=$(echo $nodesList | sed 's/,/,\n/' | grep -c ',')
+        let rc=$rc+$rc1
+    else
+        rc=$rc1
+    fi
+    return $rc
+}
+
+pickOpenTSDBDefaultHost() {
+    local otNodesList=""
+    local otNodesCnt=0
+    local otServer=""
+    local rc=1
+
+    otNodesList=$(getOpenTsdbNodesList)
+    if [ $? -eq 0 ]; then
+        $(countOpenTsdbNodes "$otNodesList")
+        otNodesCnt=$?
+        otServer=$(pickOpenTSDBHost $otNodesCnt "$otNodesList")
+        rc=$?
+    fi
+    echo "$otServer"
+    return $rc
+}
+
+pickOpenTSDBHost() {
+    # $1 is opentsdb nodes count
+    # $2 is opentsdb nodes list
+
+    # Verify options
+    local openTsdb_hosts_count=$1
+    local openTsdb_hosts=$2
+    local host_count=0
+
+    IFS=',' read -r -a otArray <<< "$2"
+    host_count=${#otArray[@]}
+    if [ $host_count -eq 0 ]; then
+        return 1
+    fi
+
+    # Validate the arguments only if we were given a nodecount to validate against
+    if [ ${openTsdb_hosts_count} -gt 0 -a ${host_count} -ne ${openTsdb_hosts_count} ]; then
+        return 1
+    fi
+
+    # For now pick the first one
+    echo ${otArray[0]}
+
     return 0
 }
 
@@ -542,10 +614,11 @@ start() {
                 fi
                 ln -s $APP_PID_FILE $MAPR_APP_PID_FILE > /dev/null 2>&1
             fi
-            # TODO iinitialize parameters
+
             GRAFANA_IP=$(hostname -i | head -n 1 | cut -d' ' -f1)
             grafanaport=$(getGrafanaPort)
-            setupOpenTsdbDataSource ${GRAFANA_IP} ${grafanaport} ${GRAFANA_DEFAULT_DATASOURCE}
+            openTsdbServer=$(pickOpenTSDBDefaultHost)
+            setupOpenTsdbDataSource ${GRAFANA_IP} ${grafanaport} ${openTsdbServer}
             if [ $? -ne 0 ]; then
                 echo "grafana - NOTE: Failed to install grafana default data source config - do it manually when you run grafana"
             else
