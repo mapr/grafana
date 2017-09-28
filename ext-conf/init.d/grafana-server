@@ -230,7 +230,7 @@ countOpenTsdbNodes() {
     local rc1=0
     if [ -n "$nodesList" ]; then
         rc1=$(echo $nodesList | sed 's/,/,\n/' | grep -c ',')
-        let rc=$rc+$rc1
+        rc=$(expr $rc + $rc1)
     else
         rc=$rc1
     fi
@@ -263,8 +263,7 @@ pickOpenTSDBHost() {
     local openTsdb_hosts=$2
     local host_count=0
 
-    IFS=',' read -r -a otArray <<< "$2"
-    host_count=${#otArray[@]}
+    host_count=$(echo $2 | tr ',' '\n' | wc -l)
     if [ $host_count -eq 0 ]; then
         return 1
     fi
