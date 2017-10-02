@@ -274,7 +274,7 @@ pickOpenTSDBHost() {
     fi
 
     # For now pick the first one
-    echo "$($2 | tr ',' \n' | head -1)"
+    echo "$(echo $2 | tr ',' '\n' | head -1)"
 
     return 0
 }
