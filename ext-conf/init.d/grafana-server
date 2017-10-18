@@ -518,6 +518,9 @@ execAsUser() {
 }
 
 isStaleLockFile() {
+    if ! [ -f "$APP_LOCK_FILE" ]; then
+        return 1
+    fi
     MOD_TIME=$(stat -c%y $APP_LOCK_FILE)
     EPOC_MOD_TIME=$(date +%s -d"$MOD_TIME")
     NOW_EPOC=$(date +%s)
