@@ -497,7 +497,7 @@ if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
     cp -p ${GRAFANA_CONF_FILE} ${GRAFANA_CONF_FILE}.${NOW}
     cp -p ${NEW_GRAFANA_CONF_FILE} ${GRAFANA_CONF_FILE}
     rm -f ${NEW_GRAFANA_CONF_FILE}
-
+    chmod 640 ${GRAFANA_CONF_FILE}
 fi
 
 fixFluentdConf
