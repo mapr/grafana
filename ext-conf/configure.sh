@@ -362,10 +362,10 @@ EOF
 #sets MAPR_USER/MAPR_GROUP/logfile
 initCfgEnv
 
-grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>]\n\t[-loadDataSourceOnly] [-customSecure] [-secure] [-unsecure] [-EC <commonEcoOpts>]\n\t[-R] -OT \"ip:port,ip1:port,\" "
+grafana_usage="usage: $0 [-help] [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>]\n\t[-loadDataSourceOnly] [-customSecure] [-secure] [-unsecure] [-EC <commonEcoOpts>]\n\t[-R] -OT \"ip:port,ip1:port,\" "
 if [ ${#} -gt 1 ]; then
     # we have arguments - run as as standalone - need to get params and
-    OPTS=`getopt -a -l help -l nodeCount: -l nodePort: -l EC: -l OT: -l grafanaPort: -l loadDataSourceOnly -l secure -l customSecure -l unsecure -l R -- "$@"`
+    OPTS=$(getopt -a -o chln:suC:G:P:O:R -l help -l nodeCount: -l nodePort: -l EC: -l OT: -l grafanaPort: -l loadDataSourceOnly -l secure -l customSecure -l unsecure -l R -- "$@")
     if [ $? != 0 ]; then
         echo -e ${grafana_usage}
         return 2 2>/dev/null || exit 2
@@ -374,7 +374,7 @@ if [ ${#} -gt 1 ]; then
 
     for i in "$@" ; do
         case "$i" in
-            --EC)
+            --EC|-C)
                 #Parse Common options
                 #Ingore ones we don't care about
                 ecOpts=($2)
@@ -386,7 +386,7 @@ if [ ${#} -gt 1 ]; then
                         --OT|-OT)
                             nodelist="$2"
                             shift 2;;
-                        --R)
+                        --R|-R)
                             GRAFANA_CONF_ASSUME_RUNNING_CORE=1
                             shift 1 ;;
                         --) shift
@@ -399,19 +399,19 @@ if [ ${#} -gt 1 ]; then
                 shift 2 
                 eval set -- "$restOpts"
                 ;;
-            --nodeCount)
-                  nodecount="$2";
-                  shift 2;;
-            --OT)
-                  nodelist="$2";
-                  shift 2;;
-            --nodePort)
-                  nodeport="$2";
-                  shift 2;;
-            --grafanaPort)
-                  grafanaport="$2";
-                  shift 2;;
-            --customSecure)
+            --nodeCount|-n)
+                nodecount="$2";
+                shift 2;;
+            --OT|-O)
+                nodelist="$2";
+                shift 2;;
+            --nodePort|-P)
+                nodeport="$2";
+                shift 2;;
+            --grafanaPort|-G)
+                grafanaport="$2";
+                shift 2;;
+            --customSecure|-c)
                 if [ -f "$GRAFANA_HOME/etc/.not_configured_yet" ]; then
                     # grafan added after secure 5.x grafan upgraded to customSecure
                     # 6.0 cluster. Deal with this by assuming a regular --secure path
@@ -425,28 +425,27 @@ if [ ${#} -gt 1 ]; then
                 fi
                 secureCluster=1;
                 shift 1;;
-            --secure)
+            --secure|-s)
                 secureCluster=1;
                 shift 1;;
-            --unsecure)
+            --unsecure|-u)
                 secureCluster=0;
                 shift 1;;
-            --loadDataSourceOnly)
-                  LOAD_DATA_SOURCE_ONLY=1
-                  shift ;;
-            --R)
-                  GRAFANA_CONF_ASSUME_RUNNING_CORE=1
-                  shift ;;
-            --help)
-                  echo -e ${grafana_usage}
-                  return 2 2>/dev/null || exit 2
-                  ;;
+            --loadDataSourceOnly|-l)
+                LOAD_DATA_SOURCE_ONLY=1
+                shift ;;
+            --R|-R)
+                GRAFANA_CONF_ASSUME_RUNNING_CORE=1
+                shift ;;
+            --help|-h)
+                echo -e ${grafana_usage}
+                return 2 2>/dev/null || exit 2
+                ;;
             --)
-                  shift
-                  break;;
+                shift
+                break;;
         esac
     done
-
 else
     echo -e "${grafana_usage}"
     return 2 2>/dev/null || exit 2
