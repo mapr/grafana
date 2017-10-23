@@ -526,5 +526,8 @@ if [ $LOAD_DATA_SOURCE_ONLY -eq 1 ]; then
         done
     fi
 fi
+if [ -f "$GRAFANA_HOME/etc/.not_configured_yet" ]; then
+    rm -f "$GRAFANA_HOME/etc/.not_configured_yet"
+fi
 
 true
