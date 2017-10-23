@@ -372,8 +372,8 @@ if [ ${#} -gt 1 ]; then
     fi
     eval set -- "$OPTS"
 
-    for i in "$@" ; do
-        case "$i" in
+    while (( $# )) ; do
+        case "$1" in
             --EC|-C)
                 #Parse Common options
                 #Ingore ones we don't care about
@@ -381,8 +381,8 @@ if [ ${#} -gt 1 ]; then
                 shift 2
                 restOpts="$@"
                 eval set -- "${ecOpts[@]} --"
-                for j in "$@" ; do
-                    case "$j" in
+                while (( $# )) ; do
+                    case "$1" in
                         --OT|-OT)
                             nodelist="$2"
                             shift 2;;
@@ -390,7 +390,7 @@ if [ ${#} -gt 1 ]; then
                             GRAFANA_CONF_ASSUME_RUNNING_CORE=1
                             shift 1 ;;
                         --) shift
-                            break;;
+                            ;;
                         *)
                             #echo "Ignoring common option $j"
                             shift 1;;
@@ -443,7 +443,12 @@ if [ ${#} -gt 1 ]; then
                 ;;
             --)
                 shift
-                break;;
+                ;;
+            *)
+                echo "Unknown option $1"
+                echo -e ${grafana_usage}
+                return 2 2>/dev/null || exit 2
+                ;;
         esac
     done
 else
