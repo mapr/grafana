@@ -365,8 +365,7 @@ initCfgEnv
 grafana_usage="usage: $0 [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>]\n\t[-loadDataSourceOnly] [-customSecure] [-secure] [-unsecure] [-EC <commonEcoOpts>]\n\t[-R] -OT \"ip:port,ip1:port,\" "
 if [ ${#} -gt 1 ]; then
     # we have arguments - run as as standalone - need to get params and
-    # XXX why do we need the -o to make this work?
-    OPTS=`getopt -a -o h -l nodeCount: -l nodePort: -l EC: -l OT: -l grafanaPort: -l loadDataSourceOnly -l secure -l customSecure -l unsecure -l R -- "$@"`
+    OPTS=`getopt -a -l help -l nodeCount: -l nodePort: -l EC: -l OT: -l grafanaPort: -l loadDataSourceOnly -l secure -l customSecure -l unsecure -l R -- "$@"`
     if [ $? != 0 ]; then
         echo -e ${grafana_usage}
         return 2 2>/dev/null || exit 2
@@ -438,7 +437,7 @@ if [ ${#} -gt 1 ]; then
             --R)
                   GRAFANA_CONF_ASSUME_RUNNING_CORE=1
                   shift ;;
-            --h)
+            --help)
                   echo -e ${grafana_usage}
                   return 2 2>/dev/null || exit 2
                   ;;
