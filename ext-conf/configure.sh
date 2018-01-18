@@ -139,7 +139,7 @@ function configureSslBrowsing() {
 #############################################################################
 function adjustOwnerShip() {
     chown -R "$MAPR_USER":"$MAPR_GROUP" "$GRAFANA_HOME"
-    chmod 750 "$GRAFANA_HOME"
+    chmod -R 750 "$GRAFANA_HOME"
 }
 
 #############################################################################
