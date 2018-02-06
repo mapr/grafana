@@ -60,6 +60,8 @@ GRAFANA_CURL_DEBUG=""
 nodecount=0
 nodeport=4242
 grafanaport="3000"
+admin_password="${GRAFANA_ADMIN_PASSWORD:-}"
+admin_user="${GRAFANA_ADMIN_USER:-}"
 nodelist=""
 secureCluster=0
 
@@ -88,6 +90,42 @@ function changePort() {
     fi
 }
 
+
+#############################################################################
+# Function to change the admin password
+#
+#############################################################################
+function changeAdminPassword() {
+    # $1 is the password
+    # $2 is config file
+    # Verify options
+    if [ ! -z $1 -a -w $2 ]; then
+        # update config file
+        # use sed to do the work
+        sed -i 's/;\(admin_password = \).*/\1'$1'/g' $2
+        return $?
+    else
+        return 1
+    fi
+}
+
+#############################################################################
+# Function to change the admin user
+#
+#############################################################################
+function changeAdminUser() {
+    # $1 is the user
+    # $2 is config file
+    # Verify options
+    if [ ! -z $1 -a -w $2 ]; then
+        # update config file
+        # use sed to do the work
+        sed -i 's/;\(admin_user = \).*/\1'$1'/g' $2
+        return $?
+    else
+        return 1
+    fi
+}
 
 #############################################################################
 # Function to change the interface configuration
@@ -363,10 +401,10 @@ EOF
 #sets MAPR_USER/MAPR_GROUP/logfile
 initCfgEnv
 
-grafana_usage="usage: $0 [-help] [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>]\n\t[-loadDataSourceOnly] [-customSecure] [-secure] [-unsecure] [-EC <commonEcoOpts>]\n\t[-R] -OT \"ip:port,ip1:port,\" "
+grafana_usage="usage: $0 [-help] [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>]\n\t[-loadDataSourceOnly] [-customSecure] [-secure] [-unsecure] [-EC <commonEcoOpts>]\n\t[-password <pw>] [-R] -OT \"ip:port,ip1:port,\" "
 if [ ${#} -gt 1 ]; then
     # we have arguments - run as as standalone - need to get params and
-    OPTS=$(getopt -a -o chln:suC:G:P:O:R -l help -l nodeCount: -l nodePort: -l EC: -l OT: -l grafanaPort: -l loadDataSourceOnly -l secure -l customSecure -l unsecure -l R -- "$@")
+    OPTS=$(getopt -a -o chln:suC:G:P:O:R -l help -l nodeCount: -l nodePort: -l EC: -l OT: -l grafanaPort: -l loadDataSourceOnly -l secure -l customSecure -l unsecure -l password: -l R -- "$@")
     if [ $? != 0 ]; then
         echo -e ${grafana_usage}
         return 2 2>/dev/null || exit 2
@@ -411,6 +449,9 @@ if [ ${#} -gt 1 ]; then
                 shift 2;;
             --grafanaPort|-G)
                 grafanaport="$2";
+                shift 2;;
+            --password|-p)
+                password="$2";
                 shift 2;;
             --customSecure|-c)
                 if [ -f "$GRAFANA_HOME/etc/.not_configured_yet" ]; then
@@ -489,6 +530,20 @@ if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
         return 2 2> /dev/null || exit 2
     fi
     registerGrafanaPort "$grafanaport"
+    if [ -n "$admin_password" ]; then
+        changeAdminPassword "$admin_password" ${NEW_GRAFANA_CONF_FILE}
+        if [ $? -ne 0 ]; then
+            logErr "grafana - Failed to change admin password"
+            return 2 2> /dev/null || exit 2
+        fi
+    fi
+    if [ -n "$admin_user" ]; then
+        changeAdminUser "$admin_user" ${NEW_GRAFANA_CONF_FILE}
+        if [ $? -ne 0 ]; then
+            logErr "grafana - Failed to change admin user"
+            return 2 2> /dev/null || exit 2
+        fi
+    fi
     configureSslBrowsing ${NEW_GRAFANA_CONF_FILE}
     if [ $? -ne 0 ]; then
         logErr "grafana - Failed to configure ssl for grafana"
