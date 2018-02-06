@@ -37,10 +37,14 @@ var (
 	linuxPackageIteration string = ""
 	race                  bool
 	phjsToRelease         string
+	pkgType               string
 	workingDir            string
 	includeBuildNumber    bool     = true
 	buildNumber           int      = 0
 	binaries              []string = []string{"grafana-server", "grafana-cli"}
+	installRoot           string
+	packageDir            string
+	serverBinaryName      string = "grafana-server"
 )
 
 const minGoVersion = 1.8
@@ -58,6 +62,9 @@ func main() {
 	flag.StringVar(&cgo, "cgo-enabled", "", "CGO_ENABLED")
 	flag.StringVar(&pkgArch, "pkg-arch", "", "PKG ARCH")
 	flag.StringVar(&phjsToRelease, "phjs", "", "PhantomJS binary")
+	flag.StringVar(&installRoot, "installRoot", installRoot, "Prefix this path to packaged files")
+	flag.StringVar(&packageDir, "packageDir", packageDir, "use a specific directory as the package directory")
+	flag.StringVar(&pkgType, "pkgType", pkgType, "Type of pkg to build")
 	flag.BoolVar(&race, "race", race, "Use race detector")
 	flag.BoolVar(&includeBuildNumber, "includeBuildNumber", includeBuildNumber, "IncludeBuildNumber in package name")
 	flag.IntVar(&buildNumber, "buildNumber", 0, "Build number from CI system")
@@ -187,6 +194,7 @@ type linuxPackageOptions struct {
 	serverBinPath          string
 	cliBinPath             string
 	configDir              string
+	configFilePath         string
 	ldapFilePath           string
 	etcDefaultPath         string
 	etcDefaultFilePath     string
@@ -207,6 +215,8 @@ func createDebPackages() {
 		homeDir:                "/usr/share/grafana",
 		binPath:                "/usr/sbin",
 		configDir:              "/etc/grafana",
+		configFilePath:         "/etc/grafana/grafana.ini",
+		ldapFilePath:           "/etc/grafana/ldap.toml",
 		etcDefaultPath:         "/etc/default",
 		etcDefaultFilePath:     "/etc/default/grafana-server",
 		initdScriptFilePath:    "/etc/init.d/grafana-server",
@@ -227,6 +237,8 @@ func createRpmPackages() {
 		homeDir:                "/usr/share/grafana",
 		binPath:                "/usr/sbin",
 		configDir:              "/etc/grafana",
+		configFilePath:         "/etc/grafana/grafana.ini",
+		ldapFilePath:           "/etc/grafana/ldap.toml",
 		etcDefaultPath:         "/etc/sysconfig",
 		etcDefaultFilePath:     "/etc/sysconfig/grafana-server",
 		initdScriptFilePath:    "/etc/init.d/grafana-server",
@@ -239,15 +251,33 @@ func createRpmPackages() {
 
 		depends: []string{"/sbin/service", "fontconfig", "freetype", "urw-fonts"},
 	})
+
 }
 
 func createLinuxPackages() {
-	createDebPackages()
-	createRpmPackages()
+	if (pkgType == "deb") {
+		createDebPackages()
+	} else if (pkgType == "rpm") {
+		createRpmPackages()
+	} else {
+		createDebPackages()
+		createRpmPackages()
+	}
 }
 
 func createPackage(options linuxPackageOptions) {
-	packageRoot, _ := ioutil.TempDir("", "grafana-linux-pack")
+	var packageRoot string
+	if (packageDir == "") { 
+		packageRoot, _ = ioutil.TempDir("", "grafana-linux-pack")
+	} else {
+		packageRoot = packageDir
+		log.Printf("packageRoot=", packageRoot)
+	}
+
+	if (installRoot != "" )  {
+		packageRoot = filepath.Join(packageRoot, installRoot)
+		log.Printf("packageRoot=", packageRoot)
+        } 
 
 	// create directories
 	runPrint("mkdir", "-p", filepath.Join(packageRoot, options.homeDir))
@@ -271,6 +301,10 @@ func createPackage(options linuxPackageOptions) {
 	runPrint("cp", "-a", filepath.Join(workingDir, "tmp")+"/.", filepath.Join(packageRoot, options.homeDir))
 	// remove bin path
 	runPrint("rm", "-rf", filepath.Join(packageRoot, options.homeDir, "bin"))
+	// copy sample ini file to /etc/grafana
+	runPrint("cp", "conf/sample.ini", filepath.Join(packageRoot, options.configFilePath))
+	// copy sample ldap toml config file to /etc/grafana/ldap.toml
+	runPrint("cp", "conf/ldap.toml", filepath.Join(packageRoot, options.ldapFilePath))
 
 	args := []string{
 		"-s", "dir",
@@ -280,6 +314,8 @@ func createPackage(options linuxPackageOptions) {
 		"--url", "https://grafana.com",
 		"--license", "\"Apache 2.0\"",
 		"--maintainer", "contact@grafana.com",
+		"--config-files", options.configFilePath,
+		"--config-files", options.ldapFilePath,
 		"--config-files", options.initdScriptFilePath,
 		"--config-files", options.etcDefaultFilePath,
 		"--config-files", options.systemdServiceFilePath,
