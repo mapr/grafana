@@ -61,7 +61,7 @@ nodecount=0
 nodeport=4242
 grafanaport="3000"
 admin_password="${GRAFANA_ADMIN_PASSWORD:-}"
-admin_user="${GRAFANA_ADMIN_USER:-}"
+admin_user="${GRAFANA_ADMIN_ID:-}"
 nodelist=""
 secureCluster=0
 
@@ -102,7 +102,7 @@ function changeAdminPassword() {
     if [ ! -z $1 -a -w $2 ]; then
         # update config file
         # use sed to do the work
-        sed -i 's/;\(admin_password = \).*/\1'$1'/g' $2
+        sed -i 's/[ ;]*\(admin_password = \).*/\1'$1'/g' $2
         return $?
     else
         return 1
@@ -120,7 +120,7 @@ function changeAdminUser() {
     if [ ! -z $1 -a -w $2 ]; then
         # update config file
         # use sed to do the work
-        sed -i 's/;\(admin_user = \).*/\1'$1'/g' $2
+        sed -i 's/[ ;]*\(admin_user = \).*/\1'$1'/g' $2
         return $?
     else
         return 1
@@ -451,7 +451,7 @@ if [ ${#} -gt 1 ]; then
                 grafanaport="$2";
                 shift 2;;
             --password|-p)
-                password="$2";
+                admin_password="$2";
                 shift 2;;
             --customSecure|-c)
                 if [ -f "$GRAFANA_HOME/etc/.not_configured_yet" ]; then
@@ -469,9 +469,12 @@ if [ ${#} -gt 1 ]; then
                 shift 1;;
             --secure|-s)
                 secureCluster=1;
+                admin_user=${GRAFANA_ADMIN_ID:-mapr}
                 shift 1;;
             --unsecure|-u)
                 secureCluster=0;
+                admin_user=${GRAFANA_ADMIN_ID:-admin}
+                admin_password=${GRAFANA_ADMIN_PASSWORD:-admin}
                 shift 1;;
             --loadDataSourceOnly|-l)
                 LOAD_DATA_SOURCE_ONLY=1
