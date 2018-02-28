@@ -53,9 +53,11 @@ func EnsureAdminUser() {
 		return
 	}
 
-	if statsQuery.Result.Users > 0 {
-		return
-	}
+        // we want to make sure we always try to create the admin user since the admin user
+        // Id changes between secure and insecure mode
+	//if statsQuery.Result.Users > 0 {
+        //		return
+	//}
 
 	cmd := m.CreateUserCommand{}
 	cmd.Login = setting.AdminUser
@@ -64,7 +66,10 @@ func EnsureAdminUser() {
 	cmd.IsAdmin = true
 
 	if err := bus.Dispatch(&cmd); err != nil {
-		log.Error(3, "Failed to create default admin user", err)
+                // We don't want to log failures when it already exists
+                if !strings.Contains(err.Error(), "UNIQUE constraint failed: user.email") {
+		    log.Error(3, "Failed to create default admin user", err)
+                }
 		return
 	}
 
