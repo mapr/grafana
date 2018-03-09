@@ -161,6 +161,9 @@ APP_OPTS_1=" --pidfile=${APP_PID_FILE} --config=${APP_CONF_FILE}  --homepath=${A
 APP_OPTS_2=""
 
 # Export APP specific variables here
+GRAFANA_DEF_PORT=3000
+GRAFANA_DEF_USER="admin"
+GRAFANA_DEF_PW="admin"
 GRAFANA_RETRY_DELAY=24
 GRAFANA_RETRY_CNT=5
 GRAFANA_DEFAULT_DASHBOARDS="cldb_dashboard.json node_dashboard.json volume_dashboard.json new_volume_dashboard.json"
@@ -185,6 +188,20 @@ fi
 # java app, otherwise set it to APP_DAEMON(usually)
 
 APP_MAIN="$APP_HOME_DIR/usr/sbin/$APP"
+
+getGrafanaLogin() {
+    local user=""
+    local pw=""
+    user=$(grep admin_user "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
+    if [ -z "$user" ]; then
+        user=$GRAFANA_DEF_USER
+    fi
+    pw=$(grep admin_password "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
+    if [ -z "$pw" ]; then
+        pw=$GRAFANA_DEF_PW
+    fi
+    echo "$user:$pw"
+}
 
 getGrafanaPort() {
     local port=""
@@ -292,6 +309,7 @@ setupOpenTsdbDataSource() {
     local protocol="http"
     local ot_protocol="http"
     local no_cert_ver=""
+    local login=""
     local rc
     grafana_ip=$1
     grafana_port=$2
@@ -305,16 +323,18 @@ setupOpenTsdbDataSource() {
         #ot_protocol="https" # commented out until we support the proxy
         no_cert_ver="-k"
     fi
+    
+    login=$(getGrafanaLogin)
 
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
-        curl -s ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/org" > /dev/null 2>&1
+        curl -s ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/org" > /dev/null 2>&1
         is_running=$?
         if [ ${is_running} -eq 0 ]; then
-            if ! curl -s ${no_cert_ver} -XGET "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" | \
+            if ! curl -s ${no_cert_ver} -XGET "$protocol://${login}@${grafana_ip}:${grafana_port}/api/datasources" | \
                 fgrep MaprMonitoring > /dev/null 2>&1 ; then
 
-                curl -s ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" \
+                curl -s ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/datasources" \
                    -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary \
                    '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${ot_protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring","jsonData":{"tsdbResolution":1,"tsdbVersion":3}}' > ${APP_LOG_DIR}/load_default_datasource.log 2>&1
                 if [ $? -eq 0 ]; then
@@ -347,6 +367,7 @@ loadDashboard() {
     local grafana_port
     local protocol="http"
     local no_cert_ver=""
+    local login=""
     local count
     local rc
     grafana_ip=$1
@@ -361,9 +382,12 @@ loadDashboard() {
         #ot_protocol="https" # commented out until we support the proxy
         no_cert_ver="-k"
     fi
+
+    login=$(getGrafanaLogin)
+
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
-        OUTPUT=$(curl -s ${curl_dbg} ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file 2>&1)
+        OUTPUT=$(curl -s ${curl_dbg} ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file 2>&1)
         if [ $? -eq 0 ]; then
             rc=0
             break

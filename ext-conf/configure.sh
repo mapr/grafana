@@ -470,6 +470,7 @@ if [ ${#} -gt 1 ]; then
             --secure|-s)
                 secureCluster=1;
                 admin_user=${GRAFANA_ADMIN_ID:-mapr}
+                admin_user=${GRAFANA_ADMIN_PASSWORD:-mapr}
                 shift 1;;
             --unsecure|-u)
                 secureCluster=0;
