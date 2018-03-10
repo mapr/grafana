@@ -73,8 +73,59 @@ else
 fi
 
 #############################################################################
+# Function to get the grafana admin login information
+#
+#############################################################################
+getGrafanaLogin() {
+    local user=""
+    local pw=""
+    user=$(grep admin_user "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
+    if [ -z "$user" ]; then
+        user=$GRAFANA_DEF_USER
+    fi
+    pw=$(grep admin_password "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
+    if [ -z "$pw" ]; then
+        pw=$GRAFANA_DEF_PW
+    fi
+    echo "$user:$pw"
+}
+
+#############################################################################
+# Function to get the port grafana is configured to listen on
+#
+#############################################################################
+getGrafanaPort() {
+    local port=""
+    port=$(grep http_port "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
+    if [ -z "$port" ]; then
+        port=$GRAFANA_DEF_PORT
+    fi
+    echo "$port"
+}
+
+#############################################################################
+# Function to figure out if grafana is secured
+#
+#############################################################################
+isGrafanaSecured() {
+    local protocol="http"
+    local prot=""
+    local isSecured=1
+    prot=$(grep protocol "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
+    if [ -z "$prot" ]; then
+        prot=$protocol
+    fi
+    if [ "$prot" = "https" ]; then
+        isSecured=0
+    elif [ "$prot" = "http" ] ; then
+        isSecured=1
+    fi
+    return $isSecured
+}
+
+#############################################################################
 # Function to change the port number configuration
-# 
+#
 #############################################################################
 function changePort() {
     # $1 is port number
@@ -129,7 +180,7 @@ function changeAdminUser() {
 
 #############################################################################
 # Function to change the interface configuration
-# 
+#
 #############################################################################
 function changeInterface() {
     # $1 is the interface Ip/hostname
@@ -146,8 +197,8 @@ function changeInterface() {
 }
 
 #############################################################################
-# Function to enable ssl communication between kibana server and browser
-# 
+# Function to enable ssl communication between grafana server and browser
+#
 #############################################################################
 function configureSslBrowsing() {
     # $1 is the config file
@@ -216,7 +267,7 @@ function registerGrafanaPort() {
 
 #############################################################################
 # Function to configure the default data source
-# 
+#
 #############################################################################
 function setupOpenTsdbDataSource() {
     # $1 is the interface Ip/hostname for grafana
@@ -239,7 +290,7 @@ function setupOpenTsdbDataSource() {
     rc=1
     curl_dbg="$GRAFANA_CURL_DEBUG"
 
-    if [ $secureCluster -eq 1 ]; then
+    if isGrafanaSecured ; then
         protocol="https"
         #ot_protocol="https" # commented out until we support the proxy
         no_cert_ver="-k"
@@ -251,15 +302,18 @@ function setupOpenTsdbDataSource() {
     if ! ${MAPR_HOME}/initscripts/mapr-warden status > /dev/null 2>&1 ; then
         return 1
     fi
+
+    login=$(getGrafanaLogin)
+
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
-        curl -s ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/org" > /dev/null 2>&1
+        curl -s ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/org" > /dev/null 2>&1
         is_running=$?
         if [ ${is_running} -eq 0 ]; then
-            if ! curl -s ${no_cert_ver} -XGET "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" | \
+            if ! curl -s ${no_cert_ver} -XGET "$protocol://${login}@${grafana_ip}:${grafana_port}/api/datasources" | \
                 fgrep MaprMonitoring > /dev/null 2>&1 ; then
 
-                curl -s ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/datasources" \
+                curl -s ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/datasources" \
                    -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary \
                    '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${ot_protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring","jsonData":{"tsdbResolution":1,"tsdbVersion":3}}'
                 if [ $? -eq 0 ]; then
@@ -281,7 +335,7 @@ function setupOpenTsdbDataSource() {
 
 #############################################################################
 # Function to load a  dashboard
-# 
+#
 #############################################################################
 function loadDashboard() {
     # $1 is the interface Ip/hostname for grafana
@@ -301,14 +355,17 @@ function loadDashboard() {
     count=1
     rc=1
 
-    if [ $secureCluster -eq 1 ]; then
+    if isGrafanaSecured ; then
         protocol="https"
         #ot_protocol="https" # commented out until we support the proxy
         no_cert_ver="-k"
     fi
+
+    login=$(getGrafanaLogin)
+
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
-        OUTPUT=$(curl -s ${curl_dbg} ${no_cert_ver} "$protocol://admin:admin@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file 2>&1)
+        OUTPUT=$(curl -s ${curl_dbg} ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file 2>&1)
         if [ $? -eq 0 ]; then
             rc=0
             break
@@ -326,7 +383,7 @@ function loadDashboard() {
 
 #############################################################################
 # Function to pick the opneTsdb host to connect to
-# 
+#
 #############################################################################
 function pickOpenTSDBHost() {
     # $1 is opentsdb nodes count
@@ -356,7 +413,7 @@ function pickOpenTSDBHost() {
 
 #############################################################################
 # Function to fix fluentd config file
-# 
+#
 #############################################################################
 function fixFluentdConf() {
 
@@ -470,7 +527,7 @@ if [ ${#} -gt 1 ]; then
             --secure|-s)
                 secureCluster=1;
                 admin_user=${GRAFANA_ADMIN_ID:-mapr}
-                admin_user=${GRAFANA_ADMIN_PASSWORD:-mapr}
+                admin_password=${GRAFANA_ADMIN_PASSWORD:-mapr}
                 shift 1;;
             --unsecure|-u)
                 secureCluster=0;
