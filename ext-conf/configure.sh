@@ -508,7 +508,11 @@ if [ ${#} -gt 1 ]; then
                 grafanaport="$2";
                 shift 2;;
             --password|-p)
-                admin_password="$2";
+                if [ -n "$2" ] && [ -f "$2" ]; then
+                    admin_password="$(cat "$2")";
+                else
+                    admin_password="$2";
+                fi
                 shift 2;;
             --customSecure|-c)
                 if [ -f "$GRAFANA_HOME/etc/.not_configured_yet" ]; then
