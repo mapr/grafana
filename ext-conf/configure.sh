@@ -461,7 +461,7 @@ initCfgEnv
 grafana_usage="usage: $0 [-help] [-nodeCount <cnt>] [-nodePort <port>] [-grafanaPort <port>]\n\t[-loadDataSourceOnly] [-customSecure] [-secure] [-unsecure] [-EC <commonEcoOpts>]\n\t[-password <pw>] [-R] -OT \"ip:port,ip1:port,\" "
 if [ ${#} -gt 1 ]; then
     # we have arguments - run as as standalone - need to get params and
-    OPTS=$(getopt -a -o chln:suC:G:P:O:R -l help -l nodeCount: -l nodePort: -l EC: -l OT: -l grafanaPort: -l loadDataSourceOnly -l secure -l customSecure -l unsecure -l password: -l R -- "$@")
+    OPTS=$(getopt -a -o chln:p:suC:G:P:O:R -l help -l nodeCount: -l nodePort: -l EC: -l OT: -l grafanaPort: -l loadDataSourceOnly -l secure -l customSecure -l unsecure -l password: -l R -- "$@")
     if [ $? != 0 ]; then
         echo -e ${grafana_usage}
         return 2 2>/dev/null || exit 2
