@@ -1,9 +1,9 @@
 package login
 /****************************************************************
 ** auth.go - is a module that ships with Grafana and this version
-** of the code is a modify version for MapR so that Grafaha 
-** authenticates against the CLDB to gain PAM support which is 
-** consistent with the rest of MapR offerings. 
+** of the code is a modify version for MapR so that Grafaha
+** authenticates against the CLDB to gain PAM support which is
+** consistent with the rest of MapR offerings.
 ******************************************************************/
 import (
 	"errors"
@@ -22,6 +22,7 @@ import (
         "bytes"
         "encoding/json"
         "io/ioutil"
+        "net"
         "net/http"
         "crypto/tls"
         "crypto/x509"
@@ -85,16 +86,16 @@ func Init() {
 }
 /*******************************************************
 ** AuthenticateUser is a required method and called by
-** Grafana promper to authenticate user. This routine 
-** was modified to leverage MapR native Login and 
-** remove Grafana original login. 
-** (1) loginUsingGrafaDB is a required call to 
-** check the grafana DB to ensure the user logging 
+** Grafana promper to authenticate user. This routine
+** was modified to leverage MapR native Login and
+** remove Grafana original login.
+** (1) loginUsingGrafaDB is a required call to
+** check the grafana DB to ensure the user logging
 ** in exist in the Grafana DB as the role information
-** is maintained. 
+** is maintained.
 ** (2) AuthenticateUserUsingCLDB is a MapR method added
 ** to authenticate the user with MapR CLDB
-** 
+**
 ** if the cluster is in insecure mode, we revert back to
 ** stock Grafana password handling
 ********************************************************/
@@ -126,7 +127,7 @@ func AuthenticateUser(query *LoginUserQuery) error {
 /*******************************************************
 ** loginUsingGrafanaDB is a private method that orginally
 ** ship that been slightly modified to no longer validate
-** the password that was stored in Grafana DB. The 
+** the password that was stored in Grafana DB. The
 ** AuthenticateUserUsing CLDB will be called in AthenticateUser
 ** method to validate the user/pass against the CLDB which
 ** leverages PAM.
@@ -136,7 +137,7 @@ func loginUsingGrafanaDB(query *LoginUserQuery, secureMode bool ) error {
 
 	if err := bus.Dispatch(&userQuery); err != nil {
 		if err == m.ErrUserNotFound {
-			return ErrInvalidCredentials
+		    return ErrInvalidCredentials
 		}
 		return err
 	}
@@ -146,13 +147,65 @@ func loginUsingGrafanaDB(query *LoginUserQuery, secureMode bool ) error {
         if !secureMode {
             passwordHashed := util.EncodePassword(query.Password, user.Salt)
             if subtle.ConstantTimeCompare([]byte(passwordHashed), []byte(user.Password)) != 1 {
-                    return ErrInvalidCredentials
+                return ErrInvalidCredentials
             }
         }
 
 	query.User = user
 	return nil
 }
+/************************************************************
+** verifyMapRPeerCertificate is a custom certificate verifier
+** that deals with verifying hosts in our cluster when we
+** try to connect with them using Ip addresses.
+**
+** The reason is the hostname verifier fails since our certs do not
+** have an ip address to compare against.
+**
+** This verifier fails if the certificate chain cannot be verified
+** or if we don't see this as a self signed cert we created
+*************************************************************
+
+func verifyMapRPeerCertificate(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+    certs := make([]*x509.Certificate, len(rawCerts))
+    roots := x509.NewCertPool()
+    if (rawCerts == nil || verifiedChains == nil) {
+        fmt.Printf("verifyMapRPeerCert: inputs are Nil\n");
+        return  x509.CertificateInvalidError{nil,
+                    x509.CANotAuthorizedForThisName, "No input certs"}
+    }
+    for i, rawCert := range rawCerts {
+        cert, _ := x509.ParseCertificate(rawCert)
+        roots.AddCert(cert)
+        certs[i] = cert
+    }
+
+    opts := x509.VerifyOptions{
+        Roots:         roots,
+        DNSName:       certs[0].Subject.CommonName,
+    }
+    _, err := certs[0].Verify(opts)
+    if (err != nil) {
+        if verr, ok := err.(*x509.CertificateInvalidError); ok {
+            if (verr.Reason != x509.NameMismatch) {
+                fmt.Printf("verifyMapRPeerCert: failed error = %s\n", err.Error())
+                return err
+            }
+        }
+    } else {
+        // if we only have one cert and it is self signed, accept it
+        if (len(certs) != 1 || strings.Compare(certs[0].Issuer.String(),
+            certs[0].Subject.String()) != 0) {
+            fmt.Printf("verifyMapRPeerCert: failed len(certs) = %d, Issuer = %s, Subject = %s\n",
+                len(certs), certs[0].Issuer.String(),
+                certs[0].Subject.String())
+            return  x509.CertificateInvalidError{certs[0],
+                        x509.CANotAuthorizedForThisName, "Not self signed"}
+        }
+    }
+    return nil
+}
+
 /************************************************************
 ** AuthenticateUserUsingCLDB is MapR specific implementation to
 ** to authenticate against the CLDB which is using PAM.
@@ -174,16 +227,26 @@ func authenticateUserUsingCLDB( u, p string, clusterConf maprClusterConf) error 
     if err != nil { return err }
     caCertPool := x509.NewCertPool()
     caCertPool.AppendCertsFromPEM(caCert)
-    if err != nil { 
-        fmt.Printf("authUsingCldb: Failed to append Cert - error =  %s\n", err.Error())
-        return err 
+    if err != nil {
+        fmt.Printf("authUsingCldb: Failed to append Cert - error = %s\n", err.Error())
+        return err
     }
 
     // Restful call to CLDB to validate user/pass
-    client := &http.Client{
+    verifyClient := &http.Client{
         Transport: &http.Transport{
             TLSClientConfig: &tls.Config{
                 RootCAs: caCertPool,
+            },
+        },
+    }
+
+    customVerifyClient := &http.Client{
+        Transport: &http.Transport{
+            TLSClientConfig: &tls.Config{
+                RootCAs: caCertPool,
+                InsecureSkipVerify: true,
+                VerifyPeerCertificate: verifyMapRPeerCertificate,
             },
         },
     }
@@ -200,6 +263,14 @@ func authenticateUserUsingCLDB( u, p string, clusterConf maprClusterConf) error 
     //**************  Try each CLDB to connect to the CLDB until success ******
     shuffle(clusterConf.cldbServers)
     for i, _ := range clusterConf.cldbServers {
+        client := verifyClient
+        if (clusterConf.secureMode) {
+           cldbHostName := net.ParseIP(clusterConf.cldbServers[i].host)
+           if (cldbHostName.To4() != nil) {
+               fmt.Printf("authUsingCldb  using customVerifyClient\n")
+               client = customVerifyClient
+           }
+        }
         req, err := http.NewRequest("POST", (clusterConf.cldbServers[i]).url, bytes.NewBuffer(jsonValue))
         req.Header.Set("Content-Type", "application/json")
         resp, err := client.Do(req)
@@ -209,7 +280,8 @@ func authenticateUserUsingCLDB( u, p string, clusterConf maprClusterConf) error 
            var m JSONfromCLDB
            err := json.Unmarshal(body, &m)
            if err != nil {
-              fmt.Printf("authUsingCldb to server - Unmashalling failed - trying another server - error = %s",err.Error())
+              fmt.Printf("authUsingCldb to server - Unmashalling failed - trying another server - error = %s\n",
+                  err.Error())
               reqSuccess = false
               continue
            }
@@ -219,20 +291,20 @@ func authenticateUserUsingCLDB( u, p string, clusterConf maprClusterConf) error 
            reqSuccess = true
            break
        } else {
-           fmt.Printf("authUsingCldb: request failed, err=%s\n", err.Error())
+           fmt.Printf("authUsingCldb: request failed, err = %s\n", err.Error())
        }
     }
-    if !reqSuccess { 
+    if !reqSuccess {
         return ErrCLDBConnectionFailed
     } else {
         return err
     }
 }
 /****************************************************************
- ** getMaprClusterConf() - returns structure for the 
+ ** getMaprClusterConf() - returns structure for the
  **       cluster configuration read from mapr-clusters.conf
  **       (1) Get Port for the CLDB REST server
- **           if the optional property cldbHttpsPort 
+ **           if the optional property cldbHttpsPort
  **           is specified else will use the default of 7443
  **       (2) Get the optional usingKerberosSecurity flag
  **           if the property is specified else it is false
@@ -251,7 +323,7 @@ func getMaprClusterConf() ( maprClusterConf, error ) {
 
     file, err := os.Open(clusterFile)
     if err != nil {
-        fmt.Printf("Failed to open Cluster Config File: %s",err)
+        fmt.Printf("Failed to open Cluster Config File error: %s\n",err.Error())
     }
     defer file.Close()
     scanner := bufio.NewScanner(file)
@@ -291,41 +363,43 @@ func getMaprClusterConf() ( maprClusterConf, error ) {
         }
         if val, ok := kvPair["secure"]; ok {
             if secureMode, err = strconv.ParseBool(val); err != nil {
-                fmt.Printf("failed to parse %v, %v\n", val, err)
+                fmt.Printf("failed to parse val = %s, error = %s\n", val, err.Error())
                 return cc, err
             }
             cc.secureMode = secureMode
-         } else {
+        } else {
             cc.secureMode = false
-         }
+        }
         if val, ok := kvPair["kerberosEnabled"]; ok {
             if kerberosEnabled, err = strconv.ParseBool(val); err != nil {
-                fmt.Printf("failed to parse %v, %v\n", val, err)
+                fmt.Printf("failed to parse val = %s, error = %s\n",
+                    val, err.Error())
                 return cc, err
             }
             cc.kerberosEnabled = kerberosEnabled
-         } else {
+        } else {
             cc.kerberosEnabled = false
-         }
+        }
         if val, ok := kvPair["cldbPrincipal"]; ok {
             cc.cldbPrincipal = val
-         } else {
+        } else {
             cc.cldbPrincipal = cldbPrincipalDefault
-         }
-         if val, ok := kvPair["cldbHttpsPort"]; ok {
-             // just to verify that it is a good number
-             if _, err = strconv.ParseInt(val, 10, 32); err != nil {
-                 fmt.Printf("failed to parse cldbHttpsPort number %v, %v\n", val, err)
-                 return cc, err
-             } else {
-                 cc.cldbHttpsPort = val
-             }
-         } else {
-             cc.cldbHttpsPort = cldbHttpsPortDefault
-         }
-         for i, _ := range cc.cldbServers {
-             cc.cldbServers[i].url += cc.cldbHttpsPort+uri
-         }
+        }
+        if val, ok := kvPair["cldbHttpsPort"]; ok {
+            // just to verify that it is a good number
+            if _, err = strconv.ParseInt(val, 10, 32); err != nil {
+                fmt.Printf("failed to parse cldbHttpsPort number val = %s, error = %s\n",
+                    val, err.Error())
+                return cc, err
+            } else {
+                cc.cldbHttpsPort = val
+            }
+        } else {
+            cc.cldbHttpsPort = cldbHttpsPortDefault
+        }
+        for i, _ := range cc.cldbServers {
+            cc.cldbServers[i].url += cc.cldbHttpsPort+uri
+        }
      return cc, err
    }
 }
