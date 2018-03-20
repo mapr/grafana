@@ -169,7 +169,7 @@ func loginUsingGrafanaDB(query *LoginUserQuery, secureMode bool ) error {
 func verifyMapRPeerCertificate(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
     certs := make([]*x509.Certificate, len(rawCerts))
     roots := x509.NewCertPool()
-    if (rawCerts == nil || verifiedChains == nil) {
+    if (rawCerts == nil) {
         fmt.Printf("verifyMapRPeerCert: inputs are Nil\n");
         return  x509.CertificateInvalidError{nil,
                     x509.CANotAuthorizedForThisName, "No input certs"}
@@ -267,7 +267,6 @@ func authenticateUserUsingCLDB( u, p string, clusterConf maprClusterConf) error 
         if (clusterConf.secureMode) {
            cldbHostName := net.ParseIP(clusterConf.cldbServers[i].host)
            if (cldbHostName.To4() != nil) {
-               fmt.Printf("authUsingCldb  using customVerifyClient\n")
                client = customVerifyClient
            }
         }
