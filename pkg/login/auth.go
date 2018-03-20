@@ -164,7 +164,7 @@ func loginUsingGrafanaDB(query *LoginUserQuery, secureMode bool ) error {
 **
 ** This verifier fails if the certificate chain cannot be verified
 ** or if we don't see this as a self signed cert we created
-*************************************************************
+*************************************************************/
 
 func verifyMapRPeerCertificate(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
     certs := make([]*x509.Certificate, len(rawCerts))
