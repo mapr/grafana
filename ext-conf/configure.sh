@@ -64,6 +64,11 @@ admin_password="${GRAFANA_ADMIN_PASSWORD:-}"
 admin_user="${GRAFANA_ADMIN_ID:-}"
 nodelist=""
 secureCluster=0
+admin_pw_given=0
+admin_user_given=0
+switching_security_mode=0
+[ -n "$admin_password" ] && admin_pw_given=1
+[ -n "$admin_user" ] && admin_user_given=1
 
 if [ -e "${MAPR_HOME}/server/common-ecosystem.sh" ]; then
     . "${MAPR_HOME}/server/common-ecosystem.sh"
@@ -513,6 +518,7 @@ if [ ${#} -gt 1 ]; then
                 else
                     admin_password="$2";
                 fi
+                admin_pw_given=1
                 shift 2;;
             --customSecure|-c)
                 if [ -f "$GRAFANA_HOME/etc/.not_configured_yet" ]; then
@@ -595,18 +601,29 @@ if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
         return 2 2> /dev/null || exit 2
     fi
     registerGrafanaPort "$grafanaport"
+
+    if ( isGrafanaSecured && [ "$secureCluster" -eq 0 ] ) ||
+        ( ! isGrafanaSecured && [ "$secureCluster" -eq 1 ] ); then
+        switching_security_mode=1
+    fi
     if [ -n "$admin_password" ]; then
-        changeAdminPassword "$admin_password" ${NEW_GRAFANA_CONF_FILE}
-        if [ $? -ne 0 ]; then
-            logErr "grafana - Failed to change admin password"
-            return 2 2> /dev/null || exit 2
+        if [ "$admin_pw_given" -eq 1 ] ||
+            ( [ "$admin_pw_given" -eq 0 ] && [ "$switching_security_mode" -eq 1 ] ); then
+            changeAdminPassword "$admin_password" ${NEW_GRAFANA_CONF_FILE}
+            if [ $? -ne 0 ]; then
+                logErr "grafana - Failed to change admin password"
+                return 2 2> /dev/null || exit 2
+            fi
         fi
     fi
     if [ -n "$admin_user" ]; then
-        changeAdminUser "$admin_user" ${NEW_GRAFANA_CONF_FILE}
-        if [ $? -ne 0 ]; then
-            logErr "grafana - Failed to change admin user"
-            return 2 2> /dev/null || exit 2
+        if [ "$admin_user_given" -eq 1 ] ||
+            ( [ "$admin_user_given" -eq 0 ] && [ "$switching_security_mode" -eq 1 ] ); then
+            changeAdminUser "$admin_user" ${NEW_GRAFANA_CONF_FILE}
+            if [ $? -ne 0 ]; then
+                logErr "grafana - Failed to change admin user"
+                return 2 2> /dev/null || exit 2
+            fi
         fi
     fi
     configureSslBrowsing ${NEW_GRAFANA_CONF_FILE}
