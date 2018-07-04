@@ -77,6 +77,8 @@ else
    exit 0
 fi
 
+INST_WARDEN_FILE="${MAPR_CONF_CONFD_DIR}/warden.grafana.conf"
+PKG_WARDEN_FILE="${GRAFANA_HOME}/etc/conf/warden.grafana.conf"
 #############################################################################
 # Function to get the grafana admin login information
 #
@@ -241,13 +243,70 @@ function adjustOwnerShip() {
 #
 #############################################################################
 function setupWardenConfFileAndStart() {
-    # make sure warden conf directory exist
-    if ! [ -d ${MAPR_CONF_DIR}/conf.d ]; then
-        mkdir -p ${MAPR_CONF_DIR}/conf.d > /dev/null 2>&1
+    local rc=0
+    local curr_start_cmd
+    local curr_heapsize_min
+    local curr_heapsize_max
+    local curr_heapsize_percent
+    local curr_runstate
+    local pkg_start_cmd
+    local pkg_heapsize_min
+    local pkg_heapsize_max
+    local pkg_heapsize_percent
+    local newestPrevVersionFile
+
+    if [ -f "$INST_WARDEN_FILE" ]; then
+        curr_start_cmd=$(get_warden_value "$INST_WARDEN_FILE" "$WARDEN_START_KEY")
+        curr_heapsize_min=$(get_warden_value "$INST_WARDEN_FILE" "$WARDEN_HEAPSIZE_MIN_KEY")
+        curr_heapsize_max=$(get_warden_value "$INST_WARDEN_FILE" "$WARDEN_HEAPSIZE_MAX_KEY")
+        curr_heapsize_percent=$(get_warden_value "$INST_WARDEN_FILE" "$WARDEN_HEAPSIZE_PERCENT_KEY")
+        curr_runstate=$(get_warden_value "$INST_WARDEN_FILE" "$WARDEN_RUNSTATE_KEY")
+        pkg_start_cmd=$(get_warden_value "$PKG_WARDEN_FILE" "$WARDEN_START_KEY")
+        pkg_heapsize_min=$(get_warden_value "$PKG_WARDEN_FILE" "$WARDEN_HEAPSIZE_MIN_KEY")
+        pkg_heapsize_max=$(get_warden_value "$PKG_WARDEN_FILE" "$WARDEN_HEAPSIZE_MAX_KEY")
+        pkg_heapsize_percent=$(get_warden_value "$PKG_WARDEN_FILE" "$WARDEN_HEAPSIZE_PERCENT_KEY")
+
+        if [ "$curr_start_cmd" != "$pkg_start_cmd" ]; then
+            cp "$PKG_WARDEN_FILE" "/tmp/$PKG_WARDEN_FILE$$"
+            if [ -n "$curr_runstate" ]; then
+                echo "service.runstate=$curr_runstate" >> "/tmp/$PKG_WARDEN_FILE$$"
+            fi
+            if [ -n "$curr_heapsize_min" ] && [ "$curr_heapsize_min" -gt "$pkg_heapsize_min" ]; then
+                update_warden_value "/tmp/$PKG_WARDEN_FILE$$" "$WARDEN_HEAPSIZE_MIN_KEY" "$curr_heapsize_min"
+            fi
+            if [ -n "$curr_heapsize_max" ] && [ "$curr_heapsize_max" -gt "$pkg_heapsize_max" ]; then
+                update_warden_value "/tmp/$PKG_WARDEN_FILE$$" "$WARDEN_HEAPSIZE_MAX_KEY" "$curr_heapsize_max"
+            fi
+            if [ -n "$curr_heapsize_percent" ] && [ "$curr_heapsize_percent" -gt "$pkg_heapsize_percent" ]; then
+                update_warden_value "/tmp/$PKG_WARDEN_FILE$$" "$WARDEN_HEAPSIZE_PERCENT_KEY" "$curr_heapsize_percent"
+            fi
+            cp "/tmp/$PKG_WARDEN_FILE$$" "$INST_WARDEN_FILE"
+            rc=$?
+            rm -f "/tmp/$PKG_WARDEN_FILE$$"
+        fi
+    else
+        if  ! [ -d "${MAPR_CONF_CONFD_DIR}" ]; then
+            mkdir -p "${MAPR_CONF_CONFD_DIR}" > /dev/null 2>&1
+        fi
+        newestPrevVersionFile=$(ls -t1 "$PKG_WARDEN_FILE"-[0-9]* |head -n 1)
+        if [ -n "$newestPrevVersionFile" ] && [ -f "$newestPrevVersionFile" ]; then
+            curr_runstate=$(get_warden_value "$newestPrevVersionFile" "$WARDEN_RUNSTATE_KEY")
+            cp "$PKG_WARDEN_FILE" "/tmp/$PKG_WARDEN_FILE$$"
+            if [ -n "$curr_runstate" ]; then
+                echo "service.runstate=$curr_runstate" >> "/tmp/$PKG_WARDEN_FILE$$"
+            fi
+            cp "/tmp/$PKG_WARDEN_FILE$$" "$INST_WARDEN_FILE"
+            rc=$?
+            rm -f "/tmp/$PKG_WARDEN_FILE$$"
+        else
+            cp "$PKG_WARDEN_FILE" "$INST_WARDEN_FILE"
+            rc=$?
+        fi
     fi
-    # Install warden file
-    cp ${GRAFANA_WARDEN_FILE} ${MAPR_CONF_DIR}/conf.d/
-    chown ${MAPR_USER}:${MAPR_GROUP} ${MAPR_CONF_DIR}/conf.d/warden.grafana.conf
+    if [ $rc -ne 0 ]; then
+        logWarn "grafana - Failed to install Warden conf file for service - service will not start"
+    fi
+    chown $MAPR_USER:$MAPR_GROUP "$INST_WARDEN_FILE"
     return $?
 }
 
