@@ -41,7 +41,6 @@
 
 # This gets fillled out at package time
 GRAFANA_HOME="${GRAFANA_HOME:-__INSTALL__}"
-GRAFANA_WARDEN_FILE="${GRAFANA_HOME}/etc/conf/warden.grafana.conf"
 GRAFANA_CONF_FILE="${GRAFANA_CONF_FILE:-${GRAFANA_HOME}/etc/grafana/grafana.ini}"
 NEW_GRAFANA_CONF_FILE="${NEW_GRAFANA_CONF_FILE:-${GRAFANA_CONF_FILE}.progress}"
 NOW=`date "+%Y%m%d_%H%M%S"`
