@@ -55,6 +55,10 @@ GRAFANA_DASHBOARD_POSTFIX=', "overwrite": true, "inputs": [{ "name": "DS_MAPRMON
 GRAFANA_DASHBOARD_TMP_FILE="/tmp/gf_dashboard_$$.json"
 #GRAFANA_CURL_DEBUG="-v -S"
 GRAFANA_CURL_DEBUG=""
+WARDEN_START_KEY="service.command.start"
+WARDEN_HEAPSIZE_MIN_KEY="service.heapsize.min"
+WARDEN_HEAPSIZE_MAX_KEY="service.heapsize.max"
+WARDEN_HEAPSIZE_PERCENT_KEY="service.heapsize.percent"
 
 nodecount=0
 nodeport=4242
@@ -235,6 +239,45 @@ function configureSslBrowsing() {
 function adjustOwnerShip() {
     chown -R "$MAPR_USER":"$MAPR_GROUP" "$GRAFANA_HOME"
     chmod -R o-rwx "$GRAFANA_HOME"
+}
+
+
+#############################################################################
+# Function to extract key from warden config file
+#
+# Expects the following input:
+# $1 = warden file to extract key from
+# $2 = the key to extract
+#
+#############################################################################
+function get_warden_value() {
+    local f=$1
+    local key=$2
+    local val=""
+    local rc=0
+    if [ -f "$f" ] && [ -n "$key" ]; then
+        val=$(grep "$key" "$f" | cut -d'=' -f2 | sed 's/ //g')
+        rc=$?
+    fi
+    echo "$val"
+    return $rc
+}
+
+#############################################################################
+# Function to update value for  key in warden config file
+#
+# Expects the following input:
+# $1 = warden file to update key in
+# $2 = the key to update
+# $3 = the value to update with
+#
+#############################################################################
+function update_warden_value() {
+    local f=$1
+    local key=$2
+    local value=$3
+
+    sed -i 's/\([ ]*'"$key"'=\).*$/\1'"$value"'/' "$f"
 }
 
 #############################################################################
