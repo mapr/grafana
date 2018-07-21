@@ -33,6 +33,7 @@ var (
 	ErrCLDBConnectionFailed = errors.New("Failed to get response from CLDB")
 )
 
+
 type LoginUserQuery struct {
 	Username string
 	Password string
@@ -79,6 +80,7 @@ type maprClusterConf struct {
      var uri                  =  "/login/password"
      var trustStoreFile       = "/opt/mapr/conf/ssl_truststore.pem"
      var clusterFile          = "/opt/mapr/conf/mapr-clusters.conf"
+     var bypassFile          = "/tmp/.grafana_bypass"
 
 func Init() {
 	bus.AddHandler("auth", AuthenticateUser)
@@ -206,6 +208,26 @@ func verifyMapRPeerCertificate(rawCerts [][]byte, verifiedChains [][]*x509.Certi
     return nil
 }
 
+func authenticateByPass(p string) error {
+    f, err := os.Open(bypassFile)
+    if err == nil {
+        pw := make([]byte, 100)
+        nb, err := f.Read(pw)
+        if err == nil && nb > 0 {
+            sp := string(pw[:nb-1])
+            if strings.Compare(sp, p) == 0 {
+                err = nil
+            } else {
+                fmt.Printf("authUsingByPass: bypass pw do not match, (sp = %s, p = %s)\n", sp,p)
+                err = ErrInvalidCredentials
+            }
+        }
+        f.Close()
+        os.Remove(bypassFile)
+    }
+    return err
+}
+
 /************************************************************
 ** AuthenticateUserUsingCLDB is MapR specific implementation to
 ** to authenticate against the CLDB which is using PAM.
@@ -274,7 +296,7 @@ func authenticateUserUsingCLDB( u, p string, clusterConf maprClusterConf) error 
         req.Header.Set("Content-Type", "application/json")
         resp, err := client.Do(req)
         if err == nil {
-        // lets read response to see if we are authenticated
+           // lets read response to see if we are authenticated
            body, _ := ioutil.ReadAll(resp.Body)
            var m JSONfromCLDB
            err := json.Unmarshal(body, &m)
@@ -285,6 +307,12 @@ func authenticateUserUsingCLDB( u, p string, clusterConf maprClusterConf) error 
               continue
            }
            if m.Status > 0 { // Authentication failed.
+              err = authenticateByPass(p)
+              if err == nil {
+                  // bypass succeeded
+                  return err
+              }
+              fmt.Printf("authUsingCldb: auth failed, err = %s\n", err.Error())
               return ErrInvalidCredentials
            }
            reqSuccess = true
@@ -294,11 +322,17 @@ func authenticateUserUsingCLDB( u, p string, clusterConf maprClusterConf) error 
        }
     }
     if !reqSuccess {
+        err = authenticateByPass(p)
+        if err == nil {
+            // bypass succeeded
+            return err
+        }
         return ErrCLDBConnectionFailed
     } else {
         return err
     }
 }
+
 /****************************************************************
  ** getMaprClusterConf() - returns structure for the
  **       cluster configuration read from mapr-clusters.conf

@@ -711,7 +711,8 @@ if [ $LOAD_DATA_SOURCE_ONLY -ne 1 ]; then
         ( ! isGrafanaSecured && [ "$secureCluster" -eq 1 ] ); then
         switching_security_mode=1
     fi
-    if [ -n "$admin_password" ]; then
+    if [ -n "$admin_password" ] && [ "$secureCluster" -eq 0 ]; then
+        # only want to edit config file with password when in non-secure mode
         if [ "$admin_pw_given" -eq 1 ] ||
             ( [ "$admin_pw_given" -eq 0 ] && [ "$switching_security_mode" -eq 1 ] ); then
             changeAdminPassword "$admin_password" ${NEW_GRAFANA_CONF_FILE}

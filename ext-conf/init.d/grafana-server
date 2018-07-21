@@ -174,6 +174,7 @@ GRAFANA_DASHBOARD_TMP_FILE="/tmp/gf_dashboard_$$.json"
 GRAFANA_CURL_DEBUG=""
 GRAFANA_CONF_FILE="${GRAFANA_CONF_FILE:-${APP_HOME_DIR}/etc/grafana/grafana.ini}" 
 MONITORING_CONF_FILE="${MAPR_HOME}/conf/mapr-monitoring.conf"
+GRAFANA_BYPASS="/tmp/.grafana_bypass"
 
 # CHOOSE BEHAVOR: Set to fit app
 if [ $APP_REQUIRE_JAVA -eq 1 -a $APP_STARTS_WITH_JAVA -eq 1 ]; then
@@ -192,13 +193,21 @@ APP_MAIN="$APP_HOME_DIR/usr/sbin/$APP"
 getGrafanaLogin() {
     local user=""
     local pw=""
-    user=$(grep admin_user "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
-    if [ -z "$user" ]; then
-        user=$GRAFANA_DEF_USER
-    fi
-    pw=$(grep admin_password "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
-    if [ -z "$pw" ]; then
-        pw=$GRAFANA_DEF_PW
+    if isGrafanaSecured ; then
+        pw=$( date +"%Y%m%d%H%M%S" )
+        echo "$pw" > "$GRAFANA_BYPASS"
+        chown "$euid" "$GRAFANA_BYPASS"
+        chmod 0600 "$GRAFANA_BYPASS"
+        user="$euid"
+    else
+        user=$(grep admin_user "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
+        if [ -z "$user" ]; then
+            user=$GRAFANA_DEF_USER
+        fi
+        pw=$(grep admin_password "$GRAFANA_CONF_FILE" | cut -d'=' -f 2 | sed -e 's/ //g')
+        if [ -z "$pw" ]; then
+            pw=$GRAFANA_DEF_PW
+        fi
     fi
     echo "$user:$pw"
 }
@@ -311,6 +320,7 @@ setupOpenTsdbDataSource() {
     local no_cert_ver=""
     local login=""
     local rc
+    local rc1
     grafana_ip=$1
     grafana_port=$2
     openTsdb_ip=$3
@@ -324,16 +334,20 @@ setupOpenTsdbDataSource() {
         no_cert_ver="-k"
     fi
     
-    login=$(getGrafanaLogin)
 
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
-        curl -s ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/org" > /dev/null 2>&1
+        login=$(getGrafanaLogin)
+        OUTPUT=$(curl -s ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/org")
         is_running=$?
-        if [ ${is_running} -eq 0 ]; then
+        echo $OUTPUT | grep -q 'Invalid username or password'
+        rc1=$?
+        if [ ${is_running} -eq 0 ] && [ $rc1 -ne 0 ]; then
+            login=$(getGrafanaLogin)
             if ! curl -s ${no_cert_ver} -XGET "$protocol://${login}@${grafana_ip}:${grafana_port}/api/datasources" | \
                 fgrep MaprMonitoring > /dev/null 2>&1 ; then
 
+                login=$(getGrafanaLogin)
                 curl -s ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/datasources" \
                    -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary \
                    '{"name":"MaprMonitoringOpenTSDB","type":"opentsdb","url":"'"${ot_protocol}://${openTsdb_ip}"'","access":"proxy","isDefault":true,"database":"mapr_monitoring","jsonData":{"tsdbResolution":1,"tsdbVersion":3}}' > ${APP_LOG_DIR}/load_default_datasource.log 2>&1
@@ -346,6 +360,10 @@ setupOpenTsdbDataSource() {
                 break
             fi
         else
+            if [ $rc1 -eq 0 ]; then
+                # Failed to authenticate
+                break
+            fi
             sleep $GRAFANA_RETRY_DELAY
         fi
         (( count++ ))
@@ -370,6 +388,8 @@ loadDashboard() {
     local login=""
     local count
     local rc
+    local rc1
+    local rc2
     grafana_ip=$1
     grafana_port=$2
     dashboard_file=$3
@@ -388,7 +408,10 @@ loadDashboard() {
     while [ $count -le $GRAFANA_RETRY_CNT ]
     do
         OUTPUT=$(curl -s ${curl_dbg} ${no_cert_ver} "$protocol://${login}@${grafana_ip}:${grafana_port}/api/dashboards/import" -X POST -H 'Content-Type: application/json;charset=UTF-8' -d @$dashboard_file 2>&1)
-        if [ $? -eq 0 ]; then
+        rc1=$?
+        echo $OUTPUT | grep -q 'Invalid username or password'
+        rc2=$?
+        if [ $rc1 -eq 0 ] || [ $rc2 -eq 0 ]; then
             rc=0
             break
         else
@@ -396,7 +419,7 @@ loadDashboard() {
         fi
         (( count++ ))
     done
-    if [ $rc -ne 0 ]; then
+    if [ $rc -ne 0 ] || [ $rc2 -eq 0 ]; then
         logInfo "grafana - NOTE: Failed to load dashboard - output = $OUTPUT"
     fi
 
