@@ -782,7 +782,7 @@
           },
           "yaxes": [
             {
-              "format": "short",
+              "format": "KBs",
               "label": null,
               "logBase": 1,
               "max": null,
@@ -790,7 +790,7 @@
               "show": true
             },
             {
-              "format": "short",
+              "format": "KBs",
               "label": null,
               "logBase": 1,
               "max": null,
