@@ -329,6 +329,11 @@
       background-color: lighten($typeahead-selected-color, 60%);
     }
 
+    .logs-row-match-highlight--preview {
+      background-color: lighten($typeahead-selected-color, 70%);
+      border-bottom-style: dotted;
+    }
+
     .logs-row-level {
       background-color: transparent;
       margin: 2px 0;
