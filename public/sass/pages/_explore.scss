@@ -410,6 +410,7 @@
       padding: 10px;
       border-radius: $border-radius;
       justify-content: space-between;
+      box-shadow: $card-shadow;
     }
 
     .logs-row-labels {
@@ -438,11 +439,12 @@
         content: '*';
         position: absolute;
         top: 0;
-        left: -0.75em;
+        left: -8px;
       }
 
       &__label {
         display: flex;
+        margin-bottom: 1px;
       }
 
       &__value {
