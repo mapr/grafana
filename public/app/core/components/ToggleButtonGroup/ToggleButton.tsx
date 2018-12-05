@@ -13,7 +13,8 @@ export default class ToggleButton extends PureComponent<ToggleButtonProps, Toggl
     classNames: '',
   };
 
-  handleChange = () => {
+  handleChange = event => {
+    event.stopPropagation();
     const { onChange, value } = this.props;
     if (onChange) {
       onChange(value);
