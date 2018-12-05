@@ -7,6 +7,7 @@
 
   .btn {
     @include buttonBackground($input-bg, $input-bg);
+    color: $link-color;
     &.active {
       background-color: lighten($input-label-bg, 5%);
       color: $link-color;
