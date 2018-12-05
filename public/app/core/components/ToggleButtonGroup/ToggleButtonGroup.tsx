@@ -14,18 +14,18 @@ export default class ToggleButtonGroup extends PureComponent<ToggleButtonGroupPr
 
   handleToggle(toggleValue) {
     const { value, onChange } = this.props;
-    if (value !== toggleValue) {
-      onChange(toggleValue);
+    if (value && value === toggleValue) {
+      return;
     }
+    onChange(toggleValue);
   }
 
   render() {
-    const { children, value, label, ...props } = this.props;
+    const { children, value, label } = this.props;
     const values = this.getValues();
     const selectedValue = value || values[0];
-    delete props.onChange;
 
-    const childrenClones = React.Children.map(children, (child: ReactElement<any>) => {
+    const childClones = React.Children.map(children, (child: ReactElement<any>) => {
       const { value: buttonValue } = child.props;
 
       return React.cloneElement(child, {
@@ -38,7 +38,7 @@ export default class ToggleButtonGroup extends PureComponent<ToggleButtonGroupPr
       <div className="gf-form">
         <div className="toggle-button-group">
           {label && <label className="gf-form-label">{label}</label>}
-          {childrenClones}
+          {childClones}
         </div>
       </div>
     );
