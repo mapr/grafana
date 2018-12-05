@@ -7,10 +7,10 @@
 
   .btn {
     @include buttonBackground($input-bg, $input-bg);
-    color: $link-color;
+    color: $text-color;
     &.active {
-      background-color: lighten($input-label-bg, 5%);
-      color: $link-color;
+      background-color: $typeahead-selected-bg;
+      color: $text-color;
       &:hover {
         cursor: default;
       }
@@ -21,8 +21,9 @@
     border-radius: 2px 0 0 2px;
     margin: 0;
   }
+
   &:last-child {
     border-radius: 0 2px 2px 0;
-    margin-left: 0 !important;
+    margin-left: 0;
   }
 }
