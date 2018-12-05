@@ -312,6 +312,29 @@
       border-bottom-style: dotted;
     }
 
+    .logs-row-field-highlight {
+      // Undoing mark styling
+      background: inherit;
+      padding: inherit;
+
+      border-bottom: 1px dotted $typeahead-selected-color;
+
+      .logs-row-field-highlight--icon {
+        margin-left: 0.5em;
+        cursor: pointer;
+        display: none;
+      }
+    }
+
+    .logs-row-field-highlight:hover {
+      color: $typeahead-selected-color;
+      border-bottom-style: solid;
+
+      .logs-row-field-highlight--icon {
+        display: inline;
+      }
+    }
+
     .logs-row-level {
       background-color: transparent;
       margin: 2px 0;
