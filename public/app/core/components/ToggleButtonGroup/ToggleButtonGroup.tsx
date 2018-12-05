@@ -1,5 +1,4 @@
 import React, { PureComponent, ReactElement } from 'react';
-import _ from 'lodash';
 
 interface ToggleButtonGroupProps {
   onChange: (value) => void;
@@ -24,13 +23,12 @@ export default class ToggleButtonGroup extends PureComponent<ToggleButtonGroupPr
     const { children, value, label, ...props } = this.props;
     const values = this.getValues();
     const selectedValue = value || values[0];
-    const formId = `${_.uniqueId()}-gf-form-toggle-button-group`;
     delete props.onChange;
 
-    const childrenClones = React.Children.map(children, child => {
-      const { value: buttonValue } = child['props'];
+    const childrenClones = React.Children.map(children, (child: ReactElement<any>) => {
+      const { value: buttonValue } = child.props;
 
-      return React.cloneElement(child as ReactElement<any>, {
+      return React.cloneElement(child, {
         selected: buttonValue === selectedValue,
         onChange: this.handleToggle.bind(this),
       });
@@ -38,7 +36,7 @@ export default class ToggleButtonGroup extends PureComponent<ToggleButtonGroupPr
 
     return (
       <div className="gf-form">
-        <div id={formId} className="toggle-button-group">
+        <div className="toggle-button-group">
           {label && <label className="gf-form-label">{label}</label>}
           {childrenClones}
         </div>
