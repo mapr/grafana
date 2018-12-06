@@ -4,7 +4,7 @@
   .gf-form-label {
     background-color: $input-label-bg;
     &:first-child {
-      border-radius: 2px 0 0 2px;
+      border-radius: $border-radius 0 0 $border-radius;
       margin: 0;
     }
     &.small {
@@ -25,12 +25,12 @@
     }
 
     &:first-child {
-      border-radius: 2px 0 0 2px;
+      border-radius: $border-radius 0 0 $border-radius;
       margin: 0;
     }
 
     &:last-child {
-      border-radius: 0 2px 2px 0;
+      border-radius: 0 $border-radius $border-radius 0;
       margin-left: 0;
     }
   }
