@@ -1,4 +1,4 @@
-import React, { PureComponent, ReactElement } from 'react';
+import React, { SFC, ReactNode, PureComponent, ReactElement } from 'react';
 
 interface ToggleButtonGroupProps {
   onChange: (value) => void;
@@ -14,7 +14,7 @@ export default class ToggleButtonGroup extends PureComponent<ToggleButtonGroupPr
 
   smallChildren() {
     const { children } = this.props;
-    return React.Children.toArray(children).every((c: ReactElement<any>) => c.props.classNames.includes('small'));
+    return React.Children.toArray(children).every((c: ReactElement<any>) => c.props.className.includes('small'));
   }
 
   handleToggle(toggleValue) {
@@ -50,3 +50,27 @@ export default class ToggleButtonGroup extends PureComponent<ToggleButtonGroupPr
     );
   }
 }
+
+interface ToggleButtonProps {
+  onChange?: (value) => void;
+  selected?: boolean;
+  value: any;
+  className?: string;
+  children: ReactNode;
+}
+
+export const ToggleButton: SFC<ToggleButtonProps> = ({ children, selected, className = '', value, onChange }) => {
+  const handleChange = event => {
+    event.stopPropagation();
+    if (onChange) {
+      onChange(value);
+    }
+  };
+
+  const btnClassName = `btn ${className} ${selected ? 'active' : ''}`;
+  return (
+    <button className={btnClassName} onClick={handleChange}>
+      <span>{children}</span>
+    </button>
+  );
+};

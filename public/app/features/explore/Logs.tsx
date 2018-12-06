@@ -16,8 +16,7 @@ import {
 } from 'app/core/logs_model';
 import { findHighlightChunksInText } from 'app/core/utils/text';
 import { Switch } from 'app/core/components/Switch/Switch';
-import ToggleButtonGroup from 'app/core/components/ToggleButtonGroup/ToggleButtonGroup';
-import ToggleButton from 'app/core/components/ToggleButtonGroup/ToggleButton';
+import ToggleButtonGroup, { ToggleButton } from 'app/core/components/ToggleButtonGroup/ToggleButtonGroup';
 
 import Graph from './Graph';
 import LogLabels from './LogLabels';
@@ -307,9 +306,9 @@ export default class Logs extends PureComponent<LogsProps, LogsState> {
             <Switch label="Local time" checked={showLocalTime} onChange={this.onChangeLocalTime} small />
             <Switch label="Labels" checked={showLabels} onChange={this.onChangeLabels} small />
             <ToggleButtonGroup label="Dedupe" onChange={this.onChangeDedup} value={dedup}>
-              {Object.keys(LogsDedupStrategy).map((s, i) => (
-                <ToggleButton classNames="" key={i} value={s}>
-                  {s}
+              {Object.keys(LogsDedupStrategy).map((dedupeType, i) => (
+                <ToggleButton className="btn-small" key={i} value={dedupeType}>
+                  {dedupeType}
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
