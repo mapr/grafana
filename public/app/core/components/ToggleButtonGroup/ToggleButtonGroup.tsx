@@ -29,7 +29,7 @@ export default class ToggleButtonGroup extends PureComponent<ToggleButtonGroupPr
     const { children, value, label } = this.props;
     const values = this.getValues();
     const selectedValue = value || values[0];
-    const labelClassName = `gf-form-label${this.smallChildren() ? '--small' : ''}`;
+    const labelClassName = `gf-form-label ${this.smallChildren() ? 'small' : ''}`;
 
     const childClones = React.Children.map(children, (child: ReactElement<any>) => {
       const { value: buttonValue } = child.props;
