@@ -18,8 +18,7 @@
     border-radius: 0;
     color: $text-color;
     &.active {
-      @include buttonBackground($input-bg, $input-bg);
-      color: $text-color;
+      background-color: $input-bg;
       &:hover {
         cursor: default;
       }
