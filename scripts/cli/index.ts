@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { startTask } from './tasks/core.start';
 import { buildTask } from './tasks/grafanaui.build';
 import { releaseTask } from './tasks/grafanaui.release';
+import { changelogTask } from './tasks/changelog';
 
 program.option('-d, --depreciate <scripts>', 'Inform about npm script deprecation', v => v.split(','));
 
@@ -34,6 +35,13 @@ program
     await execTask(releaseTask)({
       publishToNpm: !!cmd.publish,
     });
+  });
+
+program
+  .command('core:changelog')
+  .description('Builds changelog markdown')
+  .action(async cmd => {
+    await execTask(changelogTask)({});
   });
 
 program.parse(process.argv);
