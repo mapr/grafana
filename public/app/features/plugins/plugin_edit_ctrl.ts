@@ -107,7 +107,7 @@ export class PluginEditCtrl {
   getPluginIcon(type) {
     switch (type) {
       case 'datasource':
-        return 'icon-gf icon-gf-datasources';
+        return 'gicon gicon-datasources';
       case 'panel':
         return 'icon-gf icon-gf-panel';
       case 'app':
@@ -115,7 +115,7 @@ export class PluginEditCtrl {
       case 'page':
         return 'icon-gf icon-gf-endpoint-tiny';
       case 'dashboard':
-        return 'icon-gf icon-gf-dashboard';
+        return 'gicon gicon-dashboard';
       default:
         return 'icon-gf icon-gf-apps';
     }
