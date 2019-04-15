@@ -135,6 +135,18 @@
     }
   }
 
+  &--settings {
+    .gicon {
+      filter: $navbar-btn-gicon-brightness;
+    }
+  }
+
+  &--settings:hover {
+    .gicon {
+      filter: brightness(1);
+    }
+  }
+
   &--tight {
     padding: 7px 4px;
 
