@@ -1,8 +1,26 @@
 export const RATE_RANGES = ['1m', '5m', '10m', '30m', '1h'];
 
-export function processLabels(labels, withName = false) {
-  const values = {};
-  labels.forEach(l => {
+export const processHistogramLabels = (labels: string[]) => {
+  return labels.reduce(
+    (result, label) => {
+      const isHistogramValue = label.endsWith('_bucket') || label.endsWith('_bucket:sum_rate');
+      if (isHistogramValue) {
+        if (result.values['__name__'].indexOf(label) === -1) {
+          result.values['__name__'].push(label);
+        }
+        if (result.keys.indexOf(label) === -1) {
+          result.keys.push(label);
+        }
+      }
+      return result;
+    },
+    { values: { __name__: [] }, keys: [] }
+  );
+};
+
+export function processLabels(labels: any, withName = false) {
+  const values: { [key: string]: string[] } = {};
+  labels.forEach((l: any) => {
     const { __name__, ...rest } = l;
     if (withName) {
       values['__name__'] = values['__name__'] || [];
@@ -62,7 +80,7 @@ export function parseSelector(query: string, cursorOffset = 1): { labelKeys: any
 
   // Extract clean labels to form clean selector, incomplete labels are dropped
   const selector = query.slice(prefixOpen, suffixClose);
-  const labels = {};
+  const labels: { [key: string]: { value: string; operator: string } } = {};
   selector.replace(labelRegexp, (_, key, operator, value) => {
     labels[key] = { value, operator };
     return '';
