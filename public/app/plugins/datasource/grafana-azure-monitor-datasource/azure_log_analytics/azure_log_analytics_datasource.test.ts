@@ -1,8 +1,8 @@
 import AzureMonitorDatasource from '../datasource';
 import FakeSchemaData from './__mocks__/schema';
 import Q from 'q';
-import moment from 'moment';
 import { TemplateSrv } from 'app/features/templating/template_srv';
+import { toUtc } from 'app/core/moment_wrapper';
 
 describe('AzureLogAnalyticsDatasource', () => {
   const ctx: any = {
@@ -113,8 +113,8 @@ describe('AzureLogAnalyticsDatasource', () => {
   describe('When performing query', () => {
     const options = {
       range: {
-        from: moment.utc('2017-08-22T20:00:00Z'),
-        to: moment.utc('2017-08-22T23:59:00Z'),
+        from: toUtc('2017-08-22T20:00:00Z'),
+        to: toUtc('2017-08-22T23:59:00Z'),
       },
       rangeRaw: {
         from: 'now-4h',
@@ -375,8 +375,8 @@ describe('AzureLogAnalyticsDatasource', () => {
           workspace: 'abc1b44e-3e57-4410-b027-6cc0ae6dee67',
         },
         range: {
-          from: moment.utc('2017-08-22T20:00:00Z'),
-          to: moment.utc('2017-08-22T23:59:00Z'),
+          from: toUtc('2017-08-22T20:00:00Z'),
+          to: toUtc('2017-08-22T23:59:00Z'),
         },
         rangeRaw: {
           from: 'now-4h',
