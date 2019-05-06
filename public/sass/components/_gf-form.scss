@@ -322,6 +322,12 @@ $input-border: 1px solid $input-border-color;
       right: $space-xl;
     }
   }
+
+  &--with-caret-padding {
+    select.gf-form-input {
+      padding-right: 42px;
+    }
+  }
 }
 
 .gf-form--v-stretch {
