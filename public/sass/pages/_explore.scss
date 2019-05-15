@@ -133,7 +133,13 @@
 }
 
 .explore {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.explore.explore-live {
+  flex-direction: column-reverse;
 }
 
 .explore + .explore {
@@ -141,7 +147,14 @@
 }
 
 .explore-container {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   padding: $dashboard-padding;
+}
+
+.explore-container.explore-live {
+  flex-direction: column-reverse;
 }
 
 .explore-wrapper {
