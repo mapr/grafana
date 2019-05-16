@@ -13,7 +13,7 @@ import Panel from './Panel';
 import { toggleLogLevelAction } from 'app/features/explore/state/actionTypes';
 import { deduplicatedLogsSelector, exploreItemUIStateSelector } from 'app/features/explore/state/selectors';
 import { getTimeZone } from '../profile/state/selectors';
-import { LiveLogs } from './LiveLogs';
+import { LiveLogsWithTheme } from './LiveLogs';
 
 interface LogsContainerProps {
   exploreId: ExploreId;
@@ -89,7 +89,7 @@ export class LogsContainer extends PureComponent<LogsContainerProps> {
     if (isLive) {
       return (
         <Panel label="Logs" loading={false} isOpen={showingLogs} onToggle={this.onClickLogsButton}>
-          <LiveLogs logsResult={logsResult} />
+          <LiveLogsWithTheme logsResult={logsResult} />
         </Panel>
       );
     }
