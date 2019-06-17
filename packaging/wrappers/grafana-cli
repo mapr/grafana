@@ -41,10 +41,8 @@ CFG_OPTS="cfg:default.paths.provisioning=$PROVISIONING_CFG_DIR \
 COMMAND=$1
 SUBCOMMAND=$2
 
-
-
 # We special case admin commands as is they are the only ones the that supports --homepath and --config as flags.
-if [[ $COMMAND = "admin" ]]; then
+if [[ $COMMAND = "admin" && ! -z $SUBCOMMAND ]]; then
   ARG=$3
 
   if [ -z "$ARG" ]; then
@@ -53,9 +51,10 @@ if [[ $COMMAND = "admin" ]]; then
   fi
 
   eval $EXECUTABLE "$COMMAND" "$SUBCOMMAND" "$OPTS" "$ARG" "$CFG_OPTS"
-
+  exit 0
 elif [[ -z $COMMAND && -z $SUBCOMMAND ]]; then
   eval $EXECUTABLE "$@" "$CFG_OPTS"
+  exit 0
 else
   eval $EXECUTABLE "$@"
 fi
