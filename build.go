@@ -328,13 +328,15 @@ func createPackage(options linuxPackageOptions) {
 	runPrint("mkdir", "-p", filepath.Join(packageRoot, "/usr/lib/systemd/system"))
 	runPrint("mkdir", "-p", filepath.Join(packageRoot, "/usr/sbin"))
 
-	// The grafana-cli binary is exposed through a wrapper to ensure a proper configuration is in place. To enable that, we add
-	// the .real suffix to the original binary (grafana-cli.real) and then use the name grafana-cli for the wrapper.
-	runPrint("cp", "-p", filepath.Join(workingDir, "tmp/bin/"+cliBinary), filepath.Join(packageRoot, "/usr/sbin/"+cliBinary+".real"))
-	runPrint("cp", "-p", filepath.Join(workingDir, "tmp/bin/"+serverBinary), filepath.Join(packageRoot, "/usr/sbin/"+serverBinary))
-
+	// The grafana-cli binary is exposed through a wrapper to ensure a proper
+	// configuration is in place. To enable that, we need to store the original
+	// binary in a separate location to avoid conflicts.
+	runPrint("cp", "-p", filepath.Join(workingDir, "tmp/bin/"+cliBinary), filepath.Join(packageRoot, options.homeDir, cliBinary))
 	// copy grafana-cli wrapper
 	runPrint("cp", "-p", options.cliBinaryWrapperSrc, filepath.Join(packageRoot, "/usr/sbin/"+cliBinary))
+
+	// copy grafana-server binary
+	runPrint("cp", "-p", filepath.Join(workingDir, "tmp/bin/"+serverBinary), filepath.Join(packageRoot, "/usr/sbin/"+serverBinary))
 
 	// copy init.d script
 	runPrint("cp", "-p", options.initdScriptSrc, filepath.Join(packageRoot, options.initdScriptFilePath))

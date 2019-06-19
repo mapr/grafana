@@ -15,7 +15,7 @@ LOG_DIR=/var/log/grafana
 CONF_FILE=$CONF_DIR/grafana.ini
 PROVISIONING_CFG_DIR=$CONF_DIR/provisioning
 
-EXECUTABLE=/usr/sbin/grafana-cli.real
+EXECUTABLE=$GRAFANA_HOME/grafana-cli
 
 if [ ! -x $EXECUTABLE ]; then
  echo "Program not installed or not executable"
@@ -23,8 +23,8 @@ if [ ! -x $EXECUTABLE ]; then
 fi
 
 if [ $# -eq 0 ]; then
-  eval $EXECUTABLE --help
-  exit 0
+  eval $EXECUTABLE
+  exit 1
 fi
 
 # overwrite settings from default file
@@ -32,29 +32,12 @@ if [ -f "$DEFAULT" ]; then
   . "$DEFAULT"
 fi
 
-OPTS="--homepath=${GRAFANA_HOME} --config=${CONF_FILE}"
-CFG_OPTS="cfg:default.paths.provisioning=$PROVISIONING_CFG_DIR \
-      cfg:default.paths.data=${DATA_DIR} \
-      cfg:default.paths.logs=${LOG_DIR} \
-      cfg:default.paths.plugins=${PLUGINS_DIR}"
+OPTS="--homepath=${GRAFANA_HOME} \
+      --config=${CONF_FILE} \
+      --pluginsDir=${PLUGINS_DIR} \
+      --optionsString='cfg:default.paths.provisioning=$PROVISIONING_CFG_DIR \
+                        cfg:default.paths.data=${DATA_DIR} \
+                        cfg:default.paths.logs=${LOG_DIR} \
+                        cfg:default.paths.plugins=${PLUGINS_DIR}'"
 
-COMMAND=$1
-SUBCOMMAND=$2
-
-# We special case admin commands as is they are the only ones the that supports --homepath and --config as flags.
-if [[ $COMMAND = "admin" && ! -z $SUBCOMMAND ]]; then
-  ARG=$3
-
-  if [ -z "$ARG" ]; then
-    eval $EXECUTABLE "$COMMAND" "$SUBCOMMAND" "$ARG" "$OPTS"
-    exit 1
-  fi
-
-  eval $EXECUTABLE "$COMMAND" "$SUBCOMMAND" "$OPTS" "$ARG" "$CFG_OPTS"
-  exit 0
-elif [[ -z $COMMAND && -z $SUBCOMMAND ]]; then
-  eval $EXECUTABLE "$@" "$CFG_OPTS"
-  exit 0
-else
-  eval $EXECUTABLE "$@"
-fi
+eval $EXECUTABLE "$OPTS" "$@"
