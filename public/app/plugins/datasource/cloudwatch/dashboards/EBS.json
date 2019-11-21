@@ -2,7 +2,6 @@
   "__inputs": [
     {
       "name": "DS_CLOUDWATCH",
-      "label": "",
       "description": "",
       "type": "datasource",
       "pluginId": "cloudwatch",
@@ -20,7 +19,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "6.5.0"
+      "version": "6.6.0-pre"
     },
     {
       "type": "panel",
@@ -48,11 +47,12 @@
       }
     ]
   },
+  "description": "Visualize Amazon EBS metrics",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1574177036715,
+  "iteration": 1574322143223,
   "links": [],
   "panels": [
     {
@@ -109,6 +109,7 @@
             "VolumeId": "*"
           },
           "expression": "SUM(REMOVE_EMPTY(SEARCH('{AWS/EBS,VolumeId} MetricName=\"VolumeReadBytes\"', 'Sum', $period)))/$period",
+          "id": "",
           "matchExact": true,
           "metricName": "VolumeReadBytes",
           "namespace": "AWS/EBS",
@@ -123,6 +124,7 @@
             "VolumeId": "*"
           },
           "expression": "SUM(REMOVE_EMPTY(SEARCH('{AWS/EBS,VolumeId} MetricName=\"VolumeWriteBytes\"', 'Sum', $period)))/$period",
+          "id": "",
           "matchExact": true,
           "metricName": "VolumeReadBytes",
           "namespace": "AWS/EBS",
@@ -216,10 +218,12 @@
       "steppedLine": true,
       "targets": [
         {
+          "alias": "",
           "dimensions": {
             "VolumeId": "*"
           },
           "expression": "REMOVE_EMPTY(SEARCH('{AWS/EBS,VolumeId} MetricName=\"VolumeReadBytes\"', 'Sum', $period))/$period",
+          "id": "",
           "matchExact": true,
           "metricName": "VolumeReadBytes",
           "namespace": "AWS/EBS",
@@ -313,10 +317,12 @@
       "steppedLine": true,
       "targets": [
         {
+          "alias": "",
           "dimensions": {
             "VolumeId": "*"
           },
           "expression": "REMOVE_EMPTY(SEARCH('{AWS/EBS,VolumeId} MetricName=\"VolumeWriteBytes\"', 'Sum', $period))/$period",
+          "id": "",
           "matchExact": true,
           "metricName": "VolumeReadBytes",
           "namespace": "AWS/EBS",
@@ -413,6 +419,7 @@
           "alias": "{{label}}",
           "dimensions": {},
           "expression": "REMOVE_EMPTY(SEARCH('{AWS/EBS,VolumeId} MetricName=\"VolumeReadOps\"', 'Sum', $period))/$period",
+          "id": "",
           "matchExact": true,
           "metricName": "",
           "namespace": "",
@@ -509,6 +516,7 @@
           "alias": "{{label}}",
           "dimensions": {},
           "expression": "REMOVE_EMPTY(SEARCH('{AWS/EBS,VolumeId} MetricName=\"VolumeWriteOps\"', 'Sum', $period))/$period",
+          "id": "",
           "matchExact": true,
           "metricName": "",
           "namespace": "",
@@ -1271,10 +1279,13 @@
   "templating": {
     "list": [
       {
-        "current": {},
+        "current": {
+          "text": "default",
+          "value": "default"
+        },
         "hide": 0,
         "includeAll": false,
-        "label": "Datasource",
+        "label": "Data source",
         "multi": false,
         "name": "datasource",
         "options": [],
@@ -1286,7 +1297,10 @@
       },
       {
         "allValue": null,
-        "current": {},
+        "current": {
+          "text": "default",
+          "value": "default"
+        },
         "datasource": "${DS_CLOUDWATCH}",
         "definition": "regions()",
         "hide": 0,
@@ -1309,7 +1323,7 @@
       {
         "allValue": null,
         "current": {
-          "selected": false,
+          "selected": true,
           "tags": [],
           "text": "300",
           "value": "300"
@@ -1329,16 +1343,21 @@
             "selected": true,
             "text": "300",
             "value": "300"
+          },
+          {
+            "selected": false,
+            "text": "3600",
+            "value": "3600"
           }
         ],
-        "query": "60,300",
+        "query": "60,300,3600",
         "skipUrlSync": false,
         "type": "custom"
       }
     ]
   },
   "time": {
-    "from": "now-7d",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {
@@ -1346,7 +1365,6 @@
   },
   "timezone": "",
   "title": "Amazon EBS",
-  "description": "Visualize Amazon EBS metrics",
-  "uid": "VgpJGb1Zo",
+  "uid": "MP7gaHbZz",
   "version": 1
 }
