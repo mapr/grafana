@@ -130,8 +130,8 @@ export default class LokiLanguageProvider extends LanguageProvider {
     // Prevent suggestions in `function(|suffix)`
     const noSuffix = !nextCharacter || nextCharacter === ')';
 
-    // Empty prefix is safe if it does not immediately follow a complete expression and has no text after it
-    const safeEmptyPrefix = prefix === '' && !text.match(/^[\]})\s]+$/) && noSuffix;
+    // Prefix is safe if it does not immediately follow a complete expression and has no text after it
+    const safePrefix = prefix && !text.match(/^['"~=\]})\s]+$/) && noSuffix;
 
     // About to type next operand if preceded by binary operator
     const operatorsPattern = /[+\-*/^%]/;
@@ -145,8 +145,12 @@ export default class LokiLanguageProvider extends LanguageProvider {
       // Suggestions for {|} and {foo=|}
       return await this.getLabelCompletionItems(input, context);
     } else if (empty) {
-      return this.getEmptyCompletionItems(context || {}, ExploreMode.Metrics);
-    } else if ((prefixUnrecognized && noSuffix) || safeEmptyPrefix || isNextOperand) {
+      // Suggestions for empty query field
+      return this.getEmptyCompletionItems(context);
+    } else if (prefixUnrecognized && noSuffix && !isNextOperand) {
+      // Show term suggestions in a couple of scenarios
+      return this.getBeginningCompletionItems(context);
+    } else if (prefixUnrecognized && safePrefix) {
       // Show term suggestions in a couple of scenarios
       return this.getTermCompletionItems();
     }
@@ -156,7 +160,13 @@ export default class LokiLanguageProvider extends LanguageProvider {
     };
   }
 
-  getEmptyCompletionItems(context: TypeaheadContext, mode?: ExploreMode): TypeaheadOutput {
+  getBeginningCompletionItems = (context: TypeaheadContext): TypeaheadOutput => {
+    return {
+      suggestions: [...this.getEmptyCompletionItems(context).suggestions, ...this.getTermCompletionItems().suggestions],
+    };
+  };
+
+  getEmptyCompletionItems(context: TypeaheadContext): TypeaheadOutput {
     const { history } = context;
     const suggestions = [];
 
@@ -176,11 +186,6 @@ export default class LokiLanguageProvider extends LanguageProvider {
         label: 'History',
         items: historyItems,
       });
-    }
-
-    if (mode === ExploreMode.Metrics) {
-      const termCompletionItems = this.getTermCompletionItems();
-      suggestions.push(...termCompletionItems.suggestions);
     }
 
     return { suggestions };
