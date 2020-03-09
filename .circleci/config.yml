@@ -438,10 +438,12 @@ jobs:
           name: Build Docker images
           command: |
             /tmp/workspace/bin/grabpl build-docker --edition << parameters.edition >> --ubuntu=<< parameters.ubuntu >> $CIRCLE_WORKFLOW_ID
+            mkdir -p << parameters.edition >>/docker
+            mv docker/*.tar << parameters.edition >>/docker/
       - persist_to_workspace:
           root: .
           paths:
-            - docker/*.tar
+            - << parameters.edition >>/docker/*.tar
       - run:
           name: CI job failed
           command: ./scripts/ci-job-failed.sh
