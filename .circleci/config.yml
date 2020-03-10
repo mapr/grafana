@@ -403,13 +403,13 @@ jobs:
             if [[ $CIRCLE_BRANCH == "chore/new-release-pipeline" ]]; then
               # We're testing the release pipeline
               /tmp/workspace/bin/grabpl publish-packages --edition << parameters.edition >> \
-                --deb-db-bucket grafana-aptly-db-test --deb-repo-bucket grafana-repo-test --packages-bucket \
-                grafana-downloads-test --simulate-release
+                --deb-db-bucket grafana-testing-aptly-db --deb-repo-bucket grafana-testing-repo --packages-bucket \
+                grafana-downloads-test --rpm-repo-bucket grafana-testing-repo --simulate-release
             else
               # TODO: Disable simulation, use default buckets
               /tmp/workspace/bin/grabpl publish-packages --edition << parameters.edition >> \
                 --deb-db-bucket grafana-aptly-db-test --deb-repo-bucket grafana-repo-test --packages-bucket \
-                grafana-downloads-test --simulate-release
+                grafana-downloads-test --rpm-repo-bucket grafana-testing-repo --simulate-release
             fi
 
   build-docker-images:
