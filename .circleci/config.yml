@@ -400,6 +400,7 @@ jobs:
       - run:
           name: Publish packages
           command: |
+            cp -r /tmp/workspace/<< parameters.edition >>/dist .
             if [[ $CIRCLE_BRANCH == "chore/new-release-pipeline" ]]; then
               # We're testing the release pipeline
               /tmp/workspace/bin/grabpl publish-packages --edition << parameters.edition >> \
