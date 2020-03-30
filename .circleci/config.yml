@@ -560,6 +560,8 @@ jobs:
       ubuntu:
         type: boolean
     executor: base
+    environment:
+      DOCKER_BUILDKIT: 1
     steps:
       - run:
           name: Exit if enterprise and forked PR
@@ -572,7 +574,8 @@ jobs:
       - run:
           name: CI job started
           command: ./scripts/ci-job-started.sh
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 18.09.3
       - install-google-cloud-sdk
       - install-grabpl
       - run:
