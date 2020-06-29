@@ -553,6 +553,7 @@ export const processQueryResponse = (
     showLogs: !!logsResult,
     showMetrics: !!graphResult,
     showTable: !!tableResult,
+    showTrace: !!processor.traceFrames.length,
   };
 };
 
