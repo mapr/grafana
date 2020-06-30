@@ -2,7 +2,14 @@ import _ from 'lodash';
 import flatten from 'app/core/utils/flatten';
 import * as queryDef from './query_def';
 import TableModel from 'app/core/table_model';
-import { DataQueryResponse, DataFrame, toDataFrame, FieldType, MutableDataFrame } from '@grafana/data';
+import {
+  DataQueryResponse,
+  DataFrame,
+  toDataFrame,
+  FieldType,
+  MutableDataFrame,
+  PreferredVisualisationType,
+} from '@grafana/data';
 import { ElasticsearchAggregation } from './types';
 
 export class ElasticResponse {
@@ -426,7 +433,7 @@ export class ElasticResponse {
 
       const { propNames, docs } = flattenHits(response.hits.hits);
       if (docs.length > 0) {
-        const series = createEmptyDataFrame(propNames, this.targets[0].timeField, logMessageField, logLevelField);
+        let series = createEmptyDataFrame(propNames, this.targets[0].timeField, logMessageField, logLevelField);
 
         // Add a row for each document
         for (const doc of docs) {
@@ -439,6 +446,7 @@ export class ElasticResponse {
           series.add(doc);
         }
 
+        series = addPreferredVisualisationType(series, 'logs');
         dataFrame.push(series);
       }
 
@@ -574,7 +582,7 @@ const createEmptyDataFrame = (
   return series;
 };
 
-const addPreferredVisualisationType = (series: any, type: string) => {
+const addPreferredVisualisationType = (series: any, type: PreferredVisualisationType) => {
   let s = series;
   s.meta
     ? (s.meta.preferredVisualisationType = type)
