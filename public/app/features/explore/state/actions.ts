@@ -431,11 +431,11 @@ export const runQueries = (exploreId: ExploreId): ThunkResult<void> => {
 
     // Some datasource's query builders allow per-query interval limits,
     // but we're using the datasource interval limit for now
-    const minInterval = datasourceInstance.interval;
+    const minInterval = datasourceInstance?.interval;
 
     stopQueryState(querySubscription);
 
-    const datasourceId = datasourceInstance.meta.id;
+    const datasourceId = datasourceInstance?.meta.id;
 
     const queryOptions: QueryOptions = {
       minInterval,
@@ -559,7 +559,7 @@ export const stateSave = (): ThunkResult<void> => {
     const replace = left && left.urlReplaced === false;
     const urlStates: { [index: string]: string } = { orgId };
     const leftUrlState: ExploreUrlState = {
-      datasource: left.datasourceInstance.name,
+      datasource: left.datasourceInstance?.name,
       queries: left.queries.map(clearQueryKeys),
       range: toRawTimeRange(left.range),
       ui: {
@@ -572,7 +572,7 @@ export const stateSave = (): ThunkResult<void> => {
     urlStates.left = serializeStateToUrlParam(leftUrlState, true);
     if (split) {
       const rightUrlState: ExploreUrlState = {
-        datasource: right.datasourceInstance.name,
+        datasource: right.datasourceInstance?.name,
         queries: right.queries.map(clearQueryKeys),
         range: toRawTimeRange(right.range),
         ui: {
