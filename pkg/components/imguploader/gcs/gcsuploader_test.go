@@ -2,6 +2,7 @@ package gcs
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -73,5 +74,5 @@ func TestUploadToGCS_DefaultCredentials(t *testing.T) {
 	path, err := uploader.Upload(ctx, fpath)
 	require.NoError(t, err)
 
-	assert.NotEmpty(t, path)
+	assert.Regexp(t, fmt.Sprintf(`^https://storage.googleapis.com/%s/[^/]+\.png$`, bucket), path)
 }
