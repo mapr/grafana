@@ -49,6 +49,8 @@ func NewUploader(keyFile, bucket, path string, enableSignedURLs bool, signedURLE
 	return uploader, nil
 }
 
+// newClient returns a new GCS client.
+// Stubbable by tests.
 var newClient = func(ctx context.Context, opts ...option.ClientOption) (gcsifaces.StorageClient, error) {
 	client, err := storage.NewClient(ctx, opts...)
 	return clientWrapper{client}, err
