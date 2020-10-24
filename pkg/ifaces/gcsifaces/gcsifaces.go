@@ -1,3 +1,4 @@
+// Package gcsifaces provides interfaces for Google Cloud Storage.
 package gcsifaces
 
 import (

@@ -1,3 +1,4 @@
+// Package gcs provides an image uploader for GCS.
 package gcs
 
 import (
@@ -19,15 +20,6 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
-
-type Uploader struct {
-	KeyFile             string
-	Bucket              string
-	path                string
-	log                 log.Logger
-	enableSignedURLs    bool
-	signedURLExpiration time.Duration
-}
 
 // NewUploader returns a new Uploader.
 func NewUploader(keyFile, bucket, path string, enableSignedURLs bool, signedURLExpiration time.Duration) (*Uploader, error) {
@@ -54,6 +46,16 @@ func NewUploader(keyFile, bucket, path string, enableSignedURLs bool, signedURLE
 var newClient = func(ctx context.Context, opts ...option.ClientOption) (gcsifaces.StorageClient, error) {
 	client, err := storage.NewClient(ctx, opts...)
 	return clientWrapper{client}, err
+}
+
+// Uploader supports uploading images to GCS.
+type Uploader struct {
+	KeyFile             string
+	Bucket              string
+	path                string
+	log                 log.Logger
+	enableSignedURLs    bool
+	signedURLExpiration time.Duration
 }
 
 // Upload uploads an image to GCS.
