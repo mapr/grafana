@@ -4,11 +4,22 @@ package gcsifaces
 import (
 	"context"
 	"io"
+
+	"cloud.google.com/go/storage"
+	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/jwt"
 )
 
 // StorageClient represents a GCS client.
 type StorageClient interface {
+	// Bucket gets a StorageBucket.
 	Bucket(name string) StorageBucket
+	// FindDefaultCredentials finds default Google credentials.
+	FindDefaultCredentials(ctx context.Context, scope string) (*google.Credentials, error)
+	// JWTConfigFromJSON gets JWT config from a JSON document.
+	JWTConfigFromJSON(keyJSON []byte) (*jwt.Config, error)
+	// SignedURL returns a signed URL for the specified object.
+	SignedURL(bucket, name string, opts *storage.SignedURLOptions) (string, error)
 }
 
 // StorageBucket represents a GCS bucket.

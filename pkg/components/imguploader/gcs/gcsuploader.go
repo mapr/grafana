@@ -11,13 +11,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"golang.org/x/oauth2/jwt"
-
 	"cloud.google.com/go/storage"
 	"github.com/grafana/grafana/pkg/ifaces/gcsifaces"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/util"
 	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/option"
 )
 
@@ -114,21 +113,19 @@ func (u *Uploader) Upload(ctx context.Context, imageDiskPath string) (string, er
 	}
 
 	u.log.Debug("Signing GCS URL")
-	var conf *jwt.Config
+	var jwtData []byte
 	if u.KeyFile != "" {
-		conf, err = google.JWTConfigFromJSON(keyData)
-		if err != nil {
-			return "", err
-		}
+		jwtData = keyData
 	} else {
-		creds, err := google.FindDefaultCredentials(ctx, scope)
+		creds, err := client.FindDefaultCredentials(ctx, scope)
 		if err != nil {
 			return "", fmt.Errorf("failed to find default Google credentials: %s", err)
 		}
-		conf, err = google.JWTConfigFromJSON(creds.JSON)
-		if err != nil {
-			return "", err
-		}
+		jwtData = creds.JSON
+	}
+	conf, err := client.JWTConfigFromJSON(jwtData)
+	if err != nil {
+		return "", err
 	}
 	opts := &storage.SignedURLOptions{
 		Scheme:         storage.SigningSchemeV4,
@@ -137,7 +134,7 @@ func (u *Uploader) Upload(ctx context.Context, imageDiskPath string) (string, er
 		PrivateKey:     conf.PrivateKey,
 		Expires:        time.Now().Add(u.signedURLExpiration),
 	}
-	signedURL, err := storage.SignedURL(u.Bucket, key, opts)
+	signedURL, err := client.SignedURL(u.Bucket, key, opts)
 	if err != nil {
 		return "", err
 	}
@@ -186,6 +183,18 @@ type clientWrapper struct {
 
 func (c clientWrapper) Bucket(key string) gcsifaces.StorageBucket {
 	return bucketWrapper{c.client.Bucket(key)}
+}
+
+func (c clientWrapper) FindDefaultCredentials(ctx context.Context, scope string) (*google.Credentials, error) {
+	return google.FindDefaultCredentials(ctx, scope)
+}
+
+func (c clientWrapper) JWTConfigFromJSON(keyJSON []byte) (*jwt.Config, error) {
+	return google.JWTConfigFromJSON(keyJSON)
+}
+
+func (c clientWrapper) SignedURL(bucket, name string, opts *storage.SignedURLOptions) (string, error) {
+	return storage.SignedURL(bucket, name, opts)
 }
 
 type bucketWrapper struct {
