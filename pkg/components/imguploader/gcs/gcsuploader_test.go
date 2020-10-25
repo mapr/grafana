@@ -141,7 +141,7 @@ func TestUploadToGCS_DefaultCredentials(t *testing.T) {
 		path, err := uploader.Upload(ctx, fpath)
 		require.NoError(t, err)
 
-		assert.Regexp(t, cfg.signedURL, path)
+		assert.Equal(t, cfg.signedURL, path)
 	})
 }
 
