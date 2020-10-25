@@ -26,7 +26,7 @@ type testConfig struct {
 	signedURL string
 }
 
-func mockSDK(t *testing.T, ctx context.Context, content []byte, bucket string, signed bool) testConfig {
+func mockSDK(ctx context.Context, t *testing.T, content []byte, bucket string, signed bool) testConfig {
 	t.Helper()
 
 	var cfg testConfig
@@ -120,7 +120,7 @@ func TestUploadToGCS_DefaultCredentials(t *testing.T) {
 
 	t.Run("Without signed URL", func(t *testing.T) {
 		ctx := context.Background()
-		mockSDK(t, ctx, content, bucket, false)
+		mockSDK(ctx, t, content, bucket, false)
 
 		uploader, err := NewUploader("", bucket, "", false, dfltExpiration)
 		require.NoError(t, err)
@@ -133,7 +133,7 @@ func TestUploadToGCS_DefaultCredentials(t *testing.T) {
 
 	t.Run("With signed URL", func(t *testing.T) {
 		ctx := context.Background()
-		cfg := mockSDK(t, ctx, content, bucket, true)
+		cfg := mockSDK(ctx, t, content, bucket, true)
 
 		uploader, err := NewUploader("", bucket, "", true, dfltExpiration)
 		require.NoError(t, err)
