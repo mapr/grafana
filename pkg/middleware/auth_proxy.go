@@ -12,16 +12,36 @@ import (
 
 var header = setting.AuthProxyHeaderName
 
-func logUserIn(auth *authproxy.AuthProxy, username string, logger log.Logger, ignoreCache bool) (int64, *authproxy.Error) {
+func logUserIn(auth *authproxy.AuthProxy, username string, logger log.Logger, ignoreCache bool) (int64, error) {
 	logger.Debug("Trying to log user in", "username", username, "ignoreCache", ignoreCache)
 	// Try to log in user via various providers
-	id, e := auth.Login(logger, ignoreCache)
-	if e != nil {
-		logger.Error("Failed to login", "username", username, "message", e.Error(), "error", e.DetailsError,
+	id, err := auth.Login(logger, ignoreCache)
+	if err != nil {
+		details := err
+		var e authproxy.Error
+		if errors.As(err, &e) {
+			details = e.DetailsError
+		}
+		logger.Error("Failed to login", "username", username, "message", err.Error(), "error", details,
 			"ignoreCache", ignoreCache)
-		return 0, e
+		return 0, err
 	}
 	return id, nil
+}
+
+// handleError calls ctx.Handle with the error message and the underlying error.
+// If the error is of type authproxy.Error, its DetailsError is unwrapped, passed to ctx.Handle, and returned,
+// otherwise err itself is returned.
+func handleError(ctx *models.ReqContext, err error, statusCode int) error {
+	details := err
+	var e authproxy.Error
+	if errors.As(err, &e) {
+		details = e.DetailsError
+	}
+
+	ctx.Handle(statusCode, err.Error(), details)
+
+	return details
 }
 
 func initContextWithAuthProxy(store *remotecache.RemoteCache, ctx *models.ReqContext, orgID int64) bool {
@@ -46,18 +66,14 @@ func initContextWithAuthProxy(store *remotecache.RemoteCache, ctx *models.ReqCon
 
 	// Check if allowed to continue with this IP
 	if err := auth.IsAllowedIP(); err != nil {
-		logger.Error(
-			"Failed to check whitelisted IP addresses",
-			"message", err.Error(),
-			"error", err.DetailsError,
-		)
-		ctx.Handle(407, err.Error(), err.DetailsError)
+		details := handleError(ctx, err, 407)
+		logger.Error("Failed to check whitelisted IP addresses", "message", err.Error(), "error", details)
 		return true
 	}
 
-	id, e := logUserIn(auth, username, logger, false)
-	if e != nil {
-		ctx.Handle(407, e.Error(), e.DetailsError)
+	id, err := logUserIn(auth, username, logger, false)
+	if err != nil {
+		_ = handleError(ctx, err, 407)
 		return true
 	}
 
@@ -76,15 +92,16 @@ func initContextWithAuthProxy(store *remotecache.RemoteCache, ctx *models.ReqCon
 				logger.Error("Got unexpected error when removing user from auth cache", "error", err)
 			}
 		}
-		id, e = logUserIn(auth, username, logger, true)
-		if e != nil {
-			ctx.Handle(407, e.Error(), e.DetailsError)
+		id, err = logUserIn(auth, username, logger, true)
+		if err != nil {
+			_ = handleError(ctx, err, 407)
 			return true
 		}
 
-		user, e = auth.GetSignedUser(id)
-		if e != nil {
-			ctx.Handle(407, e.Error(), e.DetailsError)
+		user, err = auth.GetSignedUser(id)
+		if err != nil {
+			_ = handleError(ctx, err, 407)
+
 			return true
 		}
 	}
@@ -96,14 +113,14 @@ func initContextWithAuthProxy(store *remotecache.RemoteCache, ctx *models.ReqCon
 	ctx.IsSignedIn = true
 
 	// Remember user data in cache
-	if e := auth.Remember(id); e != nil {
+	if err := auth.Remember(id); err != nil {
+		details := handleError(ctx, err, 500)
 		logger.Error(
 			"Failed to store user in cache",
 			"username", username,
 			"message", e.Error(),
-			"error", e.DetailsError,
+			"error", details,
 		)
-		ctx.Handle(500, e.Error(), e.DetailsError)
 		return true
 	}
 
