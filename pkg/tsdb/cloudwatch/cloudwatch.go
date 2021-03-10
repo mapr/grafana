@@ -61,6 +61,7 @@ func (s *CloudWatchService) NewExecutor(*models.DataSource) (plugins.DataPlugin,
 
 func newExecutor(logsService *LogsService, cfg *setting.Cfg) *cloudWatchExecutor {
 	return &cloudWatchExecutor{
+		cfg:         cfg,
 		logsService: logsService,
 		sessions:    awsds.NewSessionCache(),
 	}
@@ -74,7 +75,7 @@ type cloudWatchExecutor struct {
 	rgtaClient resourcegroupstaggingapiiface.ResourceGroupsTaggingAPIAPI
 
 	logsService *LogsService
-	sessions    awsds.SessionCache
+	cfg         *setting.Cfg
 }
 
 func (e *cloudWatchExecutor) newSession(region string) (*session.Session, error) {
