@@ -42,9 +42,7 @@ func init() {
 	registry.Register(&registry.Descriptor{
 		Name:         "CloudWatchService",
 		InitPriority: registry.Low,
-		Instance: &CloudWatchService{
-			sessions: awsds.NewSessionCache(),
-		},
+		Instance:     &CloudWatchService{},
 	})
 }
 
@@ -55,6 +53,7 @@ type CloudWatchService struct {
 }
 
 func (s *CloudWatchService) Init() error {
+	s.sessions = awsds.NewSessionCache()
 	return nil
 }
 
@@ -305,6 +304,8 @@ func (e *cloudWatchExecutor) getAWSDatasourceSettings(region string) *awsds.AWSD
 	case "arn":
 		at = awsds.AuthTypeDefault
 		plog.Warn("Authentication type \"arn\" is deprecated, falling back to default")
+	case "ec2_iam_role":
+		at = awsds.AuthTypeEC2IAMRole
 	default:
 		plog.Warn("Unrecognized AWS authentication type", "type", atStr)
 	}

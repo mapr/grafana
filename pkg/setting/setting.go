@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/common/model"
 	ini "gopkg.in/ini.v1"
 
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana/pkg/components/gtime"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/util"
@@ -952,8 +953,9 @@ func (cfg *Cfg) handleAWSConfig() {
 		}
 	}
 	cfg.AWSListMetricsPageLimit = awsPluginSec.Key("list_metrics_page_limit").MustInt(500)
-	os.Setenv("ASSUME_ROLE_ENABLED", strconv.FormatBool(cfg.AWSAssumeRoleEnabled))
-	os.Setenv("ALLOWED_AUTH_PROVIDERS", allowedAuthProviders)
+	// Also set environment variables that can be used by core plugins
+	os.Setenv(awsds.ENV_VAR_AssumeRoleEnabled, strconv.FormatBool(cfg.AWSAssumeRoleEnabled))
+	os.Setenv(awsds.ENV_VAR_AllowedAuthProviders, allowedAuthProviders)
 }
 
 func (cfg *Cfg) readSessionConfig() {
