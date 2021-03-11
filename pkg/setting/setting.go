@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -876,7 +877,7 @@ func (cfg *Cfg) Load(args *CommandLineArgs) error {
 	}
 
 	cfg.readLDAPConfig()
-	cfg.readAWSConfig()
+	cfg.handleAWSConfig()
 	cfg.readSessionConfig()
 	cfg.readSmtpSettings()
 	cfg.readQuotaSettings()
@@ -940,10 +941,10 @@ func (cfg *Cfg) readLDAPConfig() {
 	cfg.LDAPAllowSignup = LDAPAllowSignup
 }
 
-func (cfg *Cfg) readAWSConfig() {
+func (cfg *Cfg) handleAWSConfig() {
 	awsPluginSec := cfg.Raw.Section("aws")
 	cfg.AWSAssumeRoleEnabled = awsPluginSec.Key("assume_role_enabled").MustBool(true)
-	allowedAuthProviders := awsPluginSec.Key("allowed_auth_providers").String()
+	allowedAuthProviders := awsPluginSec.Key("allowed_auth_providers").MustString("default,keys,credentials")
 	for _, authProvider := range strings.Split(allowedAuthProviders, ",") {
 		authProvider = strings.TrimSpace(authProvider)
 		if authProvider != "" {
@@ -951,6 +952,8 @@ func (cfg *Cfg) readAWSConfig() {
 		}
 	}
 	cfg.AWSListMetricsPageLimit = awsPluginSec.Key("list_metrics_page_limit").MustInt(500)
+	os.Setenv("ASSUME_ROLE_ENABLED", strconv.FormatBool(cfg.AWSAssumeRoleEnabled))
+	os.Setenv("ALLOWED_AUTH_PROVIDERS", allowedAuthProviders)
 }
 
 func (cfg *Cfg) readSessionConfig() {
