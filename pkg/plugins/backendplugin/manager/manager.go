@@ -86,6 +86,15 @@ func (m *manager) Register(pluginID string, factory backendplugin.PluginFactoryF
 		}
 	}
 
+	if true { // only amazon plugins???
+		if m.Cfg.AWSAssumeRoleEnabled {
+			hostEnv = append(hostEnv, "GF_AWS_AssumeRoleEnabled=TRUE")
+		}
+		if len(m.Cfg.AWSAllowedAuthProviders) > 0 {
+			hostEnv = append(hostEnv, "GF_AWS_AWSAllowedAuthProviders=...")
+		}
+	}
+
 	env := pluginSettings.ToEnv("GF_PLUGIN", hostEnv)
 
 	pluginLogger := m.logger.New("pluginId", pluginID)
