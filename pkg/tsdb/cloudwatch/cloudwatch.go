@@ -42,13 +42,16 @@ func init() {
 	registry.Register(&registry.Descriptor{
 		Name:         "CloudWatchService",
 		InitPriority: registry.Low,
-		Instance:     &CloudWatchService{},
+		Instance: &CloudWatchService{
+			sessions: awsds.NewSessionCache(),
+		},
 	})
 }
 
 type CloudWatchService struct {
 	LogsService *LogsService `inject:""`
 	Cfg         *setting.Cfg `inject:""`
+	sessions    *awsds.SessionCache
 }
 
 func (s *CloudWatchService) Init() error {
@@ -56,19 +59,14 @@ func (s *CloudWatchService) Init() error {
 }
 
 func (s *CloudWatchService) NewExecutor(*models.DataSource) (plugins.DataPlugin, error) {
-	return newExecutor(s.LogsService, s.Cfg), nil
+	return newExecutor(s.LogsService, s.Cfg, s.sessions), nil
 }
 
-func newExecutor(logsService *LogsService, cfg *setting.Cfg) *cloudWatchExecutor {
-	s := &awsds.AuthSettings{
-		AllowedAuthProviders: cfg.AWSAllowedAuthProviders,
-		AssumeRoleEnabled:    cfg.AWSAssumeRoleEnabled,
-	}
-
+func newExecutor(logsService *LogsService, cfg *setting.Cfg, sessions *awsds.SessionCache) *cloudWatchExecutor {
 	return &cloudWatchExecutor{
 		cfg:         cfg,
 		logsService: logsService,
-		sessions:    awsds.NewSessionCacheWithSettigns(s),
+		sessions:    sessions,
 	}
 }
 
@@ -81,7 +79,7 @@ type cloudWatchExecutor struct {
 
 	logsService *LogsService
 	cfg         *setting.Cfg
-	sessions    awsds.SessionCache
+	sessions    *awsds.SessionCache
 }
 
 func (e *cloudWatchExecutor) newSession(region string) (*session.Session, error) {
