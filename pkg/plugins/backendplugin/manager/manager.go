@@ -88,12 +88,7 @@ func (m *manager) Register(pluginID string, factory backendplugin.PluginFactoryF
 		}
 	}
 
-	if m.Cfg.AWSAssumeRoleEnabled {
-		hostEnv = append(hostEnv, awsds.ENV_VAR_AssumeRoleEnabled+"=true")
-	}
-	if len(m.Cfg.AWSAllowedAuthProviders) > 0 {
-		hostEnv = append(hostEnv, awsds.ENV_VAR_AllowedAuthProviders+"="+strings.Join(m.Cfg.AWSAllowedAuthProviders, ","))
-	}
+	hostEnv = append(hostEnv, m.getAWSEnvironmentVariables()...)
 
 	env := pluginSettings.ToEnv("GF_PLUGIN", hostEnv)
 
@@ -106,6 +101,18 @@ func (m *manager) Register(pluginID string, factory backendplugin.PluginFactoryF
 	m.plugins[pluginID] = plugin
 	m.logger.Debug("Backend plugin registered", "pluginId", pluginID)
 	return nil
+}
+
+func (m *manager) getAWSEnvironmentVariables() []string {
+	variables := []string{}
+	if m.Cfg.AWSAssumeRoleEnabled {
+		variables = append(variables, awsds.AssumeRoleEnabledEnvVarKeyName+"=true")
+	}
+	if len(m.Cfg.AWSAllowedAuthProviders) > 0 {
+		variables = append(variables, awsds.AllowedAuthProvidersEnvVarKeyName+"="+strings.Join(m.Cfg.AWSAllowedAuthProviders, ","))
+	}
+
+	return variables
 }
 
 func (m *manager) GetDataPlugin(pluginID string) interface{} {

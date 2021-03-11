@@ -954,8 +954,8 @@ func (cfg *Cfg) handleAWSConfig() {
 	}
 	cfg.AWSListMetricsPageLimit = awsPluginSec.Key("list_metrics_page_limit").MustInt(500)
 	// Also set environment variables that can be used by core plugins
-	os.Setenv(awsds.ENV_VAR_AssumeRoleEnabled, strconv.FormatBool(cfg.AWSAssumeRoleEnabled))
-	os.Setenv(awsds.ENV_VAR_AllowedAuthProviders, allowedAuthProviders)
+	os.Setenv(awsds.AssumeRoleEnabledEnvVarKeyName, strconv.FormatBool(cfg.AWSAssumeRoleEnabled))
+	os.Setenv(awsds.AllowedAuthProvidersEnvVarKeyName, allowedAuthProviders)
 }
 
 func (cfg *Cfg) readSessionConfig() {
