@@ -82,9 +82,9 @@ type cloudWatchExecutor struct {
 }
 
 func (e *cloudWatchExecutor) newSession(region string) (*session.Session, error) {
-	dsInfo := e.getAWSDatasourceSettings(region)
+	awsDatasourceSettings := e.getAWSDatasourceSettings(region)
 
-	return e.sessions.GetSession(region, *dsInfo)
+	return e.sessions.GetSession(region, *awsDatasourceSettings)
 }
 
 func (e *cloudWatchExecutor) getCWClient(region string) (cloudwatchiface.CloudWatchAPI, error) {
