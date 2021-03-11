@@ -9,9 +9,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/models"
@@ -86,13 +88,11 @@ func (m *manager) Register(pluginID string, factory backendplugin.PluginFactoryF
 		}
 	}
 
-	if true { // only amazon plugins???
-		if m.Cfg.AWSAssumeRoleEnabled {
-			hostEnv = append(hostEnv, "GF_AWS_AssumeRoleEnabled=TRUE")
-		}
-		if len(m.Cfg.AWSAllowedAuthProviders) > 0 {
-			hostEnv = append(hostEnv, "GF_AWS_AWSAllowedAuthProviders=...")
-		}
+	if m.Cfg.AWSAssumeRoleEnabled {
+		hostEnv = append(hostEnv, awsds.ENV_VAR_AssumeRoleEnabled+"=true")
+	}
+	if len(m.Cfg.AWSAllowedAuthProviders) > 0 {
+		hostEnv = append(hostEnv, awsds.ENV_VAR_AllowedAuthProviders+"="+strings.Join(m.Cfg.AWSAllowedAuthProviders, ","))
 	}
 
 	env := pluginSettings.ToEnv("GF_PLUGIN", hostEnv)

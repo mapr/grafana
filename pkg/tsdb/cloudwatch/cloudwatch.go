@@ -60,10 +60,15 @@ func (s *CloudWatchService) NewExecutor(*models.DataSource) (plugins.DataPlugin,
 }
 
 func newExecutor(logsService *LogsService, cfg *setting.Cfg) *cloudWatchExecutor {
+	s := &awsds.AuthSettings{
+		AllowedAuthProviders: cfg.AWSAllowedAuthProviders,
+		AssumeRoleEnabled:    cfg.AWSAssumeRoleEnabled,
+	}
+
 	return &cloudWatchExecutor{
 		cfg:         cfg,
 		logsService: logsService,
-		sessions:    awsds.NewSessionCache(),
+		sessions:    awsds.NewSessionCacheWithSettigns(s),
 	}
 }
 
@@ -76,6 +81,7 @@ type cloudWatchExecutor struct {
 
 	logsService *LogsService
 	cfg         *setting.Cfg
+	sessions    awsds.SessionCache
 }
 
 func (e *cloudWatchExecutor) newSession(region string) (*session.Session, error) {
