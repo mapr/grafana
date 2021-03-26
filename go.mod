@@ -64,7 +64,7 @@ require (
 	github.com/prometheus/alertmanager v0.21.1-0.20210324070758-10757eb5fb78
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/common v0.19.0
+	github.com/prometheus/common v0.20.0
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/russellhaering/goxmldsig v1.1.0
