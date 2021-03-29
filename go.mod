@@ -15,7 +15,7 @@ require (
 	cloud.google.com/go/storage v1.14.0
 	github.com/BurntSushi/toml v0.3.1
 	github.com/VividCortex/mysqlerr v0.0.0-20170204212430-6c6b55f8796f
-	github.com/aws/aws-sdk-go v1.38.2
+	github.com/aws/aws-sdk-go v1.38.7
 	github.com/beevik/etree v1.1.0
 	github.com/benbjohnson/clock v0.0.0-20161215174838-7dc76406b6d3
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
@@ -88,7 +88,7 @@ require (
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	gonum.org/v1/gonum v0.8.2
 	google.golang.org/api v0.42.0
-	google.golang.org/grpc v1.36.0
+	google.golang.org/grpc v1.36.1
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/ini.v1 v1.62.0
 	gopkg.in/ldap.v3 v3.0.2
