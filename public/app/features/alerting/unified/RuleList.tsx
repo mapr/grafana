@@ -1,3 +1,6 @@
+import { GrafanaTheme } from '@grafana/data';
+import { Button, useStyles } from '@grafana/ui';
+import { css } from 'emotion';
 import React, { FC, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { AlertingPageWrapper } from './components/AlertingPageWrapper';
@@ -9,6 +12,7 @@ import { getRulesDataSources } from './utils/datasource';
 
 export const RuleList: FC = () => {
   const dispatch = useDispatch();
+  const styles = useStyles(getStyles);
 
   // trigger fetch for any rules sources that dont have results and are not currently loading
   useEffect(() => getRulesDataSources().forEach((ds) => dispatch(fetchRulesAction(ds.name))), [dispatch]);
@@ -22,8 +26,22 @@ export const RuleList: FC = () => {
 
   return (
     <AlertingPageWrapper isLoading={loading && !haveResults}>
+      <div className={styles.buttonsContainer}>
+        <div />
+        <a href="/alerting/new">
+          <Button icon="plus">New alert rule</Button>
+        </a>
+      </div>
       {dispatched && !loading && !haveResults && <NoRulesSplash />}
       {haveResults && <SystemOrApplicationAlerts />}
     </AlertingPageWrapper>
   );
 };
+
+const getStyles = (theme: GrafanaTheme) => ({
+  buttonsContainer: css`
+    margin-bottom: ${theme.spacing.md};
+    display: flex;
+    justify-content: space-between;
+  `,
+});
