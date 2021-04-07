@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-openapi/strfmt"
 	apimodels "github.com/grafana/alerting-api/pkg/api"
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/models"
@@ -26,14 +25,6 @@ func toMacaronPath(path string) string {
 		m := string(s[1 : len(s)-1])
 		return []byte(fmt.Sprintf(":%s", m))
 	}))
-}
-
-func timePtr(t strfmt.DateTime) *strfmt.DateTime {
-	return &t
-}
-
-func stringPtr(s string) *string {
-	return &s
 }
 
 func backendType(ctx *models.ReqContext, cache datasources.CacheService) (apimodels.Backend, error) {
