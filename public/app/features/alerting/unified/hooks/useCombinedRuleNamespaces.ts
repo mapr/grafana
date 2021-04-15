@@ -1,4 +1,10 @@
-import { CombinedRule, CombinedRuleNamespace, Rule, RuleNamespace } from 'app/types/unified-alerting';
+import {
+  CombinedRule,
+  CombinedRuleGroup,
+  CombinedRuleNamespace,
+  Rule,
+  RuleNamespace,
+} from 'app/types/unified-alerting';
 import { RulerRulesConfigDTO } from 'app/types/unified-alerting-dto';
 import { useMemo, useRef } from 'react';
 import { getAllRulesSources, isCloudRulesSource, isGrafanaRulesSource } from '../utils/datasource';
@@ -34,39 +40,51 @@ export function useCombinedRuleNamespaces(): CombinedRuleNamespace[] {
 
         // first get all the ruler rules in
         Object.entries(rulerRules || {}).forEach(([namespaceName, groups]) => {
-          namespaces[namespaceName] = {
+          const namespace: CombinedRuleNamespace = {
             rulesSource,
             name: namespaceName,
-            groups: groups.map((group) => ({
-              name: group.name,
-              rules: group.rules.map(
-                (rule): CombinedRule =>
-                  isAlertingRulerRule(rule)
-                    ? {
-                        name: rule.alert,
-                        query: rule.expr,
-                        labels: rule.labels || {},
-                        annotations: rule.annotations || {},
-                        rulerRule: rule,
-                      }
-                    : isRecordingRulerRule(rule)
-                    ? {
-                        name: rule.record,
-                        query: rule.expr,
-                        labels: rule.labels || {},
-                        annotations: {},
-                        rulerRule: rule,
-                      }
-                    : {
-                        name: rule.grafana_alert.title,
-                        query: '',
-                        labels: rule.grafana_alert.labels || {},
-                        annotations: rule.grafana_alert.annotations || {},
-                        rulerRule: rule,
-                      }
-              ),
-            })),
+            groups: [],
           };
+          namespaces[namespaceName] = namespace;
+          namespace.groups = groups.map((group) => {
+            const combinedGroup: CombinedRuleGroup = {
+              name: group.name,
+              rules: [],
+            };
+            combinedGroup.rules = group.rules.map(
+              (rule): CombinedRule =>
+                isAlertingRulerRule(rule)
+                  ? {
+                      name: rule.alert,
+                      query: rule.expr,
+                      labels: rule.labels || {},
+                      annotations: rule.annotations || {},
+                      rulerRule: rule,
+                      namespace,
+                      group: combinedGroup,
+                    }
+                  : isRecordingRulerRule(rule)
+                  ? {
+                      name: rule.record,
+                      query: rule.expr,
+                      labels: rule.labels || {},
+                      annotations: {},
+                      rulerRule: rule,
+                      namespace,
+                      group: combinedGroup,
+                    }
+                  : {
+                      name: rule.grafana_alert.title,
+                      query: '',
+                      labels: rule.grafana_alert.labels || {},
+                      annotations: rule.grafana_alert.annotations || {},
+                      rulerRule: rule,
+                      namespace,
+                      group: combinedGroup,
+                    }
+            );
+            return combinedGroup;
+          });
         });
 
         // then correlate with prometheus rules
@@ -103,6 +121,8 @@ export function useCombinedRuleNamespaces(): CombinedRuleNamespace[] {
                   labels: rule.labels || {},
                   annotations: isAlertingRule(rule) ? rule.annotations || {} : {},
                   promRule: rule,
+                  namespace: ns,
+                  group: combinedGroup!,
                 });
               }
             });
