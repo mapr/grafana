@@ -161,9 +161,9 @@ export function deleteRuleAction(ruleIdentifier: RuleIdentifier): ThunkResult<vo
 }
 
 async function saveLotexRule(values: RuleFormValues, existing?: RuleWithLocation): Promise<RuleIdentifier> {
-  const { dataSourceName, location } = values;
+  const { dataSourceName, group, namespace } = values;
   const formRule = formValuesToRulerAlertingRuleDTO(values);
-  if (dataSourceName && location) {
+  if (dataSourceName && group && namespace) {
     // if we're updating a rule...
     if (existing) {
       // refetch it so we always have the latest greatest
@@ -172,7 +172,7 @@ async function saveLotexRule(values: RuleFormValues, existing?: RuleWithLocation
         throw new Error('Rule not found.');
       }
       // if namespace or group was changed, delete the old rule
-      if (freshExisting.namespace !== location.namespace || freshExisting.group.name !== location.group) {
+      if (freshExisting.namespace !== namespace || freshExisting.group.name !== group) {
         await deleteRule(freshExisting);
       } else {
         // if same namespace or group, update the group replacing the old rule with new
@@ -182,14 +182,14 @@ async function saveLotexRule(values: RuleFormValues, existing?: RuleWithLocation
             existingRule === freshExisting.rule ? formRule : existingRule
           ),
         };
-        await setRulerRuleGroup(dataSourceName, location.namespace, payload);
-        return getRuleIdentifier(dataSourceName, location.namespace, location.group, formRule);
+        await setRulerRuleGroup(dataSourceName, namespace, payload);
+        return getRuleIdentifier(dataSourceName, namespace, group, formRule);
       }
     }
 
     // if creating new rule or existing rule was in a different namespace/group, create new rule in target group
 
-    const targetGroup = await fetchRulerRulesGroup(dataSourceName, location.namespace, location.group);
+    const targetGroup = await fetchRulerRulesGroup(dataSourceName, namespace, group);
 
     const payload: RulerRuleGroupDTO = targetGroup
       ? {
@@ -197,12 +197,12 @@ async function saveLotexRule(values: RuleFormValues, existing?: RuleWithLocation
           rules: [...targetGroup.rules, formRule],
         }
       : {
-          name: location.group,
+          name: group,
           rules: [formRule],
         };
 
-    await setRulerRuleGroup(dataSourceName, location.namespace, payload);
-    return getRuleIdentifier(dataSourceName, location.namespace, location.group, formRule);
+    await setRulerRuleGroup(dataSourceName, namespace, payload);
+    return getRuleIdentifier(dataSourceName, namespace, group, formRule);
   } else {
     throw new Error('Data source and location must be specified');
   }
