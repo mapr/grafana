@@ -13,7 +13,7 @@ replace k8s.io/client-go => k8s.io/client-go v0.18.8
 
 require (
 	cloud.google.com/go/storage v1.14.0
-	cuelang.org/go v0.3.0-beta.6
+	cuelang.org/go v0.3.2
 	github.com/BurntSushi/toml v0.3.1
 	github.com/VividCortex/mysqlerr v0.0.0-20170204212430-6c6b55f8796f
 	github.com/aws/aws-sdk-go v1.38.17
@@ -101,7 +101,6 @@ require (
 	gopkg.in/square/go-jose.v2 v2.5.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	gotest.tools v2.2.0+incompatible
 	xorm.io/core v0.7.3
 	xorm.io/xorm v0.8.2
 )
