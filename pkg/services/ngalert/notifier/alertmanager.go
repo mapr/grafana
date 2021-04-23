@@ -75,6 +75,10 @@ const (
 `
 )
 
+func init() {
+	registry.RegisterService(NewAlertmanager())
+}
+
 type Alertmanager struct {
 	logger   log.Logger
 	Settings *setting.Cfg       `inject:""`
@@ -93,6 +97,7 @@ type Alertmanager struct {
 	dispatcher *dispatch.Dispatcher
 	inhibitor  *inhibit.Inhibitor
 	wg         sync.WaitGroup
+	stopc      chan struct{}
 
 	stageMetrics      *notify.Metrics
 	dispatcherMetrics *dispatch.DispatcherMetrics
@@ -101,8 +106,10 @@ type Alertmanager struct {
 	config          []byte
 }
 
-func init() {
-	registry.RegisterService(&Alertmanager{})
+func NewAlertmanager() *Alertmanager {
+	return &Alertmanager{
+		stopc: make(chan struct{}),
+	}
 }
 
 func (am *Alertmanager) IsDisabled() bool {
@@ -149,9 +156,16 @@ func (am *Alertmanager) Run(ctx context.Context) error {
 		am.logger.Error("unable to sync configuration", "err", err)
 	}
 
+	am.wg.Add(1)
+	go func() {
+		am.silences.Maintenance(15*time.Minute, filepath.Join(am.WorkingDirPath(), "silences"), am.stopc)
+		am.wg.Done()
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
+			close(am.stopc)
 			am.StopAndWait()
 			return nil
 		case <-time.After(pollInterval):
@@ -171,7 +185,6 @@ func (am *Alertmanager) StopAndWait() {
 	if am.dispatcher != nil {
 		am.dispatcher.Stop()
 	}
-
 	if am.inhibitor != nil {
 		am.inhibitor.Stop()
 	}
