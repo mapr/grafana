@@ -68,16 +68,31 @@ func (st DBstore) GetAlertmanagerConfiguration(query *models.GetAlertmanagerConf
 	})
 }
 
-// SaveAlertmanagerConfiguration creates an alertmanager configuration.
+// SaveAlertmanagerConfiguration creates an alertmanager configuration version.
 func (st DBstore) SaveAlertmanagerConfiguration(cmd *models.SaveAlertmanagerConfigurationCmd) error {
+	return st.SaveAlertmanagerConfigurationWithCallback(cmd, func() error { return nil })
+}
+
+// SaveAlertmanagerConfigurationWithCallback creates an alertmanager configuration version and then executes a callback.
+// If the callback results in error in rollsback the transaction.
+func (st DBstore) SaveAlertmanagerConfigurationWithCallback(cmd *models.SaveAlertmanagerConfigurationCmd, cb func() error) error {
 	return st.SQLStore.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
 		config := models.AlertConfiguration{
 			AlertmanagerConfiguration: cmd.AlertmanagerConfiguration,
 			ConfigurationVersion:      cmd.ConfigurationVersion,
+			Default:                   cmd.Default,
 		}
 		if _, err := sess.Insert(config); err != nil {
 			return err
 		}
+
+		if err := cb(); err != nil {
+			if err := sess.Rollback(); err != nil {
+				return err
+			}
+			return err
+		}
+
 		return nil
 	})
 }
