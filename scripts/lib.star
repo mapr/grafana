@@ -1109,3 +1109,16 @@ def integration_test_services(edition):
         }])
 
     return services
+
+def validate_scuemata():
+    return {
+        'name': 'validate-schema',
+        'image': build_image,
+        'depends_on': [
+            'build-backend',
+        ],
+        'commands': [
+            'GO111MODULE=on go run build.go build-cli',
+            './bin/darwin-amd64/grafana-cli cue validate-schema',
+        ],
+    }

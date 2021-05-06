@@ -95,6 +95,14 @@ steps:
   - initialize
   - lint-backend
 
+- name: validate-schema
+  image: grafana/build-container:1.4.1
+  commands:
+  - GO111MODULE=on go run build.go build-cli
+  - ./bin/darwin-amd64/grafana-cli cue validate-schema
+  depends_on:
+  - build-backend
+
 - name: gen-version
   image: grafana/build-container:1.4.1
   commands:
