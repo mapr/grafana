@@ -1113,9 +1113,9 @@ def integration_test_services(edition):
 def validate_scuemata():
     return {
         'name': 'validate-schema',
-        'image': build_image,
+        'image': alpine_image,
         'depends_on': [
-            'build-backend',
+            'clone',
         ],
         'commands': [
             'GO111MODULE=on go run build.go build-cli',

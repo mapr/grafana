@@ -96,12 +96,12 @@ steps:
   - lint-backend
 
 - name: validate-schema
-  image: grafana/build-container:1.4.1
+  image: alpine:3.13
   commands:
   - GO111MODULE=on go run build.go build-cli
   - ./bin/darwin-amd64/grafana-cli cue validate-schema
   depends_on:
-  - build-backend
+  - clone
 
 - name: gen-version
   image: grafana/build-container:1.4.1
