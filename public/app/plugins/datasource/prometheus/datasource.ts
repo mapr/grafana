@@ -708,6 +708,13 @@ export class PrometheusDatasource extends DataSourceApi<PromQuery, PromOptions> 
     );
   }
 
+  async getQueryFromNLQ(nlqQuery: string) {
+    const url = ' http://172.17.0.3:5000/translate';
+    const result = await getBackendSrv().post(url, { question: nlqQuery });
+    console.log(result);
+    return result;
+  }
+
   async getTagKeys() {
     const result = await this.metadataRequest('/api/v1/labels');
     return result?.data?.data?.map((value: any) => ({ text: value })) ?? [];

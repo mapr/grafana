@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 
+import { css } from '@emotion/css';
 import { Plugin } from 'slate';
 import {
   SlatePrism,
@@ -10,6 +11,9 @@ import {
   DOMUtil,
   SuggestionsState,
   Icon,
+  Modal,
+  ButtonGroup,
+  ToolbarButton,
 } from '@grafana/ui';
 
 import { LanguageMap, languages as prismLanguages } from 'prismjs';
@@ -85,6 +89,10 @@ interface PromQueryFieldState {
   labelBrowserVisible: boolean;
   syntaxLoaded: boolean;
   hint: QueryHint | null;
+  showModal: boolean;
+  showNLQ: boolean;
+  nlqQuery: string;
+  tranlationNLQ: string;
 }
 
 class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryFieldState> {
@@ -109,6 +117,10 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
       labelBrowserVisible: false,
       syntaxLoaded: false,
       hint: null,
+      showModal: false,
+      showNLQ: false,
+      nlqQuery: '',
+      tranlationNLQ: '',
     };
   }
 
@@ -205,13 +217,31 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
     this.onChangeQuery(selector, true);
     this.setState({ labelBrowserVisible: false });
   };
-
+  onTranslateNLQ = async (query: PromQuery, value: string) => {
+    // call api
+    const result = await this.props.datasource.getQueryFromNLQ(value);
+    if (!result?.translation.includes('Could not translate')) {
+      const { translation } = result;
+      const nextQuery: PromQuery = { ...query, expr: translation };
+      this.props.onChange(nextQuery);
+    } else {
+      // show message can't translate
+      // clean the query.expr
+      const nextQuery: PromQuery = { ...query, expr: '' };
+      this.props.onChange(nextQuery);
+    }
+  };
   onChangeQuery = (value: string, override?: boolean) => {
     // Send text change to parent
     const { query, onChange, onRunQuery } = this.props;
     if (onChange) {
       const nextQuery: PromQuery = { ...query, expr: value };
-      onChange(nextQuery);
+      // call the endpoint
+      if (this.state.showNLQ) {
+        this.onTranslateNLQ(query, value);
+      } else {
+        onChange(nextQuery);
+      }
 
       if (override && onRunQuery) {
         onRunQuery();
@@ -244,6 +274,23 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
     this.setState({ syntaxLoaded: true });
   };
 
+  onShowNaturalLanguage = () => {
+    //show modal
+    this.setState({ showModal: true });
+  };
+  onHideNaturalLanguage = () => {
+    //show modal
+    this.setState({ showNLQ: false, showModal: false });
+  };
+
+  onSwitchToNLQ = () => {
+    this.setState({ showNLQ: true, showModal: false });
+  };
+
+  onSwitchToPromQL = () => {
+    this.setState({ showNLQ: false });
+  };
+
   onTypeahead = async (typeahead: TypeaheadInput): Promise<TypeaheadOutput> => {
     const {
       datasource: { languageProvider },
@@ -273,42 +320,82 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
       placeholder = 'Enter a PromQL query (run with Shift+Enter)',
     } = this.props;
 
+    const { nlqQuery } = this.state;
+
     const { labelBrowserVisible, syntaxLoaded, hint } = this.state;
     const cleanText = languageProvider ? languageProvider.cleanText : undefined;
     const hasMetrics = languageProvider.metrics.length > 0;
     const chooserText = getChooserText(datasource.lookupsDisabled, syntaxLoaded, hasMetrics);
     const buttonDisabled = !(syntaxLoaded && hasMetrics);
-
+    const styles = getNLQStyles();
     return (
       <>
         <div
           className="gf-form-inline gf-form-inline--xs-view-flex-column flex-grow-1"
           data-testid={this.props['data-testid']}
         >
-          <button
-            className="gf-form-label query-keyword pointer"
-            onClick={this.onClickChooserButton}
-            disabled={buttonDisabled}
-          >
-            {chooserText}
-            <Icon name={labelBrowserVisible ? 'angle-down' : 'angle-right'} />
-          </button>
-
+          {!this.state.showNLQ && (
+            <button
+              className="gf-form-label query-keyword pointer"
+              onClick={this.onClickChooserButton}
+              disabled={buttonDisabled}
+            >
+              {chooserText}
+              <Icon name={labelBrowserVisible ? 'angle-down' : 'angle-right'} />
+            </button>
+          )}
           <div className="gf-form gf-form--grow flex-shrink-1 min-width-15">
-            <QueryField
-              additionalPlugins={this.plugins}
-              cleanText={cleanText}
-              query={query.expr}
-              onTypeahead={this.onTypeahead}
-              onWillApplySuggestion={willApplySuggestion}
-              onBlur={this.props.onBlur}
-              onChange={this.onChangeQuery}
-              onRunQuery={this.props.onRunQuery}
-              placeholder={placeholder}
-              portalOrigin="prometheus"
-              syntaxLoaded={syntaxLoaded}
-            />
+            {!this.state.showNLQ && (
+              <QueryField
+                additionalPlugins={this.plugins}
+                cleanText={cleanText}
+                query={query.expr}
+                onTypeahead={this.onTypeahead}
+                onWillApplySuggestion={willApplySuggestion}
+                onBlur={this.props.onBlur}
+                onChange={this.onChangeQuery}
+                onRunQuery={this.props.onRunQuery}
+                placeholder={placeholder}
+                portalOrigin="prometheus"
+                syntaxLoaded={syntaxLoaded}
+              />
+            )}
+            {this.state.showNLQ && (
+              <div className="gf-form gf-form--grow gf-form--alt flex-shrink-1 min-width-15">
+                <QueryField
+                  cleanText={cleanText}
+                  query={nlqQuery}
+                  onBlur={this.props.onBlur}
+                  onChange={this.onChangeQuery}
+                  onRunQuery={this.props.onRunQuery}
+                  placeholder="Use natural language"
+                  portalOrigin="prometheus"
+                  syntaxLoaded={syntaxLoaded}
+                />
+
+                <div className={styles.translatedQueryContainer}>
+                  <p>
+                    PromQL result: <span className={styles.translatedQuery}> {query.expr} </span>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
+          {!this.state.showNLQ && (
+            <ToolbarButton
+              className="gf-form-label query-keyword"
+              onClick={this.onShowNaturalLanguage}
+              disabled={buttonDisabled}
+              variant="active"
+            >
+              🤔 New to PromQl?
+            </ToolbarButton>
+          )}
+          {this.state.showNLQ && (
+            <ToolbarButton className="gf-form-label query-keyword" narrow onClick={this.onSwitchToPromQL}>
+              Switch back to PromQL
+            </ToolbarButton>
+          )}
         </div>
         {labelBrowserVisible && (
           <div className="gf-form">
@@ -329,9 +416,53 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
             </div>
           </div>
         ) : null}
+        <Modal
+          isOpen={this.state.showModal}
+          closeOnEscape
+          icon="trash-alt"
+          title="New to PromQL?"
+          onDismiss={this.onHideNaturalLanguage}
+          contentClassName={styles.modalContent}
+        >
+          <div>
+            <div>
+              <p>If you are new to PromQL, would you like to try using a </p>
+              <p> natural language query (NLQ)?</p>
+            </div>
+            <ButtonGroup key="nlq-buttons">
+              <ToolbarButton variant="primary" tooltip="try new NLQ" onClick={this.onSwitchToNLQ}>
+                Yes, switch to NLQ
+              </ToolbarButton>
+              <ToolbarButton onClick={this.onHideNaturalLanguage}>Maybe later</ToolbarButton>
+            </ButtonGroup>
+          </div>
+        </Modal>
       </>
     );
   }
 }
+
+const getNLQStyles = () => ({
+  translatedQueryContainer: css`
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    justify-content: space-between;
+    width: 100%;
+  `,
+  translatedQuery: css`
+    border: 1px solid silver;
+    padding: 5px;
+    margin-left: 5px;
+    margin-right: 25px;
+  `,
+  modalContent: css`
+    padding: calc(32px);
+    overflow: auto;
+    width: 100%;
+    max-height: calc(90vh - 32px);
+  `,
+});
 
 export default PromQueryField;
