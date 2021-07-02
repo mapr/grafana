@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -174,26 +175,33 @@ func (proxy *DataSourceProxy) addTraceFromHeaderValue(span opentracing.Span, hea
 }
 
 func (proxy *DataSourceProxy) director(req *http.Request) {
-	req.URL.Scheme = proxy.targetUrl.Scheme
-	req.URL.Host = proxy.targetUrl.Host
-	req.Host = proxy.targetUrl.Host
+	targetUrl := proxy.targetUrl
+
+	if proxy.ds.JsonData != nil && proxy.ds.JsonData.Get("nlqEndpoint") != nil && strings.HasPrefix(path.Base(req.URL.Path), "translate") {
+		targetUrl, _ = url.Parse(proxy.ds.JsonData.Get("nlqEndpoint").MustString())
+		logger.Info("setting target url to " + proxy.ds.JsonData.Get("nlqEndpoint").MustString())
+	}
+
+	req.URL.Scheme = targetUrl.Scheme
+	req.URL.Host = targetUrl.Host
+	req.Host = targetUrl.Host
 
 	reqQueryVals := req.URL.Query()
 
 	switch proxy.ds.Type {
 	case models.DS_INFLUXDB_08:
-		req.URL.RawPath = util.JoinURLFragments(proxy.targetUrl.Path, "db/"+proxy.ds.Database+"/"+proxy.proxyPath)
+		req.URL.RawPath = util.JoinURLFragments(targetUrl.Path, "db/"+proxy.ds.Database+"/"+proxy.proxyPath)
 		reqQueryVals.Add("u", proxy.ds.User)
 		reqQueryVals.Add("p", proxy.ds.DecryptedPassword())
 		req.URL.RawQuery = reqQueryVals.Encode()
 	case models.DS_INFLUXDB:
-		req.URL.RawPath = util.JoinURLFragments(proxy.targetUrl.Path, proxy.proxyPath)
+		req.URL.RawPath = util.JoinURLFragments(targetUrl.Path, proxy.proxyPath)
 		req.URL.RawQuery = reqQueryVals.Encode()
 		if !proxy.ds.BasicAuth {
 			req.Header.Set("Authorization", util.GetBasicAuthHeader(proxy.ds.User, proxy.ds.DecryptedPassword()))
 		}
 	default:
-		req.URL.RawPath = util.JoinURLFragments(proxy.targetUrl.Path, proxy.proxyPath)
+		req.URL.RawPath = util.JoinURLFragments(targetUrl.Path, proxy.proxyPath)
 	}
 
 	unescapedPath, err := url.PathUnescape(req.URL.RawPath)
@@ -293,8 +301,11 @@ func (proxy *DataSourceProxy) validateRequest() error {
 		if proxy.ctx.Req.Request.Method == "PUT" {
 			return errors.New("non allow-listed PUTs not allowed on proxied Prometheus datasource")
 		}
+
 		if proxy.ctx.Req.Request.Method == "POST" {
-			return errors.New("non allow-listed POSTs not allowed on proxied Prometheus datasource")
+			if !(proxy.ds.JsonData != nil && proxy.ds.JsonData.Get("nlqServer") != nil && strings.HasPrefix(path.Base(proxy.ctx.Req.Request.URL.Path), "translate")) {
+				return errors.New("non allow-listed POSTs not allowed on proxied Prometheus datasource")
+			}
 		}
 	}
 
