@@ -25,6 +25,7 @@ export interface PromOptions extends DataSourceJsonData {
   customQueryParameters?: string;
   disableMetricsLookup?: boolean;
   exemplarTraceIdDestinations?: ExemplarTraceIdDestination[];
+  nlqEndpoint: string;
 }
 
 export type ExemplarTraceIdDestination = {

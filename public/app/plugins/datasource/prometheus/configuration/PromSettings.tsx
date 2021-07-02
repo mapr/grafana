@@ -111,6 +111,24 @@ export const PromSettings = (props: Props) => {
             />
           </div>
         </div>
+        <div className="gf-form-inline">
+          <div className="gf-form max-width-30">
+            <FormField
+              label="NLQ endpoint"
+              labelWidth={14}
+              tooltip="Endpoint for NLQ question translation."
+              inputEl={
+                <Input
+                  className="width-25"
+                  value={options.jsonData.nlqEndpoint}
+                  onChange={onChangeHandler('nlqEndpoint', options, onOptionsChange)}
+                  spellCheck={false}
+                  placeholder="http://nlq.endpoint"
+                />
+              }
+            />
+          </div>
+        </div>
       </div>
       <ExemplarsSettings
         options={options.jsonData.exemplarTraceIdDestinations}

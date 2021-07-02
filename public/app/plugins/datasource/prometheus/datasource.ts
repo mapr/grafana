@@ -63,6 +63,7 @@ export class PrometheusDatasource extends DataSourceApi<PromQuery, PromOptions> 
   lookupsDisabled: boolean;
   customQueryParameters: any;
   exemplarErrors: Subject<string> = new Subject();
+  nlqEndpoint: string;
 
   constructor(
     instanceSettings: DataSourceInstanceSettings<PromOptions>,
@@ -86,6 +87,7 @@ export class PrometheusDatasource extends DataSourceApi<PromQuery, PromOptions> 
     this.lookupsDisabled = instanceSettings.jsonData.disableMetricsLookup ?? false;
     this.customQueryParameters = new URLSearchParams(instanceSettings.jsonData.customQueryParameters);
     this.variables = new PrometheusVariableSupport(this, this.templateSrv, this.timeSrv);
+    this.nlqEndpoint = instanceSettings.jsonData.nlqEndpoint;
   }
 
   init = () => {
@@ -709,10 +711,14 @@ export class PrometheusDatasource extends DataSourceApi<PromQuery, PromOptions> 
   }
 
   async getQueryFromNLQ(nlqQuery: string) {
-    const url = ' http://172.17.0.3:5000/translate';
-    const result = await getBackendSrv().post(url, { question: nlqQuery });
+    const result = await this._request<any>(
+      '/translate',
+      { question: nlqQuery },
+      { method: 'POST', hideFromInspector: true }
+    ).toPromise();
+
     console.log(result);
-    return result;
+    return result.data;
   }
 
   async getTagKeys() {
