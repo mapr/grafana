@@ -245,7 +245,7 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
       } else {
         this.onClearQuery();
       }
-      this.setState({ translationNLQ: { translation: result.translation, logs: result.logs } });
+      this.setState({ isNLQLoading: false, translationNLQ: { translation: result.translation, logs: result.logs } });
     } catch (err) {
       this.setState({ isNLQLoading: false });
     }
