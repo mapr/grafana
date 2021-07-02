@@ -25,6 +25,7 @@ import { LanguageMap, languages as prismLanguages } from 'prismjs';
 import { PromQuery, PromOptions } from '../types';
 import { roundMsToMin } from '../language_utils';
 import { CancelablePromise, makePromiseCancelable } from 'app/core/utils/CancelablePromise';
+import { LocalStorageValueProvider } from 'app/core/components/LocalStorageValueProvider';
 import {
   ExploreQueryFieldProps,
   QueryHint,
@@ -37,6 +38,8 @@ import { PrometheusDatasource } from '../datasource';
 import { PrometheusMetricsBrowser } from './PrometheusMetricsBrowser';
 
 export const RECORDING_RULES_GROUP = '__recording_rules__';
+
+const LOCAL_STORAGE_KEY = 'explorer.components.PromQLField.featureNLQ.isDismissed';
 
 function getChooserText(metricsLookupDisabled: boolean, hasSyntax: boolean, hasMetrics: boolean) {
   if (metricsLookupDisabled) {
@@ -294,7 +297,12 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
   };
 
   onShowNaturalLanguage = () => {
-    this.setState({ showModal: true });
+    const isModalShown = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (isModalShown) {
+      this.setState({ showNLQ: true });
+    } else {
+      this.setState({ showModal: true });
+    }
   };
   onHideNaturalLanguage = () => {
     this.setState({ showNLQ: false, showModal: false });
@@ -460,27 +468,48 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
             </div>
           </div>
         ) : null}
-        <Modal
-          isOpen={this.state.showModal}
-          closeOnEscape
-          icon="trash-alt"
-          title="New to PromQL?"
-          onDismiss={this.onHideNaturalLanguage}
-          contentClassName={styles.modalContent}
-        >
-          <div>
-            <div>
-              <p>If you are new to PromQL, would you like to try using a </p>
-              <p> natural language query (NLQ)?</p>
-            </div>
-            <ButtonGroup key="nlq-buttons">
-              <ToolbarButton variant="primary" tooltip="try new NLQ" onClick={this.onSwitchToNLQ}>
-                Yes, switch to NLQ
-              </ToolbarButton>
-              <ToolbarButton onClick={this.onHideNaturalLanguage}>Maybe later</ToolbarButton>
-            </ButtonGroup>
-          </div>
-        </Modal>
+
+        <LocalStorageValueProvider<boolean> storageKey={LOCAL_STORAGE_KEY} defaultValue={false}>
+          {(isDismissed, onDismiss) => {
+            if (isDismissed) {
+              return null;
+            }
+
+            return (
+              <Modal
+                isOpen={this.state.showModal}
+                closeOnEscape
+                icon="trash-alt"
+                title="New to PromQL?"
+                onDismiss={this.onHideNaturalLanguage}
+                contentClassName={styles.modalContent}
+              >
+                <div>
+                  <p>
+                    <span>If you are new to PromQL, would you like to try using a </span>
+                    <br></br>
+                    <span>natural language query (NLQ)?</span>
+                  </p>
+                  <ButtonGroup key="nlq-buttons">
+                    <ToolbarButton
+                      variant="primary"
+                      tooltip="try new NLQ"
+                      onClick={() => {
+                        onDismiss(true);
+                        this.onSwitchToNLQ();
+                      }}
+                    >
+                      Yes, switch to NLQ
+                    </ToolbarButton>
+                    <ToolbarButton className={styles.spacing} onClick={this.onHideNaturalLanguage}>
+                      Maybe later
+                    </ToolbarButton>
+                  </ButtonGroup>
+                </div>
+              </Modal>
+            );
+          }}
+        </LocalStorageValueProvider>
       </>
     );
   }
@@ -515,6 +544,9 @@ const getNLQStyles = () => ({
   `,
   switchButton: css`
     margin-left: 5px;
+  `,
+  spacing: css`
+    margin-left: 20px;
   `,
 });
 
