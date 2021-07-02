@@ -15,6 +15,17 @@ export enum CatalogPodStatus {
   Red = 2,
 }
 
+export const PodStatusToString = (status: CatalogPodStatus): 'red' | 'green' | 'yellow' => {
+  switch (status) {
+    case CatalogPodStatus.Green:
+      return 'green';
+    case CatalogPodStatus.Red:
+      return 'red';
+    case CatalogPodStatus.Yellow:
+      return 'yellow';
+  }
+};
+
 export interface CatalogPod {
   name: string;
   status: CatalogPodStatus;

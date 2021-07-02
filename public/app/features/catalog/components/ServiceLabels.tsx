@@ -1,25 +1,28 @@
 import React from 'react';
-import { Themeable2, withTheme2 } from '@grafana/ui';
 import { CatalogLabels } from 'app/types/catalog';
+import { Tag } from '@grafana/ui';
 
-interface Props extends Themeable2 {
+interface ServiceLabelProps {
+  name: string;
+  value: string;
+}
+
+export const ServiceLabel = (props: ServiceLabelProps) => {
+  const { name, value } = props;
+  return <Tag name={`${name}: ${value}`} />;
+};
+
+interface Props {
   labels?: CatalogLabels;
 }
 
-const labels = (props: Props) => {
+export const ServiceLabels = (props: Props) => {
   const { labels } = props;
   return (
-    <div className="service-label">
-      {Object.keys(labels || {}).map((key) => {
-        return (
-          <span className="service-label">
-            {key} : {labels![key]}
-          </span>
-        );
+    <div className="service-labels">
+      {Object.keys(labels || {}).map((key, i) => {
+        return <ServiceLabel name={key} value={labels![key]} key={i} />;
       })}
     </div>
   );
 };
-
-// Theming
-export default withTheme2(labels);
