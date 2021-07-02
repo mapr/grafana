@@ -235,20 +235,20 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
     }
 
     // call api
-    this.setState({ isNLQLoading: true });
-    const result = await this.props.datasource.getQueryFromNLQ(value);
-    const { translation } = result;
-
-    this.setState({ isNLQLoading: false });
-
-    if (!result?.translation.includes('Could not translate')) {
-      const nextQuery: PromQuery = { ...query, expr: translation };
-      this.props.onChange(nextQuery);
-    } else {
-      this.onClearQuery();
+    try {
+      this.setState({ isNLQLoading: true });
+      const result = await this.props.datasource.getQueryFromNLQ(value);
+      const { translation } = result;
+      if (!result?.translation.includes('Could not translate')) {
+        const nextQuery: PromQuery = { ...query, expr: translation };
+        this.props.onChange(nextQuery);
+      } else {
+        this.onClearQuery();
+      }
+      this.setState({ translationNLQ: { translation: result.translation, logs: result.logs } });
+    } catch (err) {
+      this.setState({ isNLQLoading: false });
     }
-
-    this.setState({ translationNLQ: { translation: result.translation, logs: result.logs } });
   };
   onChangeQuery = async (value: string, override?: boolean) => {
     // Send text change to parent
