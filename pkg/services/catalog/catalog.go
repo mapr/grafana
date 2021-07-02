@@ -3,13 +3,19 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/grafana/grafana/pkg/api/dtos"
 	"github.com/grafana/grafana/pkg/registry"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -20,7 +26,8 @@ import (
 const ServiceName = "Catalog"
 
 type Service struct {
-	Client kubernetes.Interface
+	Client  *kubernetes.Clientset
+	catalog dtos.Catalog
 }
 
 func (s *Service) Init() error {
@@ -42,6 +49,12 @@ func init() {
 }
 
 func (s *Service) Run(ctx context.Context) error {
+	svc, err := s.getServiceForDeployment(ctx, "", "")
+	if err != nil {
+	}
+	_, err = s.getPodsForSvc(ctx, svc, "")
+	if err != nil {
+	}
 	return s.startServiceInformer()
 }
 
@@ -69,19 +82,20 @@ func (s *Service) startServiceInformer() error {
 	factory := informers.NewSharedInformerFactory(s.Client, time.Second)
 	stopper := make(chan struct{})
 	defer close(stopper)
+
 	// https://pkg.go.dev/k8s.io/client-go@v0.21.2/informers/core/v1#NewServiceInformer
 	inf := factory.Core().V1().Services().Informer()
 	inf.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
 			// "k8s.io/apimachinery/pkg/apis/meta/v1" provides an Object
 			// interface that allows us to get metadata easily
-			mObj := obj.(*v1.Service)
+			mObj := obj.(*corev1.Service)
 			log.Printf("service deleted: %s", mObj.GetName())
 		},
 		AddFunc: func(obj interface{}) {
 			// "k8s.io/apimachinery/pkg/apis/meta/v1" provides an Object
 			// interface that allows us to get metadata easily
-			mObj := obj.(*v1.Service)
+			mObj := obj.(*corev1.Service)
 			log.Printf("New Service Added to Store: %s", mObj.GetName())
 		},
 	})
@@ -89,4 +103,29 @@ func (s *Service) startServiceInformer() error {
 	inf.Run(stopper)
 
 	return nil
+}
+
+func (s *Service) getServiceForDeployment(ctx context.Context, deployment string, namespace string) (*corev1.Service, error) {
+	listOptions := metav1.ListOptions{}
+	svcs, err := s.Client.CoreV1().Services(namespace).List(ctx, listOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, svc := range svcs.Items {
+		if strings.Contains(svc.Name, deployment) {
+			fmt.Fprintf(os.Stdout, "service name: %v\n", svc.Name)
+			return &svc, nil
+		}
+	}
+	return nil, errors.New("cannot find service for deployment")
+}
+
+func (s *Service) getPodsForSvc(ctx context.Context, svc *corev1.Service, namespace string) (*corev1.PodList, error) {
+	set := labels.Set(svc.Spec.Selector)
+	listOptions := metav1.ListOptions{LabelSelector: set.AsSelector().String()}
+	pods, err := s.Client.CoreV1().Pods(namespace).List(ctx, listOptions)
+	for _, pod := range pods.Items {
+		fmt.Fprintf(os.Stdout, "pod name: %v\n", pod.Name)
+	}
+	return pods, err
 }
