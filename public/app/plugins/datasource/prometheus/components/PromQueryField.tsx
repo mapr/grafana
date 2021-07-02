@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { Plugin } from 'slate';
 import {
   SlatePrism,
@@ -14,6 +14,9 @@ import {
   Modal,
   ButtonGroup,
   ToolbarButton,
+  LoadingPlaceholder,
+  Tooltip,
+  JSONFormatter,
 } from '@grafana/ui';
 
 import { LanguageMap, languages as prismLanguages } from 'prismjs';
@@ -85,6 +88,11 @@ interface PromQueryFieldProps extends ExploreQueryFieldProps<PrometheusDatasourc
   'data-testid'?: string;
 }
 
+export interface TranslationResponseNLQ {
+  logs: string;
+  translation: string;
+}
+
 interface PromQueryFieldState {
   labelBrowserVisible: boolean;
   syntaxLoaded: boolean;
@@ -92,7 +100,8 @@ interface PromQueryFieldState {
   showModal: boolean;
   showNLQ: boolean;
   nlqQuery: string;
-  tranlationNLQ: string;
+  translationNLQ: TranslationResponseNLQ;
+  isNLQLoading: boolean;
 }
 
 class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryFieldState> {
@@ -120,7 +129,8 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
       showModal: false,
       showNLQ: false,
       nlqQuery: '',
-      tranlationNLQ: '',
+      translationNLQ: { translation: '', logs: '' },
+      isNLQLoading: false,
     };
   }
 
@@ -218,27 +228,36 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
     this.setState({ labelBrowserVisible: false });
   };
   onTranslateNLQ = async (query: PromQuery, value: string) => {
+    if (!value) {
+      this.onClearQuery();
+      this.onClearNLQQuery();
+      return;
+    }
+
     // call api
+    this.setState({ isNLQLoading: true });
     const result = await this.props.datasource.getQueryFromNLQ(value);
+    const { translation } = result;
+
+    this.setState({ isNLQLoading: false });
+
     if (!result?.translation.includes('Could not translate')) {
-      const { translation } = result;
       const nextQuery: PromQuery = { ...query, expr: translation };
       this.props.onChange(nextQuery);
     } else {
-      // show message can't translate
-      // clean the query.expr
-      const nextQuery: PromQuery = { ...query, expr: '' };
-      this.props.onChange(nextQuery);
+      this.onClearQuery();
     }
+
+    this.setState({ translationNLQ: { translation: result.translation, logs: result.logs } });
   };
-  onChangeQuery = (value: string, override?: boolean) => {
+  onChangeQuery = async (value: string, override?: boolean) => {
     // Send text change to parent
     const { query, onChange, onRunQuery } = this.props;
     if (onChange) {
       const nextQuery: PromQuery = { ...query, expr: value };
       // call the endpoint
       if (this.state.showNLQ) {
-        this.onTranslateNLQ(query, value);
+        await this.onTranslateNLQ(query, value);
       } else {
         onChange(nextQuery);
       }
@@ -275,20 +294,29 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
   };
 
   onShowNaturalLanguage = () => {
-    //show modal
     this.setState({ showModal: true });
   };
   onHideNaturalLanguage = () => {
-    //show modal
     this.setState({ showNLQ: false, showModal: false });
   };
 
   onSwitchToNLQ = () => {
+    // clear current prometheus query
+    this.onClearQuery();
     this.setState({ showNLQ: true, showModal: false });
   };
 
+  onClearQuery = () => {
+    const nextQuery: PromQuery = { ...this.props.query, expr: '' };
+    this.props.onChange(nextQuery);
+  };
+
+  onClearNLQQuery = () => {
+    this.setState({ translationNLQ: { translation: '', logs: '' } });
+  };
   onSwitchToPromQL = () => {
     this.setState({ showNLQ: false });
+    this.onClearNLQQuery();
   };
 
   onTypeahead = async (typeahead: TypeaheadInput): Promise<TypeaheadOutput> => {
@@ -320,7 +348,7 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
       placeholder = 'Enter a PromQL query (run with Shift+Enter)',
     } = this.props;
 
-    const { nlqQuery } = this.state;
+    const { nlqQuery, isNLQLoading, translationNLQ } = this.state;
 
     const { labelBrowserVisible, syntaxLoaded, hint } = this.state;
     const cleanText = languageProvider ? languageProvider.cleanText : undefined;
@@ -368,31 +396,47 @@ class PromQueryField extends React.PureComponent<PromQueryFieldProps, PromQueryF
                   onBlur={this.props.onBlur}
                   onChange={this.onChangeQuery}
                   onRunQuery={this.props.onRunQuery}
-                  placeholder="Use natural language"
+                  placeholder="Ask me anything, i.e how many users are there for Grafana? (run Shift + Enter)"
                   portalOrigin="prometheus"
                   syntaxLoaded={syntaxLoaded}
                 />
 
                 <div className={styles.translatedQueryContainer}>
-                  <p>
-                    PromQL result: <span className={styles.translatedQuery}> {query.expr} </span>
-                  </p>
+                  PromQL result:
+                  <span className={styles.translatedQuery}>
+                    {isNLQLoading ? (
+                      <LoadingPlaceholder className={styles.loadingPlaceholder} text="We are doing magic..." />
+                    ) : !translationNLQ?.translation ? (
+                      <span className={styles.noResults}> Your PromQL query will appear here </span>
+                    ) : (
+                      translationNLQ.translation
+                    )}
+                  </span>
+                  {translationNLQ?.logs && (
+                    <Tooltip theme="info-alt" content={<JSONFormatter json={translationNLQ.logs} />}>
+                      <ToolbarButton>&#128526; Logs for nerds </ToolbarButton>
+                    </Tooltip>
+                  )}
                 </div>
               </div>
             )}
           </div>
           {!this.state.showNLQ && (
             <ToolbarButton
-              className="gf-form-label query-keyword"
+              className={cx(styles.switchButton, 'gf-form-label query-keyword')}
               onClick={this.onShowNaturalLanguage}
               disabled={buttonDisabled}
               variant="active"
             >
-              🤔 New to PromQl?
+              &#x1F914; New to PromQl?
             </ToolbarButton>
           )}
           {this.state.showNLQ && (
-            <ToolbarButton className="gf-form-label query-keyword" narrow onClick={this.onSwitchToPromQL}>
+            <ToolbarButton
+              className={cx(styles.switchButton, 'gf-form-label query-keyword')}
+              narrow
+              onClick={this.onSwitchToPromQL}
+            >
               Switch back to PromQL
             </ToolbarButton>
           )}
@@ -448,20 +492,29 @@ const getNLQStyles = () => ({
     align-items: center;
     margin-top: 10px;
     margin-bottom: 10px;
-    justify-content: space-between;
-    width: 100%;
   `,
   translatedQuery: css`
-    border: 1px solid silver;
+    border: 2px dashed silver;
     padding: 5px;
     margin-left: 5px;
     margin-right: 25px;
+    font-weight: 400;
+  `,
+  noResults: css`
+    color: gray;
+  `,
+  loadingPlaceholder: css`
+    margin-bottom: 0;
+    color: #ff780a;
   `,
   modalContent: css`
     padding: calc(32px);
     overflow: auto;
     width: 100%;
     max-height: calc(90vh - 32px);
+  `,
+  switchButton: css`
+    margin-left: 5px;
   `,
 });
 
