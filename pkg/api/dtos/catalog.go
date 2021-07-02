@@ -35,7 +35,7 @@ const (
 
 type CatalogPod struct {
 	Name   string           `json:"name,omitempty"`
-	Status CatalogPodStatus `json:"status,omitempty"`
+	Status CatalogPodStatus `json:"status"`
 }
 
 type ServiceComponent struct {

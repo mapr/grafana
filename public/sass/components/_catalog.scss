@@ -1,0 +1,22 @@
+.host-statuses {
+}
+.host-status {
+  width: 12px;
+  height: 12px;
+  margin: auto;
+  display: inline-block;
+  padding: 6px;
+  margin: auto 2px;
+  &.green {
+    background-color: $green-base;
+  }
+  &.red {
+    background-color: $red-base;
+  }
+  &.yellow {
+    background-color: $yellow;
+  }
+  &.tall {
+    height: 18px;
+  }
+}

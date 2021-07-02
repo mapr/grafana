@@ -33,6 +33,110 @@ var DemoCatalog = dtos.Catalog{
 						Name:   "cart-api-asdf-3",
 						Status: dtos.PodStatusRed,
 					},
+					{
+						Name:   "cart-api-asdf-4",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-5",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-6",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-7",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-8",
+						Status: dtos.PodStatusYellow,
+					},
+					{
+						Name:   "cart-api-asdf-9",
+						Status: dtos.PodStatusYellow,
+					},
+					{
+						Name:   "cart-api-asdf-10",
+						Status: dtos.PodStatusYellow,
+					},
+					{
+						Name:   "cart-api-asdf-11",
+						Status: dtos.PodStatusYellow,
+					},
+					{
+						Name:   "cart-api-asdf-12",
+						Status: dtos.PodStatusYellow,
+					},
+					{
+						Name:   "cart-api-asdf-13",
+						Status: dtos.PodStatusYellow,
+					},
+					{
+						Name:   "cart-api-asdf-14",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-15",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-16",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-17",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-18",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-19",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-20",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-21",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-22",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-23",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-24",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-25",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-26",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-27",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-28",
+						Status: dtos.PodStatusRed,
+					},
+					{
+						Name:   "cart-api-asdf-29",
+						Status: dtos.PodStatusRed,
+					},
 				},
 				External: false,
 			},
