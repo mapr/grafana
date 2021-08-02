@@ -25,7 +25,7 @@ export const AlertGroupHeader = ({ group }: Props) => {
       {`${total} alerts: `}
       {Object.entries(countByStatus).map(([state, count], index) => {
         return (
-          <span key={`${JSON.stringify(group.labels)}-notifications-${index}`} className={styles[state as AlertState]}>
+          <span key={`${JSON.stringify(group.labels)}-groups-${index}`} className={styles[state as AlertState]}>
             {index > 0 && ', '}
             {`${count} ${state}`}
           </span>
