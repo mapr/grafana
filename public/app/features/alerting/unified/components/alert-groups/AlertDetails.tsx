@@ -12,10 +12,7 @@ interface AmNotificationsAlertDetailsProps {
   alert: AlertmanagerAlert;
 }
 
-export const AmNotificationsAlertDetails: FC<AmNotificationsAlertDetailsProps> = ({
-  alert,
-  alertManagerSourceName,
-}) => {
+export const AlertDetails: FC<AmNotificationsAlertDetailsProps> = ({ alert, alertManagerSourceName }) => {
   const styles = useStyles2(getStyles);
   return (
     <>
