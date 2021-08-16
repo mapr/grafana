@@ -22,7 +22,8 @@ import {
   transformTraceList,
 } from './resultTransformer';
 
-export type TempoQueryType = 'search' | 'traceId' | 'upload' | 'lokiSearch';
+// search = Loki search, nativeSearch = Tempo search for backwards compatibility
+export type TempoQueryType = 'search' | 'traceId' | 'upload' | 'nativeSearch';
 
 export type TempoQuery = {
   query: string;
@@ -50,12 +51,12 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TraceToLo
   query(options: DataQueryRequest<TempoQuery>): Observable<DataQueryResponse> {
     const subQueries: Array<Observable<DataQueryResponse>> = [];
     const filteredTargets = options.targets.filter((target) => !target.hide);
-    const searchTargets = filteredTargets.filter((target) => target.queryType === 'search');
+    const searchTargets = filteredTargets.filter((target) => target.queryType === 'nativeSearch');
     const uploadTargets = filteredTargets.filter((target) => target.queryType === 'upload');
     const traceTargets = filteredTargets.filter(
       (target) => target.queryType === 'traceId' || target.queryType === undefined
     );
-    const lokiSearchTargets = filteredTargets.filter((target) => target.queryType === 'lokiSearch');
+    const lokiSearchTargets = filteredTargets.filter((target) => target.queryType === 'search');
 
     // Run search queries on linked datasource
     if (this.tracesToLogs?.datasourceUid && lokiSearchTargets.length > 0) {
@@ -141,7 +142,6 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TraceToLo
     const params = data ? serializeParams(data) : '';
     const url = `${this.instanceSettings.url}${apiUrl}${params.length ? `?${params}` : ''}`;
     const req = { ...options, url };
-    console.log('Req: ', req);
 
     return getBackendSrv().fetch(req);
   }

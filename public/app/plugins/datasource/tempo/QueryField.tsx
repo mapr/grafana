@@ -3,63 +3,32 @@ import { DataSourceApi, ExploreQueryFieldProps, SelectableValue } from '@grafana
 import { selectors } from '@grafana/e2e-selectors';
 import { config, getDataSourceSrv } from '@grafana/runtime';
 import {
-  BracesPlugin,
   FileDropzone,
   InlineField,
   InlineFieldRow,
   InlineLabel,
-  Input,
   LegacyForms,
-  QueryField,
   RadioButtonGroup,
-  Select,
-  SlatePrism,
   Themeable2,
-  TypeaheadInput,
-  TypeaheadOutput,
   withTheme2,
 } from '@grafana/ui';
 import { TraceToLogsOptions } from 'app/core/components/TraceToLogsSettings';
-import Prism from 'prismjs';
 import React from 'react';
-import { Node } from 'slate';
 import { LokiQueryField } from '../loki/components/LokiQueryField';
 import { LokiQuery } from '../loki/types';
 import { TempoDatasource, TempoQuery, TempoQueryType } from './datasource';
-import { tokenizer } from './syntax';
+import NativeSearch from './NativeSearch';
 
 interface Props extends ExploreQueryFieldProps<TempoDatasource, TempoQuery>, Themeable2 {}
 
 const DEFAULT_QUERY_TYPE: TempoQueryType = 'traceId';
 interface State {
   linkedDatasource?: DataSourceApi;
-  hasSyntaxLoaded: boolean;
-  serviceNameOptions: Array<SelectableValue<string>>;
-  spanNameOptions: Array<SelectableValue<string>>;
-  serviceName: SelectableValue<string> | null;
-  spanName: SelectableValue<string> | null;
 }
-
-const PRISM_LANGUAGE = 'tempo';
-const durationPlaceholder = 'e.g. 1.2s, 100ms, 500us';
-const plugins = [
-  BracesPlugin(),
-  SlatePrism({
-    onlyIn: (node: Node) => node.object === 'block' && node.type === 'code_block',
-    getSyntax: () => PRISM_LANGUAGE,
-  }),
-];
-
-Prism.languages[PRISM_LANGUAGE] = tokenizer;
 
 class TempoQueryFieldComponent extends React.PureComponent<Props, State> {
   state = {
     linkedDatasource: undefined,
-    hasSyntaxLoaded: false,
-    serviceNameOptions: [] as Array<SelectableValue<string>>,
-    spanNameOptions: [] as Array<SelectableValue<string>>,
-    serviceName: null,
-    spanName: null,
   };
 
   constructor(props: Props) {
@@ -78,18 +47,6 @@ class TempoQueryFieldComponent extends React.PureComponent<Props, State> {
         linkedDatasource,
       });
     }
-
-    if (config.featureToggles.tempoSearch) {
-      await this.fetchAutocomplete();
-    }
-  }
-
-  async fetchAutocomplete() {
-    const lp = this.props.datasource.languageProvider;
-    await lp.start();
-    const serviceNameOptions = await lp.getOptions('service.name');
-    const spanNameOptions = await lp.getOptions('name');
-    this.setState({ hasSyntaxLoaded: true, serviceNameOptions, spanNameOptions });
   }
 
   onChangeLinkedQuery = (value: LokiQuery) => {
@@ -104,19 +61,6 @@ class TempoQueryFieldComponent extends React.PureComponent<Props, State> {
     this.props.onRunQuery();
   };
 
-  onTypeahead = async (typeahead: TypeaheadInput): Promise<TypeaheadOutput> => {
-    const languageProvider = this.props.datasource.languageProvider;
-    return await languageProvider.provideCompletionItems(typeahead);
-  };
-
-  cleanText = (text: string) => {
-    const splittedText = text.split(/\s+(?=([^"]*"[^"]*")*[^"]*$)/g);
-    if (splittedText.length > 1) {
-      return splittedText[splittedText.length - 1];
-    }
-    return text;
-  };
-
   render() {
     const { query, onChange } = this.props;
     const { linkedDatasource } = this.state;
@@ -127,11 +71,11 @@ class TempoQueryFieldComponent extends React.PureComponent<Props, State> {
     ];
 
     if (config.featureToggles.tempoSearch) {
-      queryTypeOptions.unshift({ value: 'search', label: 'Search' });
+      queryTypeOptions.unshift({ value: 'nativeSearch', label: 'Search' });
     }
 
     if (linkedDatasource) {
-      queryTypeOptions.push({ value: 'lokiSearch', label: 'Loki Search' });
+      queryTypeOptions.push({ value: 'search', label: 'Loki Search' });
     }
 
     return (
@@ -151,109 +95,16 @@ class TempoQueryFieldComponent extends React.PureComponent<Props, State> {
             />
           </InlineField>
         </InlineFieldRow>
-        {query.queryType === 'search' && (
-          <div className={css({ maxWidth: '500px' })}>
-            <InlineFieldRow>
-              <InlineField label="Service Name" labelWidth={14} grow>
-                <Select
-                  menuShouldPortal
-                  options={this.state.serviceNameOptions}
-                  value={this.state.serviceName}
-                  onChange={(v) => {
-                    this.setState({ serviceName: v });
-                    onChange({
-                      ...query,
-                      serviceName: v?.value || undefined,
-                    });
-                  }}
-                  placeholder="Select a service"
-                  isClearable
-                />
-              </InlineField>
-            </InlineFieldRow>
-            <InlineFieldRow>
-              <InlineField label="Span Name" labelWidth={14} grow>
-                <Select
-                  menuShouldPortal
-                  options={this.state.spanNameOptions}
-                  value={this.state.spanName}
-                  onChange={(v) => {
-                    this.setState({ spanName: v });
-                    onChange({
-                      ...query,
-                      spanName: v?.value || undefined,
-                    });
-                  }}
-                  placeholder="Select a span"
-                  isClearable
-                />
-              </InlineField>
-            </InlineFieldRow>
-            <InlineFieldRow>
-              <InlineField label="Tags" labelWidth={14} grow tooltip="Values should be in the logfmt format.">
-                <QueryField
-                  additionalPlugins={plugins}
-                  query={query.search}
-                  onTypeahead={this.onTypeahead}
-                  onBlur={this.props.onBlur}
-                  onChange={(value) => {
-                    onChange({
-                      ...query,
-                      search: value,
-                    });
-                  }}
-                  cleanText={this.cleanText}
-                  onRunQuery={this.onRunLinkedQuery}
-                  syntaxLoaded={this.state.hasSyntaxLoaded}
-                  portalOrigin="tempo"
-                />
-              </InlineField>
-            </InlineFieldRow>
-            <InlineFieldRow>
-              <InlineField label="Min Duration" labelWidth={14} grow>
-                <Input
-                  value={query.minDuration || ''}
-                  placeholder={durationPlaceholder}
-                  onChange={(v) =>
-                    onChange({
-                      ...query,
-                      minDuration: v.currentTarget.value,
-                    })
-                  }
-                />
-              </InlineField>
-            </InlineFieldRow>
-            <InlineFieldRow>
-              <InlineField label="Max Duration" labelWidth={14} grow>
-                <Input
-                  value={query.maxDuration || ''}
-                  placeholder={durationPlaceholder}
-                  onChange={(v) =>
-                    onChange({
-                      ...query,
-                      maxDuration: v.currentTarget.value,
-                    })
-                  }
-                />
-              </InlineField>
-            </InlineFieldRow>
-            <InlineFieldRow>
-              <InlineField label="Limit" labelWidth={14} grow tooltip="Maximum numbers of returned results">
-                <Input
-                  value={query.limit || ''}
-                  type="number"
-                  onChange={(v) =>
-                    onChange({
-                      ...query,
-                      limit: v.currentTarget.value ? parseInt(v.currentTarget.value, 10) : undefined,
-                    })
-                  }
-                />
-              </InlineField>
-            </InlineFieldRow>
-          </div>
+        {query.queryType === 'nativeSearch' && (
+          <NativeSearch
+            languageProvider={this.props.datasource.languageProvider}
+            query={query}
+            onChange={onChange}
+            onBlur={this.props.onBlur}
+            onRunQuery={this.props.onRunQuery}
+          />
         )}
-        {query.queryType === 'lokiSearch' && (
+        {query.queryType === 'search' && (
           <>
             <InlineLabel>
               Tempo uses {((linkedDatasource as unknown) as DataSourceApi).name} to find traces.
