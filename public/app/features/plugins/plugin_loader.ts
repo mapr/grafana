@@ -249,24 +249,28 @@ export function importPanelPluginFromMeta(meta: grafanaData.PanelPluginMeta): Pr
 }
 
 function getPanelPlugin(meta: grafanaData.PanelPluginMeta): Promise<grafanaData.PanelPlugin> {
-  return importPluginModule(meta.module)
-    .then((pluginExports) => {
-      if (pluginExports.plugin) {
-        return pluginExports.plugin as grafanaData.PanelPlugin;
-      } else if (pluginExports.PanelCtrl) {
-        const plugin = new grafanaData.PanelPlugin(null);
-        plugin.angularPanelCtrl = pluginExports.PanelCtrl;
+  if (meta.moduleLoader === 'federated-modules') {
+    return Promise.reject('Federated Modules needs a module loader');
+  } else {
+    return importPluginModule(meta.module)
+      .then((pluginExports) => {
+        if (pluginExports.plugin) {
+          return pluginExports.plugin as grafanaData.PanelPlugin;
+        } else if (pluginExports.PanelCtrl) {
+          const plugin = new grafanaData.PanelPlugin(null);
+          plugin.angularPanelCtrl = pluginExports.PanelCtrl;
+          return plugin;
+        }
+        throw new Error('missing export: plugin or PanelCtrl');
+      })
+      .then((plugin) => {
+        plugin.meta = meta;
         return plugin;
-      }
-      throw new Error('missing export: plugin or PanelCtrl');
-    })
-    .then((plugin) => {
-      plugin.meta = meta;
-      return plugin;
-    })
-    .catch((err) => {
-      // TODO, maybe a different error plugin
-      console.warn('Error loading panel plugin: ' + meta.id, err);
-      return getPanelPluginLoadError(meta, err);
-    });
+      })
+      .catch((err) => {
+        // TODO, maybe a different error plugin
+        console.warn('Error loading panel plugin: ' + meta.id, err);
+        return getPanelPluginLoadError(meta, err);
+      });
+  }
 }
