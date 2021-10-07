@@ -177,6 +177,7 @@ func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (map[string]i
 			"id":            panel.Id,
 			"info":          panel.Info,
 			"hideFromList":  panel.HideFromList,
+			"moduleLoader":  panel.ModuleLoader,
 			"sort":          getPanelSort(panel.Id),
 			"skipDataQuery": panel.SkipDataQuery,
 			"state":         panel.State,

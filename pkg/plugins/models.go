@@ -62,6 +62,7 @@ type PluginBase struct {
 	BaseUrl      string                `json:"baseUrl"`
 	Category     string                `json:"category"`
 	HideFromList bool                  `json:"hideFromList,omitempty"`
+	ModuleLoader string                `json:"moduleLoader,omitempty"`
 	Preload      bool                  `json:"preload"`
 	State        PluginState           `json:"state,omitempty"`
 	Signature    PluginSignatureStatus `json:"signature"`

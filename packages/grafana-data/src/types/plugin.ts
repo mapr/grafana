@@ -59,6 +59,7 @@ export interface PluginMeta<T extends KeyValue = {}> {
 
   // System.load & relative URLS
   module: string;
+  moduleLoader?: 'federated-modules';
   baseUrl: string;
 
   // Define plugin requirements
