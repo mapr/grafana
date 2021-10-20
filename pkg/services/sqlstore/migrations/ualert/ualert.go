@@ -1,12 +1,18 @@
 package ualert
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/grafana/grafana/pkg/services/ngalert/notifier"
+	"github.com/grafana/grafana/pkg/services/ngalert/notifier/channels"
+
+	"github.com/grafana/grafana/pkg/services/encryption"
 
 	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 
@@ -62,6 +68,7 @@ func AddDashAlertMigration(mg *migrator.Migrator) {
 			mg.Logger.Error("alert migration error: could not clear alert migration for removing data", "error", err)
 		}
 		mg.AddMigration(migTitle, &migration{
+			encryptionService:         mg.EncryptionService,
 			seenChannelUIDs:           make(map[string]struct{}),
 			migratedChannelsPerOrg:    make(map[int64]map[*notificationChannel]struct{}),
 			portedChannelGroupsPerOrg: make(map[int64]map[string]string),
@@ -211,6 +218,7 @@ type migration struct {
 	silences                  map[int64][]*pb.MeshSilence
 	portedChannelGroupsPerOrg map[int64]map[string]string // Org -> Channel group key -> receiver name.
 	lastReceiverID            int                         // For the auto generated receivers.
+	encryptionService         encryption.Service
 }
 
 func (m *migration) SQL(dialect migrator.Dialect) string {
@@ -377,6 +385,9 @@ func (m *migration) Exec(sess *xorm.Session, mg *migrator.Migrator) error {
 			return err
 		}
 
+		if err := m.validateAlertmanagerConfig(orgID, amConfig); err != nil {
+		}
+
 		if err := m.writeAlertmanagerConfig(orgID, amConfig, allChannelsPerOrg[orgID]); err != nil {
 			return err
 		}
@@ -414,6 +425,84 @@ func (m *migration) writeAlertmanagerConfig(orgID int64, amConfig *PostableUserC
 	})
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+//TODO: Test cases to test: failure at decryption, failure at invalid data (e.g. no slack URL), verify encryption layer - are they not-encrypted at this point?
+func (m *migration) validateAlertmanagerConfig(orgID int64, config *PostableUserConfig) error {
+	for _, r := range config.AlertmanagerConfig.Receivers {
+		for _, gr := range r.GrafanaManagedReceivers {
+			secureSettings := make(map[string][]byte, len(gr.SecureSettings))
+
+			for k, v := range gr.SecureSettings {
+				d, err := base64.StdEncoding.DecodeString(v)
+				if err != nil {
+					return err
+				}
+				secureSettings[k] = d
+			}
+
+			var (
+				cfg = &channels.NotificationChannelConfig{
+					UID:                   gr.UID,
+					OrgID:                 orgID,
+					Name:                  gr.Name,
+					Type:                  gr.Type,
+					DisableResolveMessage: gr.DisableResolveMessage,
+					Settings:              gr.Settings,
+					SecureSettings:        secureSettings,
+				}
+				_   notifier.NotificationChannel
+				err error
+			)
+
+			switch gr.Type {
+			case "email":
+				_, err = channels.NewEmailNotifier(cfg, nil) // Email notifier already has a default template.
+			case "pagerduty":
+				_, err = channels.NewPagerdutyNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			case "pushover":
+				_, err = channels.NewPushoverNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			case "slack":
+				_, err = channels.NewSlackNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			case "telegram":
+				_, err = channels.NewTelegramNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			case "victorops":
+				_, err = channels.NewVictoropsNotifier(cfg, nil)
+			case "teams":
+				_, err = channels.NewTeamsNotifier(cfg, nil)
+			case "dingding":
+				_, err = channels.NewDingDingNotifier(cfg, nil)
+			case "kafka":
+				_, err = channels.NewKafkaNotifier(cfg, nil)
+			case "webhook":
+				_, err = channels.NewWebHookNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			case "sensugo":
+				_, err = channels.NewSensuGoNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			case "discord":
+				_, err = channels.NewDiscordNotifier(cfg, nil)
+			case "googlechat":
+				_, err = channels.NewGoogleChatNotifier(cfg, nil)
+			case "LINE":
+				_, err = channels.NewLineNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			case "threema":
+				_, err = channels.NewThreemaNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			case "opsgenie":
+				_, err = channels.NewOpsgenieNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			case "prometheus-alertmanager":
+				_, err = channels.NewAlertmanagerNotifier(cfg, nil, m.encryptionService.GetDecryptedValue)
+			default:
+				return fmt.Errorf("notifier %s is not supported", gr.Type)
+			}
+
+			// TODO: collect all errors
+			if err != nil {
+				return err
+			}
+
+		}
 	}
 
 	return nil

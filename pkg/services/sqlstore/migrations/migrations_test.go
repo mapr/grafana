@@ -24,7 +24,7 @@ func TestMigrations(t *testing.T) {
 	_, err = x.SQL(query).Get(&result)
 	require.Error(t, err)
 
-	mg := NewMigrator(x, &setting.Cfg{})
+	mg := NewMigrator(x, nil, &setting.Cfg{})
 	migrations := &OSSMigrations{}
 	migrations.AddMigration(mg)
 	expectedMigrations := mg.MigrationsCount()
@@ -38,7 +38,7 @@ func TestMigrations(t *testing.T) {
 
 	require.Equal(t, expectedMigrations, result.Count)
 
-	mg = NewMigrator(x, &setting.Cfg{})
+	mg = NewMigrator(x, nil, &setting.Cfg{})
 	migrations.AddMigration(mg)
 
 	err = mg.Start()

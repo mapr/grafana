@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/grafana/grafana/pkg/services/encryption"
+
 	"github.com/go-sql-driver/mysql"
 	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/infra/fs"
@@ -40,9 +42,10 @@ var (
 type ContextSessionKey struct{}
 
 type SQLStore struct {
-	Cfg          *setting.Cfg
-	Bus          bus.Bus
-	CacheService *localcache.CacheService
+	Cfg               *setting.Cfg
+	Bus               bus.Bus
+	CacheService      *localcache.CacheService
+	EncryptionService encryption.Service
 
 	dbCfg                       DatabaseConfig
 	engine                      *xorm.Engine
@@ -52,12 +55,12 @@ type SQLStore struct {
 	migrations                  registry.DatabaseMigrator
 }
 
-func ProvideService(cfg *setting.Cfg, cacheService *localcache.CacheService, bus bus.Bus, migrations registry.DatabaseMigrator) (*SQLStore, error) {
+func ProvideService(cfg *setting.Cfg, cacheService *localcache.CacheService, bus bus.Bus, migrations registry.DatabaseMigrator, es encryption.Service) (*SQLStore, error) {
 	// This change will make xorm use an empty default schema for postgres and
 	// by that mimic the functionality of how it was functioning before
 	// xorm's changes above.
 	xorm.DefaultPostgresSchema = ""
-	s, err := newSQLStore(cfg, cacheService, bus, nil, migrations)
+	s, err := newSQLStore(cfg, cacheService, es, bus, nil, migrations)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +80,13 @@ func ProvideServiceForTests(migrations registry.DatabaseMigrator) (*SQLStore, er
 	return initTestDB(migrations, InitTestDBOpt{EnsureDefaultOrgAndUser: true})
 }
 
-func newSQLStore(cfg *setting.Cfg, cacheService *localcache.CacheService, bus bus.Bus, engine *xorm.Engine,
+func newSQLStore(cfg *setting.Cfg, cacheService *localcache.CacheService, es encryption.Service, bus bus.Bus, engine *xorm.Engine,
 	migrations registry.DatabaseMigrator, opts ...InitTestDBOpt) (*SQLStore, error) {
 	ss := &SQLStore{
 		Cfg:                         cfg,
 		Bus:                         bus,
 		CacheService:                cacheService,
+		EncryptionService:           es,
 		log:                         log.New("sqlstore"),
 		skipEnsureDefaultOrgAndUser: false,
 		migrations:                  migrations,
@@ -140,7 +144,7 @@ func (ss *SQLStore) Migrate() error {
 		return nil
 	}
 
-	migrator := migrator.NewMigrator(ss.engine, ss.Cfg)
+	migrator := migrator.NewMigrator(ss.engine, ss.EncryptionService, ss.Cfg)
 	ss.migrations.AddMigration(migrator)
 
 	return migrator.Start()
@@ -516,7 +520,7 @@ func initTestDB(migration registry.DatabaseMigrator, opts ...InitTestDBOpt) (*SQ
 		engine.DatabaseTZ = time.UTC
 		engine.TZLocation = time.UTC
 
-		testSQLStore, err = newSQLStore(cfg, localcache.New(5*time.Minute, 10*time.Minute), bus.GetBus(), engine, migration, opts...)
+		testSQLStore, err = newSQLStore(cfg, localcache.New(5*time.Minute, 10*time.Minute), nil, bus.GetBus(), engine, migration, opts...)
 		if err != nil {
 			return nil, err
 		}
