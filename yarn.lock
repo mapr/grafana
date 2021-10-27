@@ -7305,17 +7305,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-scale-chromatic@npm:*":
+"@types/d3-scale-chromatic@npm:*, @types/d3-scale-chromatic@npm:3.0.0":
   version: 3.0.0
   resolution: "@types/d3-scale-chromatic@npm:3.0.0"
   checksum: e06afffd2725570aa90cb3050eb96a94727264948d9256e56807ab582aba379168d84d1d98bcaa275bf38375148b35dfe13697e06fc7565dd17ac7e2acb11980
-  languageName: node
-  linkType: hard
-
-"@types/d3-scale-chromatic@npm:1.3.1":
-  version: 1.3.1
-  resolution: "@types/d3-scale-chromatic@npm:1.3.1"
-  checksum: f3d5eafa0723e6b46fe6610c544e166b03915d91a19298183ad411dc928a0ce12827bb073dfab2bc704e5b9311ea1831a2d7b4192d96cd73891f2e6fecd80041
   languageName: node
   linkType: hard
 
@@ -13922,6 +13915,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"d3-color@npm:1 - 3":
+  version: 3.0.1
+  resolution: "d3-color@npm:3.0.1"
+  checksum: 5096af3bd342d0cfad4719c1860915d0a2fd2f9078b1f0d960ab16e541eb71886d8f3b5e3df0e298d5c139aff43516295543304c65acf8cb4850e71c93f4df0c
+  languageName: node
+  linkType: hard
+
 "d3-contour@npm:1":
   version: 1.3.2
   resolution: "d3-contour@npm:1.3.2"
@@ -14045,6 +14045,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"d3-interpolate@npm:1 - 3":
+  version: 3.0.1
+  resolution: "d3-interpolate@npm:3.0.1"
+  dependencies:
+    d3-color: 1 - 3
+  checksum: a42ba314e295e95e5365eff0f604834e67e4a3b3c7102458781c477bd67e9b24b6bb9d8e41ff5521050a3f2c7c0c4bbbb6e187fd586daa3980943095b267e78b
+  languageName: node
+  linkType: hard
+
 "d3-interpolate@npm:1, d3-interpolate@npm:1.4.0, d3-interpolate@npm:^1.4.0":
   version: 1.4.0
   resolution: "d3-interpolate@npm:1.4.0"
@@ -14098,13 +14107,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"d3-scale-chromatic@npm:1, d3-scale-chromatic@npm:1.5.0":
+"d3-scale-chromatic@npm:1":
   version: 1.5.0
   resolution: "d3-scale-chromatic@npm:1.5.0"
   dependencies:
     d3-color: 1
     d3-interpolate: 1
   checksum: 3bff7717f6e6b309b3347d48d6532e2295037a280bc5174f908ce5fc0e17a9470f6b202e49499b01a17a1f28cb76a61aae870a6c13c57195a362847f33747501
+  languageName: node
+  linkType: hard
+
+"d3-scale-chromatic@npm:3.0.0":
+  version: 3.0.0
+  resolution: "d3-scale-chromatic@npm:3.0.0"
+  dependencies:
+    d3-color: 1 - 3
+    d3-interpolate: 1 - 3
+  checksum: a8ce4cb0267a17b28ebbb929f5e3071d985908a9c13b6fcaa2a198e1e018f275804d691c5794b970df0049725b7944f32297b31603d235af6414004f0c7f82c0
   languageName: node
   linkType: hard
 
@@ -18039,7 +18058,7 @@ __metadata:
     "@types/common-tags": ^1.8.0
     "@types/d3": 7.0.0
     "@types/d3-force": ^2.1.0
-    "@types/d3-scale-chromatic": 1.3.1
+    "@types/d3-scale-chromatic": 3.0.0
     "@types/debounce-promise": 3.1.3
     "@types/enzyme": 3.10.5
     "@types/enzyme-adapter-react-16": 1.0.6
@@ -18119,7 +18138,7 @@ __metadata:
     cypress: 8.4.1
     d3: 5.15.0
     d3-force: ^2.1.1
-    d3-scale-chromatic: 1.5.0
+    d3-scale-chromatic: 3.0.0
     dangerously-set-html-content: 1.0.9
     date-fns: 1.30.1
     debounce-promise: 3.1.2
