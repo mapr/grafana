@@ -39,7 +39,7 @@ func TestDatasourceAsConfig(t *testing.T) {
 		bus.AddHandler("test", mockGetOrg)
 	}
 
-	t.Run("apply default values when missing", func(t *testing.T) {
+	t.Run("When testing datasource as configuration, apply default values when missing", func(t *testing.T) {
 		setup()
 		dc := newDatasourceProvisioner(logger)
 		err := dc.applyChanges(context.Background(), withoutDefaults)
