@@ -21,6 +21,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 
 	"github.com/grafana/grafana/pkg/infra/httpclient"
@@ -84,8 +85,11 @@ func ProvideService(cfg *setting.Cfg, httpClientProvider httpclient.Provider, pl
 		dsService:            dsService,
 	}
 
+	mux := http.NewServeMux()
+	s.registerRoutes(mux)
 	factory := coreplugin.New(backend.ServeOpts{
-		QueryDataHandler: s,
+		QueryDataHandler:    s,
+		CallResourceHandler: httpadapter.New(mux),
 	})
 
 	if err := s.backendPluginManager.Register(dsName, factory); err != nil {
@@ -115,9 +119,14 @@ type datasourceInfo struct {
 	defaultProject     string
 	clientEmail        string
 	tokenUri           string
-	client             *http.Client
+	services           map[string]datasourceService
 
 	decryptedSecureJSONData map[string]string
+}
+
+type datasourceService struct {
+	url    string
+	client *http.Client
 }
 
 func newInstanceSettings(httpClientProvider httpclient.Provider) datasource.InstanceFactoryFunc {
@@ -157,6 +166,7 @@ func newInstanceSettings(httpClientProvider httpclient.Provider) datasource.Inst
 			clientEmail:             clientEmail,
 			tokenUri:                tokenUri,
 			decryptedSecureJSONData: settings.DecryptedSecureJSONData,
+			services:                map[string]datasourceService{},
 		}
 
 		opts, err := settings.HTTPClientOptions()
@@ -164,9 +174,15 @@ func newInstanceSettings(httpClientProvider httpclient.Provider) datasource.Inst
 			return nil, err
 		}
 
-		dsInfo.client, err = newHTTPClient(dsInfo, opts, httpClientProvider)
-		if err != nil {
-			return nil, err
+		for name, info := range routes {
+			client, err := newHTTPClient(dsInfo, opts, httpClientProvider, name)
+			if err != nil {
+				return nil, err
+			}
+			dsInfo.services[name] = datasourceService{
+				url:    info.url,
+				client: client,
+			}
 		}
 
 		return dsInfo, nil
@@ -582,7 +598,7 @@ func (s *Service) createRequest(ctx context.Context, pluginCtx backend.PluginCon
 	if body != nil {
 		method = http.MethodPost
 	}
-	req, err := http.NewRequest(method, cloudMonitoringRoute.url, body)
+	req, err := http.NewRequest(method, dsInfo.services[cloudMonitor].url, body)
 	if err != nil {
 		slog.Error("Failed to create request", "error", err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
