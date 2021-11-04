@@ -79,21 +79,23 @@ export function transformV2(
 
   // EXEMPLAR FRAMES: We enrich exemplar frames with data links and add dataTopic meta info
   const { exemplarTraceIdDestinations: destinations } = options;
-  const processedExemplarFrames = exemplarFrames.map((dataFrame) => {
-    if (destinations?.length) {
-      for (const exemplarTraceIdDestination of destinations) {
-        const traceIDField = dataFrame.fields.find((field) => field.name === exemplarTraceIdDestination.name);
-        if (traceIDField) {
-          const links = getDataLinks(exemplarTraceIdDestination);
-          traceIDField.config.links = traceIDField.config.links?.length
-            ? [...traceIDField.config.links, ...links]
-            : links;
+  const processedExemplarFrames = exemplarFrames
+    .filter((dataFrame) => dataFrame.length)
+    .map((dataFrame) => {
+      if (destinations?.length) {
+        for (const exemplarTraceIdDestination of destinations) {
+          const traceIDField = dataFrame.fields.find((field) => field.name === exemplarTraceIdDestination.name);
+          if (traceIDField) {
+            const links = getDataLinks(exemplarTraceIdDestination);
+            traceIDField.config.links = traceIDField.config.links?.length
+              ? [...traceIDField.config.links, ...links]
+              : links;
+          }
         }
       }
-    }
 
-    return { ...dataFrame, meta: { ...dataFrame.meta, dataTopic: DataTopic.Annotations } };
-  });
+      return { ...dataFrame, meta: { ...dataFrame.meta, dataTopic: DataTopic.Annotations } };
+    });
 
   // Everything else is processed as time_series result and graph preferredVisualisationType
   const otherFrames = framesWithoutTableHeatmapsAndExemplars.map((dataFrame) => {

@@ -251,6 +251,59 @@ describe('Prometheus Result Transformer', () => {
       expect(series.data[1].fields[1].values.toArray()).toEqual([10, 0, 30]);
       expect(series.data[2].fields[1].values.toArray()).toEqual([10, 0, 10]);
     });
+
+    it('results with empty exemplar dataFrame should be filtered out', () => {
+      const options = ({
+        targets: [
+          {
+            format: 'exemplar',
+            refId: 'A',
+          },
+        ],
+      } as unknown) as DataQueryRequest<PromQuery>;
+      const response = ({
+        state: 'Done',
+        data: [
+          new MutableDataFrame({
+            refId: 'A',
+            meta: {
+              custom: {
+                resultType: 'exemplar',
+              },
+            },
+            fields: [
+              { name: 'Time', type: FieldType.time, values: [] },
+              {
+                name: 'Value',
+                type: FieldType.number,
+                values: [],
+                labels: { le: '1' },
+              },
+            ],
+          }),
+          new MutableDataFrame({
+            refId: 'A',
+            meta: {
+              custom: {
+                resultType: 'exemplar',
+              },
+            },
+            fields: [
+              { name: 'Time', type: FieldType.time, values: [6, 5, 4] },
+              {
+                name: 'Value',
+                type: FieldType.number,
+                values: [20, 10, 30],
+                labels: { le: '2' },
+              },
+            ],
+          }),
+        ],
+      } as unknown) as DataQueryResponse;
+
+      const series = transformV2(response, options, {});
+      expect(series.data.length).toEqual(1);
+    });
   });
   describe('transformDFToTable', () => {
     it('transforms dataFrame with response length 1 to table dataFrame', () => {
