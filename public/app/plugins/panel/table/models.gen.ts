@@ -4,7 +4,7 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 import { TableCellDisplayMode, TableSortByFieldState } from '@grafana/ui';
-import { HideableFieldConfig } from '@grafana/schema';
+import { HideableFieldConfig, TableFieldOptions } from '@grafana/schema';
 
 // Only the latest schema version is translated to TypeScript, on the premise
 // that either the dashboard loading process, or (eventually) CUE-defined
@@ -36,13 +36,7 @@ export const defaultPanelOptions: PanelOptions = {
   },
 };
 
-export interface PanelFieldConfig extends HideableFieldConfig {
-  width?: number;
-  minWidth?: number;
-  align?: string;
-  displayMode?: TableCellDisplayMode;
-  filterable?: boolean;
-}
+export interface PanelFieldConfig extends TableFieldOptions {}
 
 export const defaultPanelFieldConfig: PanelFieldConfig = {
   displayMode: TableCellDisplayMode.Auto,

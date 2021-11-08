@@ -268,7 +268,7 @@ export enum BarGaugeDisplayMode {
   Lcd = 'lcd',
 }
 
-export interface TableFieldOptions {
+export interface TableFieldOptions extends HideableFieldConfig {
   align: string;
   displayMode: TableCellDisplayMode;
   hidden?: boolean;
