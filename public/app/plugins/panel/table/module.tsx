@@ -9,7 +9,7 @@ import {
 import { TablePanel } from './TablePanel';
 import { PanelOptions, PanelFieldConfig, defaultPanelOptions, defaultPanelFieldConfig } from './models.gen';
 import { tableMigrationHandler, tablePanelChangedHandler } from './migrations';
-import { TableCellDisplayMode } from '@grafana/ui';
+import { commonOptionsBuilder, TableCellDisplayMode } from '@grafana/ui';
 import { TableSuggestionsSupplier } from './suggestions';
 
 export const plugin = new PanelPlugin<PanelOptions, PanelFieldConfig>(TablePanel)
@@ -80,6 +80,8 @@ export const plugin = new PanelPlugin<PanelOptions, PanelFieldConfig>(TablePanel
           description: 'Enables/disables field filters in table',
           defaultValue: defaultPanelFieldConfig.filterable,
         });
+
+      commonOptionsBuilder.addHideFrom(builder);
     },
   })
   .setPanelOptions((builder) => {
