@@ -93,7 +93,6 @@ export function mapLocalToCatalog(plugin: LocalPlugin, error?: PluginError): Cat
     name,
     info: { description, version, logos, updated, author },
     id,
-    signature,
     dev,
     type,
     signatureOrg,
@@ -118,7 +117,7 @@ export function mapLocalToCatalog(plugin: LocalPlugin, error?: PluginError): Cat
     hasUpdate,
     isInstalled: true,
     isDisabled: !!error,
-    isCore: signature === 'internal',
+    isCore: isLocalCorePlugin(plugin),
     isDev: Boolean(dev),
     isEnterprise: false,
     type,
@@ -256,4 +255,8 @@ export function getLatestCompatibleVersion(versions: Version[] | undefined): Ver
   const [latest] = versions.filter((v) => Boolean(v.isCompatible));
 
   return latest;
+}
+
+export function isLocalCorePlugin(local?: LocalPlugin): boolean {
+  return Boolean(local?.signature === 'internal');
 }
