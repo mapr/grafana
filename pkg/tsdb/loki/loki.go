@@ -188,9 +188,15 @@ func parseResponse(value *loghttp.QueryResponse, query *lokiQuery) (data.Frames,
 			values = append(values, float64(k.Value))
 		}
 
-		frames = append(frames, data.NewFrame(name,
+		frame := data.NewFrame(name,
 			data.NewField("time", nil, timeVector),
-			data.NewField("value", tags, values).SetConfig(&data.FieldConfig{DisplayNameFromDS: name})))
+			data.NewField("value", tags, values).SetConfig(&data.FieldConfig{DisplayNameFromDS: name}))
+
+		frame.SetMeta(&data.FrameMeta{
+			PreferredVisualization: data.VisTypeGraph,
+		})
+
+		frames = append(frames, frame)
 	}
 
 	return frames, nil
