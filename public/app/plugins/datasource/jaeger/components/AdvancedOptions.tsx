@@ -35,7 +35,7 @@ export function AdvancedOptions({ query, onChange }: Props) {
       >
         <div>
           <InlineFieldRow>
-            <InlineField htmlFor="minDuration" label="Min Duration" labelWidth={21} grow>
+            <InlineField label="Min Duration" labelWidth={21} grow>
               <Input
                 id="minDuration"
                 name="minDuration"
@@ -51,7 +51,7 @@ export function AdvancedOptions({ query, onChange }: Props) {
             </InlineField>
           </InlineFieldRow>
           <InlineFieldRow>
-            <InlineField htmlFor="maxDuration" label="Max Duration" labelWidth={21} grow>
+            <InlineField label="Max Duration" labelWidth={21} grow>
               <Input
                 id="maxDuration"
                 name="maxDuration"
@@ -67,13 +67,7 @@ export function AdvancedOptions({ query, onChange }: Props) {
             </InlineField>
           </InlineFieldRow>
           <InlineFieldRow>
-            <InlineField
-              htmlFor="limit"
-              label="Limit"
-              labelWidth={21}
-              grow
-              tooltip="Maximum numbers of returned results"
-            >
+            <InlineField label="Limit" labelWidth={21} grow tooltip="Maximum numbers of returned results">
               <Input
                 id="limit"
                 name="limit"
