@@ -9,7 +9,6 @@ import { CloudWatchJsonData, CloudWatchLogsQuery, CloudWatchQuery } from '../typ
 import { CloudWatchLogsQueryField } from './LogsQueryField';
 import CloudWatchLink from './CloudWatchLink';
 import { css } from '@emotion/css';
-import QueryHeader from './QueryHeader';
 
 type Props = QueryEditorProps<CloudWatchDatasource, CloudWatchQuery, CloudWatchJsonData> & {
   allowCustomValue?: boolean;
@@ -39,21 +38,12 @@ export const CloudWatchLogsQueryEditor = memo(function CloudWatchLogsQueryEditor
 
   return (
     <>
-      <QueryHeader
-        query={query}
-        onRunQuery={onRunQuery}
-        datasource={datasource}
-        onChange={onChange}
-        sqlCodeEditorIsDirty={false}
-      />
       <CloudWatchLogsQueryField
         exploreId={exploreId}
         datasource={datasource}
         query={query}
         onBlur={() => {}}
-        onChange={(val: CloudWatchQuery) => {
-          onChange({ ...val, queryMode: 'Logs' });
-        }}
+        onChange={onChange}
         onRunQuery={onRunQuery}
         history={[]}
         data={data}
