@@ -17,6 +17,7 @@ import {
   QueryResultMeta,
   TimeSeriesValue,
   ScopedVars,
+  toDataFrame,
 } from '@grafana/data';
 
 import { getTemplateSrv, getDataSourceSrv } from '@grafana/runtime';
@@ -208,7 +209,7 @@ export function lokiPointsToTimeseriesPoints(
 
     const timestamp = time * 1000;
     for (let t = baseTimestampMs; t < timestamp; t += stepMs) {
-      datapoints.push([null, t]);
+      // datapoints.push([null, t]);
     }
 
     baseTimestampMs = timestamp + stepMs;
@@ -217,7 +218,7 @@ export function lokiPointsToTimeseriesPoints(
 
   const endTimestamp = options.end / 1e6;
   for (let t = baseTimestampMs; t <= endTimestamp; t += stepMs) {
-    datapoints.push([null, t]);
+    // datapoints.push([null, t]);
   }
 
   return datapoints;
@@ -454,7 +455,7 @@ function fieldFromDerivedFieldConfig(derivedFieldConfigs: DerivedFieldConfig[]):
   };
 }
 
-export function rangeQueryResponseToTimeSeries(
+function rangeQueryResponseToTimeSeries(
   response: LokiResponse,
   query: LokiRangeQueryRequest,
   target: LokiQuery,
@@ -491,6 +492,30 @@ export function rangeQueryResponseToTimeSeries(
   }
 }
 
+export function rangeQueryResponseToDataFrames(
+  response: LokiResponse,
+  query: LokiRangeQueryRequest,
+  target: LokiQuery,
+  responseListLength: number,
+  scopedVars: ScopedVars
+): DataFrame[] {
+  const series = rangeQueryResponseToTimeSeries(response, query, target, responseListLength, scopedVars);
+  const frames = series.map((s) => toDataFrame(s));
+
+  const { step } = query;
+
+  if (step != null) {
+    const intervalMs = step * 1000;
+    frames.forEach((frame) => {
+      frame.fields.forEach((field) => {
+        field.config.interval = intervalMs;
+      });
+    });
+  }
+
+  return frames;
+}
+
 export function processRangeQueryResponse(
   response: LokiResponse,
   target: LokiQuery,
@@ -511,7 +536,7 @@ export function processRangeQueryResponse(
     case LokiResultType.Vector:
     case LokiResultType.Matrix:
       return of({
-        data: rangeQueryResponseToTimeSeries(
+        data: rangeQueryResponseToDataFrames(
           response,
           query,
           {
