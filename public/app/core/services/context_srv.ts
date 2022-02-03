@@ -2,6 +2,7 @@ import config from '../../core/config';
 import { extend } from 'lodash';
 import { rangeUtil, WithAccessControlMetadata } from '@grafana/data';
 import { AccessControlAction, UserPermission } from 'app/types';
+import { featureEnabled } from '@grafana/runtime';
 
 export class User {
   id: number;
@@ -85,10 +86,14 @@ export class ContextSrv {
     return Boolean(config.featureToggles['accesscontrol']);
   }
 
+  licensedAccessControlEnabled(): boolean {
+    return featureEnabled('accesscontrol') && Boolean(config.featureToggles['accesscontrol']);
+  }
+
   // Checks whether user has required permission
   hasPermissionInMetadata(action: AccessControlAction | string, object: WithAccessControlMetadata): boolean {
     // Fallback if access control disabled
-    if (!config.featureToggles['accesscontrol']) {
+    if (!this.accessControlEnabled()) {
       return true;
     }
 
@@ -98,7 +103,7 @@ export class ContextSrv {
   // Checks whether user has required permission
   hasPermission(action: AccessControlAction | string): boolean {
     // Fallback if access control disabled
-    if (!config.featureToggles['accesscontrol']) {
+    if (!this.accessControlEnabled()) {
       return true;
     }
 
@@ -125,14 +130,14 @@ export class ContextSrv {
   }
 
   hasAccessToExplore() {
-    if (config.featureToggles['accesscontrol']) {
+    if (this.accessControlEnabled()) {
       return this.hasPermission(AccessControlAction.DataSourcesExplore);
     }
     return (this.isEditor || config.viewersCanEdit) && config.exploreEnabled;
   }
 
   hasAccess(action: string, fallBack: boolean) {
-    if (!config.featureToggles['accesscontrol']) {
+    if (!this.accessControlEnabled()) {
       return fallBack;
     }
     return this.hasPermission(action);
@@ -140,7 +145,7 @@ export class ContextSrv {
 
   // evaluates access control permissions, granting access if the user has any of them; uses fallback if access control is disabled
   evaluatePermission(fallback: () => string[], actions: string[]) {
-    if (!config.featureToggles['accesscontrol']) {
+    if (!this.accessControlEnabled()) {
       return fallback();
     }
     if (actions.some((action) => this.hasPermission(action))) {
