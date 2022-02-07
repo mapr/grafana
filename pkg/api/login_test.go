@@ -612,13 +612,14 @@ func TestLoginPostRunLokingHook(t *testing.T) {
 		Id:    42,
 		Email: "",
 	}
+	ldapMock := &multildap.MultiLDAPmock{UserInfo: testUser}
 	hs := &HTTPServer{
 		log:              log.New("test"),
 		Cfg:              setting.NewCfg(),
 		License:          &licensing.OSSLicensingService{},
 		AuthTokenService: auth.NewFakeUserAuthTokenService(),
 		HooksService:     hookService,
-		MultiLDAPService: &multildap.MultiLDAPmock{UserInfo: testUser},
+		MultiLDAPService: ldapMock,
 	}
 
 	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) response.Response {
@@ -680,9 +681,9 @@ func TestLoginPostRunLokingHook(t *testing.T) {
 
 	for _, c := range testCases {
 		t.Run(c.desc, func(t *testing.T) {
-			hs.MultiLDAPService.(*multildap.MultiLDAPmock).UserInfo = c.authUser
-			hs.MultiLDAPService.(*multildap.MultiLDAPmock).AuthModule = c.authModule
-			hs.MultiLDAPService.(*multildap.MultiLDAPmock).ExpectedErr = c.authErr
+			ldapMock.UserInfo = c.authUser
+			ldapMock.AuthModule = c.authModule
+			ldapMock.ExpectedErr = c.authErr
 			sc.m.Post(sc.url, sc.defaultHandler)
 			sc.fakeReqNoAssertions("POST", sc.url).exec()
 
