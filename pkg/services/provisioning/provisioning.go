@@ -63,7 +63,7 @@ func newProvisioningServiceImpl(
 	newDashboardProvisioner dashboards.DashboardProvisionerFactory,
 	provisionNotifiers func(context.Context, string, encryption.Internal, *notifications.NotificationService) error,
 	provisionDatasources func(context.Context, string) error,
-	provisionPlugins func(context.Context, string, plugifaces.Store) error,
+	provisionPlugins func(context.Context, string, plugins.Store, plugifaces.Store) error,
 ) *ProvisioningServiceImpl {
 	return &ProvisioningServiceImpl{
 		log:                     log.New("provisioning"),
@@ -86,7 +86,7 @@ type ProvisioningServiceImpl struct {
 	dashboardProvisioner    dashboards.DashboardProvisioner
 	provisionNotifiers      func(context.Context, string, encryption.Internal, *notifications.NotificationService) error
 	provisionDatasources    func(context.Context, string) error
-	provisionPlugins        func(context.Context, string, plugifaces.Store) error
+	provisionPlugins        func(context.Context, string, plugins.Store, plugifaces.Store) error
 	mutex                   sync.Mutex
 }
 
@@ -150,7 +150,7 @@ func (ps *ProvisioningServiceImpl) ProvisionDatasources(ctx context.Context) err
 
 func (ps *ProvisioningServiceImpl) ProvisionPlugins(ctx context.Context) error {
 	appPath := filepath.Join(ps.Cfg.ProvisioningPath, "plugins")
-	if err := ps.provisionPlugins(ctx, appPath, ps.pluginStore); err != nil {
+	if err := ps.provisionPlugins(ctx, appPath, ps.SQLStore, ps.pluginStore); err != nil {
 		err = errutil.Wrap("app provisioning error", err)
 		ps.log.Error("Failed to provision plugins", "error", err)
 		return err
