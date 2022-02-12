@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/dashboards"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/models"
@@ -31,6 +30,7 @@ type Provisioner struct {
 	fileReaders        []*FileReader
 	configs            []*config
 	duplicateValidator duplicateValidator
+	store              dashboards.Store
 }
 
 // New returns a new DashboardProvisioner
@@ -52,6 +52,7 @@ func New(ctx context.Context, configDirectory string, store dashboards.Store) (D
 		fileReaders:        fileReaders,
 		configs:            configs,
 		duplicateValidator: newDuplicateValidator(logger, fileReaders),
+		store:              store,
 	}
 
 	return d, nil
@@ -84,7 +85,7 @@ func (provider *Provisioner) CleanUpOrphanedDashboards(ctx context.Context) {
 		currentReaders[index] = reader.Cfg.Name
 	}
 
-	if err := bus.Dispatch(ctx, &models.DeleteOrphanedProvisionedDashboardsCommand{ReaderNames: currentReaders}); err != nil {
+	if err := provider.store.DeleteOrphanedProvisionedDashboards(ctx, &models.DeleteOrphanedProvisionedDashboardsCommand{ReaderNames: currentReaders}); err != nil {
 		provider.log.Warn("Failed to delete orphaned provisioned dashboards", "err", err)
 	}
 }
