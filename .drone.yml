@@ -422,7 +422,7 @@ volumes:
 ---
 depends_on: []
 kind: pipeline
-name: test-docs-pr
+name: pr-docs
 node:
   type: no-parallel
 platform:
@@ -4279,6 +4279,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: 639a5385c1a6289d3515943b5c756e13d0bce42daf720cb844e5edc087e9b7a5
+hmac: ef5b88cb2e242a5ebc490611aba3967cd6a8bc83c5492db7bbcf2b2b0860988b
 
 ...
