@@ -1,0 +1,30 @@
+  apiserver:
+    image: k8s.gcr.io/kube-apiserver:v1.23.3
+    restart: on-failure
+    ports:
+      - "6443:6443"
+    depends_on:
+      - etcd
+    volumes:
+      - ./docker/blocks/intentapi/data:/var/lib/kubernetes
+    command:
+      - /usr/local/bin/kube-apiserver
+      - --secure-port=6443
+      - --etcd-servers=http://etcd:2379
+      - --service-account-issuer=kube-apiserver
+      - --service-account-signing-key-file=/var/lib/kubernetes/kube.key
+      - --service-account-key-file=/var/lib/kubernetes/kube.pem
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.2
+    restart: on-failure
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    command:
+      - /usr/local/bin/etcd
+      - -name=etcd-node-0
+      - -listen-client-urls=http://0.0.0.0:2379
+      - -advertise-client-urls=http://0.0.0.0:2379
+      - -initial-advertise-peer-urls=http://0.0.0.0:2380
+      - -listen-peer-urls=http://0.0.0.0:2380
+      - -initial-cluster=etcd-node-0=http://0.0.0.0:2380
