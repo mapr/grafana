@@ -92,7 +92,11 @@ steps:
   name: test-frontend
 trigger:
   event:
-  - pull_request
+    include:
+    - pull_request
+  paths:
+    exclude:
+    - docs/**
 type: docker
 volumes:
 - host:
@@ -323,7 +327,11 @@ steps:
     path: /var/run/docker.sock
 trigger:
   event:
-  - pull_request
+    include:
+    - pull_request
+  paths:
+    exclude:
+    - docs/**
 type: docker
 volumes:
 - host:
@@ -398,7 +406,11 @@ steps:
   name: mysql-integration-tests
 trigger:
   event:
-  - pull_request
+    include:
+    - pull_request
+  paths:
+    exclude:
+    - docs/**
 type: docker
 volumes:
 - host:
@@ -4293,6 +4305,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: 5d9c426d469185b0d06934edd819af22ea32f2689b33a76e8e63b215b5d85ba7
+hmac: ab6443368b99a459cc1bb5c1326022e73f0dcd7b5c9d9eac73ebef4a65ff2c3e
 
 ...
