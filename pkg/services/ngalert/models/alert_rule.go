@@ -1,9 +1,15 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/grafana/grafana/pkg/util/cmputil"
 )
 
 var (
@@ -102,6 +108,20 @@ type AlertRule struct {
 	For         time.Duration
 	Annotations map[string]string
 	Labels      map[string]string
+}
+
+// Diff calculates diff between two alert rules. Returns nil if two rules are equal. Otherwise, returns cmputil.DiffReport
+func (alertRule *AlertRule) Diff(rule *AlertRule) *cmputil.DiffReport {
+	var compareOpts = cmpopts.IgnoreFields(AlertQuery{}, "modelProps")
+	var reporter cmputil.DiffReport
+	var report = cmp.Reporter(&reporter)
+	var jsonCmp = cmp.Transformer("", func(in json.RawMessage) string {
+		return string(in)
+	})
+	if cmp.Equal(alertRule, rule, compareOpts, report, jsonCmp) {
+		return nil
+	}
+	return &reporter
 }
 
 // AlertRuleKey is the alert definition identifier
