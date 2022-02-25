@@ -488,6 +488,7 @@ def build_plugins_step(edition, sign=False):
         'environment': env,
         'commands': [
             # TODO: Use percentage for num jobs
+            'yarn add -D speed-measure-webpack5-plugin',
             './bin/grabpl build-plugins --jobs 8 --edition {}{}'.format(edition, sign_args),
         ],
     }

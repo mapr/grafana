@@ -156,6 +156,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition oss
   depends_on:
   - initialize
@@ -686,6 +687,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition oss --sign --signing-admin
   depends_on:
   - initialize
@@ -1294,6 +1296,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition oss --sign --signing-admin
   depends_on:
   - initialize
@@ -1888,6 +1891,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition enterprise --sign --signing-admin
   depends_on:
   - initialize
@@ -3057,6 +3061,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition oss --sign --signing-admin
   depends_on:
   - initialize
@@ -3579,6 +3584,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition enterprise --sign --signing-admin
   depends_on:
   - initialize
@@ -4334,6 +4340,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: 48e80cd564c0c248ecd449f62d06988ba18a41441daa73ab6bc8bfeb292393cb
+hmac: d948d962dbf2ac5767c4257085f0ebf103850ef11437a4648d288ba907896f38
 
 ...

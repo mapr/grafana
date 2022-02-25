@@ -1,6 +1,6 @@
 const { merge } = require('lodash');
 const PnpWebpackPlugin = require('pnp-webpack-plugin');
-const SpeedMeasurePlugin = require('speed-measure-webpack-plugin');
+const SpeedMeasurePlugin = require('speed-measure-webpack5-plugin');
 const config = environment.toWebpackConfig();
 
 const smp = new SpeedMeasurePlugin();
