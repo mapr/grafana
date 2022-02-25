@@ -137,6 +137,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-backend
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-frontend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
     --no-pull-enterprise
   depends_on:
@@ -666,6 +667,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-backend
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-frontend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
     --no-pull-enterprise
   depends_on:
@@ -3036,6 +3038,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-backend
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-frontend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
     --no-pull-enterprise
   depends_on:
@@ -3557,6 +3560,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-backend
 - commands:
+  - yarn add -D speed-measure-webpack5-plugin
   - ./bin/grabpl build-frontend --jobs 8 --edition enterprise --build-id ${DRONE_BUILD_NUMBER}
     --no-pull-enterprise
   depends_on:
@@ -4330,6 +4334,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: f8445040a37308e4bf836c7cc0756dcd56a7355eb52e2e47bcb186aa58d47b8f
+hmac: 48e80cd564c0c248ecd449f62d06988ba18a41441daa73ab6bc8bfeb292393cb
 
 ...

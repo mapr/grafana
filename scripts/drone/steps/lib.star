@@ -406,6 +406,7 @@ def build_frontend_step(edition, ver_mode, is_downstream=False):
         ]
     else:
         cmds = [
+            'yarn add -D speed-measure-webpack5-plugin',
             './bin/grabpl build-frontend --jobs 8 --edition {} '.format(edition) + \
             '--build-id {} --no-pull-enterprise'.format(build_no),
         ]
