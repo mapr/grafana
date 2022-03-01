@@ -10,6 +10,7 @@ import (
 
 type SQLStoreMock struct {
 	ExpectedUser       *models.User
+	ExpectedDashboard  *models.Dashboard
 	ExpectedDatasource *models.DataSource
 	ExpectedError      error
 }
@@ -404,7 +405,7 @@ func (m SQLStoreMock) SaveDashboard(cmd models.SaveDashboardCommand) (*models.Da
 }
 
 func (m SQLStoreMock) GetDashboard(id int64, orgID int64, uid string, slug string) (*models.Dashboard, error) {
-	return nil, m.ExpectedError
+	return m.ExpectedDashboard, m.ExpectedError
 }
 
 func (m SQLStoreMock) GetFolderByTitle(orgID int64, title string) (*models.Dashboard, error) {
