@@ -327,7 +327,8 @@ func setupHTTPServer(t *testing.T, useFakeAccessControl bool, enableAccessContro
 	return setupHTTPServerWithCfg(t, useFakeAccessControl, enableAccessControl, cfg)
 }
 
-func setupHTTPServerWithCfg(t *testing.T, useFakeAccessControl, enableAccessControl bool, cfg *setting.Cfg) accessControlScenarioContext {
+func setupHTTPServerWithCfg(t *testing.T, useFakeAccessControl, enableAccessControl bool, cfg *setting.Cfg, options ...func(*HTTPServer) error) accessControlScenarioContext {
+
 	t.Helper()
 
 	features := featuremgmt.WithFeatures("accesscontrol", enableAccessControl)
@@ -342,6 +343,7 @@ func setupHTTPServerWithCfg(t *testing.T, useFakeAccessControl, enableAccessCont
 	bus := bus.GetBus()
 
 	routeRegister := routing.NewRouteRegister()
+
 	// Create minimal HTTP Server
 	hs := &HTTPServer{
 		Cfg:                cfg,
