@@ -5,7 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -41,6 +44,19 @@ type dashMeta struct {
 
 func (s *StandardSearchService) DoDashboardQuery(ctx context.Context, user *backend.User, orgId int64, query DashboardQuery) *backend.DataResponse {
 	rsp := &backend.DataResponse{}
+
+	if query.Query == "<EXPORT>" {
+		dir, err := os.MkdirTemp("", "dashboard_export_")
+		if err != nil {
+			rsp.Error = err
+			return rsp
+		}
+		rsp.Error = exportDashboards(ctx, orgId, s.sql, dir)
+		fmt.Printf("=======================\n")
+		fmt.Printf("EXPORT: %s\n", dir)
+		fmt.Printf("=======================\n")
+		return rsp
+	}
 
 	// Load and parse all dashboards for given orgId
 	dash, err := loadDashboards(ctx, orgId, s.sql)
@@ -144,6 +160,96 @@ func loadDashboards(ctx context.Context, orgID int64, sql *sqlstore.SQLStore) ([
 	})
 
 	return meta, err
+}
+
+// replace any unsafe file name characters... TODO, but be a standard way to do this cleanly!!!
+func cleanFileName(name string) string {
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, "\\", "-")
+	name = strings.ReplaceAll(name, ":", "-")
+	return name
+}
+
+// Utility function to export dashboards
+func exportDashboards(ctx context.Context, orgID int64, sql *sqlstore.SQLStore, target string) error {
+	// key will allow name or uid
+	lookup := func(key string) *extract.DatasourceInfo {
+		return nil // TODO!
+	}
+
+	err := sql.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
+		rows := make([]*dashDataQueryResult, 0)
+
+		sess.Table("dashboard").
+			Where("org_id = ?", orgID).
+			Cols("id", "is_folder", "folder_id", "data", "slug", "created", "updated")
+
+		err := sess.Find(&rows)
+		if err != nil {
+			return err
+		}
+
+		alias := make(map[string]string, 100)
+		folders := make(map[int64]string, 100)
+
+		// Process all folders (only one level deep!!!)
+		for _, row := range rows {
+			if row.IsFolder {
+				dash := extract.ReadDashboard(bytes.NewReader(row.Data), lookup)
+
+				fpath := path.Join(target, cleanFileName(dash.Title))
+				err = os.MkdirAll(fpath, 0750)
+				if err != nil {
+					return err
+				}
+
+				alias[dash.UID] = fpath
+				folders[row.Id] = fpath
+			}
+		}
+
+		for _, row := range rows {
+			if !row.IsFolder {
+				var dash map[string]interface{}
+				err := json.Unmarshal(row.Data, &dash)
+				if err != nil {
+					return err
+				}
+				title := dash["title"]
+				uid := dash["uid"]
+				delete(dash, "id")
+				delete(dash, "uid")
+				delete(dash, "title")
+
+				fpath, ok := folders[row.FolderID]
+				if !ok {
+					if row.FolderID == 0 {
+						fpath = target
+					} else {
+						fpath = path.Join(target, fmt.Sprintf("folder_%d", row.FolderID))
+						_ = os.MkdirAll(fpath, 0750)
+					}
+				}
+
+				clean, err := json.MarshalIndent(dash, "", "  ")
+				if err != nil {
+					return err
+				}
+
+				dpath := path.Join(fpath, cleanFileName(fmt.Sprintf("%v", title))+".dash.json")
+				err = os.WriteFile(dpath, clean, 0600)
+				if err != nil {
+					return err
+				}
+
+				alias[fmt.Sprintf("%v", uid)] = fpath
+			}
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 type simpleCounter struct {
