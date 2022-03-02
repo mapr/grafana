@@ -197,14 +197,30 @@ func exportDashboards(ctx context.Context, orgID int64, sql *sqlstore.SQLStore, 
 			if row.IsFolder {
 				dash := extract.ReadDashboard(bytes.NewReader(row.Data), lookup)
 
-				fpath := path.Join(target, cleanFileName(dash.Title))
+				slug := cleanFileName(dash.Title)
+				fpath := path.Join(target, slug)
 				err = os.MkdirAll(fpath, 0750)
 				if err != nil {
 					return err
 				}
 
-				alias[dash.UID] = fpath
-				folders[row.Id] = fpath
+				folder := map[string]string{
+					"title": dash.Title,
+				}
+
+				clean, err := json.MarshalIndent(folder, "", "  ")
+				if err != nil {
+					return err
+				}
+
+				dpath := path.Join(fpath, "__folder.json")
+				err = os.WriteFile(dpath, clean, 0600)
+				if err != nil {
+					return err
+				}
+
+				alias[dash.UID] = slug
+				folders[row.Id] = slug
 			}
 		}
 
@@ -215,20 +231,16 @@ func exportDashboards(ctx context.Context, orgID int64, sql *sqlstore.SQLStore, 
 				if err != nil {
 					return err
 				}
-				title := dash["title"]
 				uid := dash["uid"]
 				delete(dash, "id")
 				delete(dash, "uid")
-				delete(dash, "title")
 
+				fname := row.Slug + ".json"
 				fpath, ok := folders[row.FolderID]
-				if !ok {
-					if row.FolderID == 0 {
-						fpath = target
-					} else {
-						fpath = path.Join(target, fmt.Sprintf("folder_%d", row.FolderID))
-						_ = os.MkdirAll(fpath, 0750)
-					}
+				if ok {
+					fpath = path.Join(fpath, fname)
+				} else {
+					fpath = fname
 				}
 
 				clean, err := json.MarshalIndent(dash, "", "  ")
@@ -236,7 +248,7 @@ func exportDashboards(ctx context.Context, orgID int64, sql *sqlstore.SQLStore, 
 					return err
 				}
 
-				dpath := path.Join(fpath, cleanFileName(fmt.Sprintf("%v", title))+".dash.json")
+				dpath := path.Join(target, fpath)
 				err = os.WriteFile(dpath, clean, 0600)
 				if err != nil {
 					return err
