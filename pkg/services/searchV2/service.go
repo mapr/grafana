@@ -246,7 +246,13 @@ func exportDashboards(ctx context.Context, orgID int64, sql *sqlstore.SQLStore, 
 			}
 		}
 
-		return nil
+		clean, err := json.MarshalIndent(alias, "", "  ")
+		if err != nil {
+			return err
+		}
+		err = os.WriteFile(path.Join(target, "__alias.json"), clean, 0600)
+
+		return err
 	})
 
 	return err
