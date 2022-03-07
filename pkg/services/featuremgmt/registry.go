@@ -237,5 +237,10 @@ var (
 			Description: "Enable Saved Items in the navbar.",
 			State:       FeatureStateAlpha,
 		},
+		{
+			Name:        "traceToMetrics",
+			Description: "Enable trace to metrics links",
+			State:       FeatureStateAlpha,
+		},
 	}
 )

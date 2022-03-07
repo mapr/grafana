@@ -32,6 +32,7 @@ import SpanTreeOffset from './SpanTreeOffset';
 import Ticks from './Ticks';
 import TimelineRow from './TimelineRow';
 import { formatDuration, ViewedBoundsFunctionType } from './utils';
+import { SpanLinksMenu } from './SpanLinks';
 
 const spanBarClassName = 'spanBar';
 const spanBarLabelClassName = 'spanBarLabel';
@@ -476,8 +477,13 @@ export class UnthemedSpanBarRow extends React.PureComponent<SpanBarRowProps> {
             </a>
             {createSpanLink &&
               (() => {
-                const link = createSpanLink(span);
-                if (link) {
+                const links = createSpanLink(span);
+                if (links?.count === 1) {
+                  const link = links.logLinks?.[0] ?? links.metricLinks?.[0] ?? links.traceLinks?.[0] ?? undefined;
+                  if (!link) {
+                    return null;
+                  }
+
                   return (
                     <a
                       href={link.href}
@@ -499,6 +505,8 @@ export class UnthemedSpanBarRow extends React.PureComponent<SpanBarRowProps> {
                       {link.content}
                     </a>
                   );
+                } else if (links && links.count > 1) {
+                  return <SpanLinksMenu links={links} />;
                 } else {
                   return null;
                 }

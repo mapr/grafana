@@ -8,4 +8,11 @@ export type SpanLinkDef = {
   content: React.ReactNode;
 };
 
-export type SpanLinkFunc = (span: TraceSpan) => SpanLinkDef | undefined;
+export type SpanLinks = {
+  logLinks?: SpanLinkDef[];
+  traceLinks?: SpanLinkDef[];
+  metricLinks?: SpanLinkDef[];
+  count: number;
+};
+
+export type SpanLinkFunc = (span: TraceSpan) => SpanLinks | undefined;

@@ -5,10 +5,10 @@ import {
   DataLink,
   DataQuery,
   DataSourceInstanceSettings,
+  DataSourceJsonData,
   dateTime,
   Field,
   KeyValue,
-  LinkModel,
   mapInternalLinkToExplore,
   rangeUtil,
   SplitOpen,
@@ -16,7 +16,8 @@ import {
 } from '@grafana/data';
 import { getTemplateSrv } from '@grafana/runtime';
 import { Icon } from '@grafana/ui';
-import { SpanLinkDef, SpanLinkFunc, TraceSpan } from '@jaegertracing/jaeger-ui-components';
+import { SpanLinkFunc, TraceSpan } from '@jaegertracing/jaeger-ui-components';
+import { SpanLinks } from '@jaegertracing/jaeger-ui-components/src/types/links';
 import { TraceToLogsOptions } from 'app/core/components/TraceToLogs/TraceToLogsSettings';
 import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 
@@ -31,18 +32,20 @@ import { getFieldLinksForExplore } from '../utils/links';
 export function createSpanLinkFactory({
   splitOpenFn,
   traceToLogsOptions,
+  traceToMetricsOptions,
   dataFrame,
 }: {
   splitOpenFn: SplitOpen;
   traceToLogsOptions?: TraceToLogsOptions;
+  traceToMetricsOptions?: { datasourceUid?: string };
   dataFrame?: DataFrame;
 }): SpanLinkFunc | undefined {
   if (!dataFrame || dataFrame.fields.length === 1 || !dataFrame.fields.some((f) => Boolean(f.config.links?.length))) {
     // if the dataframe contains just a single blob of data (legacy format) or does not have any links configured,
     // let's try to use the old legacy path.
-    return legacyCreateSpanLinkFactory(splitOpenFn, traceToLogsOptions);
+    return legacyCreateSpanLinkFactory(splitOpenFn, traceToLogsOptions, traceToMetricsOptions);
   } else {
-    return function SpanLink(span: TraceSpan): SpanLinkDef | undefined {
+    return function SpanLink(span: TraceSpan): SpanLinks | undefined {
       // We should be here only if there are some links in the dataframe
       const field = dataFrame.fields.find((f) => Boolean(f.config.links?.length))!;
       try {
@@ -55,9 +58,14 @@ export function createSpanLinkFactory({
         });
 
         return {
-          href: links[0].href,
-          onClick: links[0].onClick,
-          content: <Icon name="gf-logs" title="Explore the logs for this in split view" />,
+          logLinks: [
+            {
+              href: links[0].href,
+              onClick: links[0].onClick,
+              content: <Icon name="gf-logs" title="Explore the logs for this in split view" />,
+            },
+          ],
+          count: 1,
         };
       } catch (error) {
         // It's fairly easy to crash here for example if data source defines wrong interpolation in the data link
@@ -68,65 +76,118 @@ export function createSpanLinkFactory({
   }
 }
 
-function legacyCreateSpanLinkFactory(splitOpenFn: SplitOpen, traceToLogsOptions?: TraceToLogsOptions) {
-  // We should return if dataSourceUid is undefined otherwise getInstanceSettings would return testDataSource.
-  if (!traceToLogsOptions?.datasourceUid) {
+function legacyCreateSpanLinkFactory(
+  splitOpenFn: SplitOpen,
+  traceToLogsOptions?: TraceToLogsOptions,
+  traceToMetricsOptions?: { datasourceUid?: string }
+) {
+  let logsDataSourceSettings: DataSourceInstanceSettings<DataSourceJsonData> | undefined;
+  const isSplunkDS = logsDataSourceSettings?.type === 'grafana-splunk-datasource';
+  if (traceToLogsOptions?.datasourceUid) {
+    logsDataSourceSettings = getDatasourceSrv().getInstanceSettings(traceToLogsOptions.datasourceUid);
+  }
+
+  let metricsDataSourceSettings: DataSourceInstanceSettings<DataSourceJsonData> | undefined;
+  if (traceToMetricsOptions?.datasourceUid) {
+    metricsDataSourceSettings = getDatasourceSrv().getInstanceSettings(traceToMetricsOptions.datasourceUid);
+  }
+
+  // Return if no linked datasources
+  if (!logsDataSourceSettings && !metricsDataSourceSettings) {
     return undefined;
   }
 
-  const dataSourceSettings = getDatasourceSrv().getInstanceSettings(traceToLogsOptions.datasourceUid);
-  const isSplunkDS = dataSourceSettings?.type === 'grafana-splunk-datasource';
-
-  if (!dataSourceSettings) {
-    return undefined;
-  }
-
-  return function SpanLink(span: TraceSpan): SpanLinkDef | undefined {
+  return function SpanLink(span: TraceSpan): SpanLinks {
+    const links: SpanLinks = { count: 0 };
     // This is reusing existing code from derived fields which may not be ideal match so some data is a bit faked at
     // the moment. Issue is that the trace itself isn't clearly mapped to dataFrame (right now it's just a json blob
     // inside a single field) so the dataLinks as config of that dataFrame abstraction breaks down a bit and we do
     // it manually here instead of leaving it for the data source to supply the config.
     let dataLink: DataLink<LokiQuery | DataQuery> | undefined = {} as DataLink<LokiQuery | DataQuery> | undefined;
-    let link: LinkModel<Field>;
 
-    switch (dataSourceSettings?.type) {
-      case 'loki':
-        dataLink = getLinkForLoki(span, traceToLogsOptions, dataSourceSettings);
-        if (!dataLink) {
-          return undefined;
-        }
-        break;
-      case 'grafana-splunk-datasource':
-        dataLink = getLinkForSplunk(span, traceToLogsOptions, dataSourceSettings);
-        break;
-      default:
-        return undefined;
+    // Get logs link
+    if (logsDataSourceSettings && traceToLogsOptions) {
+      switch (logsDataSourceSettings?.type) {
+        case 'loki':
+          dataLink = getLinkForLoki(span, traceToLogsOptions, logsDataSourceSettings);
+          break;
+        case 'grafana-splunk-datasource':
+          dataLink = getLinkForSplunk(span, traceToLogsOptions, logsDataSourceSettings);
+          break;
+      }
+
+      if (dataLink) {
+        const link = mapInternalLinkToExplore({
+          link: dataLink,
+          internalLink: dataLink.internal!,
+          scopedVars: {},
+          range: getTimeRangeFromSpan(
+            span,
+            {
+              startMs: traceToLogsOptions.spanStartTimeShift
+                ? rangeUtil.intervalToMs(traceToLogsOptions.spanStartTimeShift)
+                : 0,
+              endMs: traceToLogsOptions.spanEndTimeShift
+                ? rangeUtil.intervalToMs(traceToLogsOptions.spanEndTimeShift)
+                : 0,
+            },
+            isSplunkDS
+          ),
+          field: {} as Field,
+          onClickFn: splitOpenFn,
+          replaceVariables: getTemplateSrv().replace.bind(getTemplateSrv()),
+        });
+
+        links.logLinks = [
+          {
+            href: link.href,
+            onClick: link.onClick,
+            content: <Icon name="gf-logs" title="Explore the logs for this in split view" />,
+          },
+        ];
+        links.count++;
+      }
     }
 
-    link = mapInternalLinkToExplore({
-      link: dataLink,
-      internalLink: dataLink?.internal!,
-      scopedVars: {},
-      range: getTimeRangeFromSpan(
-        span,
-        {
-          startMs: traceToLogsOptions.spanStartTimeShift
-            ? rangeUtil.intervalToMs(traceToLogsOptions.spanStartTimeShift)
-            : 0,
-          endMs: traceToLogsOptions.spanEndTimeShift ? rangeUtil.intervalToMs(traceToLogsOptions.spanEndTimeShift) : 0,
+    // Get metrics links
+    if (metricsDataSourceSettings && traceToMetricsOptions && span.operationName.length % 2 === 0) {
+      const dataLink: DataLink<LokiQuery> = {
+        title: metricsDataSourceSettings.name,
+        url: '',
+        internal: {
+          datasourceUid: metricsDataSourceSettings.uid,
+          datasourceName: metricsDataSourceSettings.name,
+          query: {
+            expr: `histogram_quantile(0.5, sum(rate(tempo_spanmetrics_latency_bucket{operation="${span.operationName}"}[5m])) by (le))`,
+            refId: '',
+          },
         },
-        isSplunkDS
-      ),
-      field: {} as Field,
-      onClickFn: splitOpenFn,
-      replaceVariables: getTemplateSrv().replace.bind(getTemplateSrv()),
-    });
+      };
 
-    return {
-      href: link.href,
-      onClick: link.onClick,
-      content: <Icon name="gf-logs" title="Explore the logs for this in split view" />,
-    };
+      const link = mapInternalLinkToExplore({
+        link: dataLink,
+        internalLink: dataLink.internal!,
+        scopedVars: {},
+        range: getTimeRangeFromSpan(span, {
+          startMs: 0,
+          endMs: 0,
+        }),
+        field: {} as Field,
+        onClickFn: splitOpenFn,
+        replaceVariables: getTemplateSrv().replace.bind(getTemplateSrv()),
+      });
+
+      links.metricLinks = [
+        {
+          href: link.href,
+          onClick: link.onClick,
+          content: <Icon name="chart-line" title="Explore metrics for this span" />,
+        },
+      ];
+      links.count++;
+    }
+
+    return links;
   };
 }
 

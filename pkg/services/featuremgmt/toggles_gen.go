@@ -174,4 +174,8 @@ const (
 	// FlagSavedItems
 	// Enable Saved Items in the navbar.
 	FlagSavedItems = "savedItems"
+
+	// FlagTraceToMetrics
+	// Enable trace to metrics links
+	FlagTraceToMetrics = "traceToMetrics"
 )

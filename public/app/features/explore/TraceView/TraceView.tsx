@@ -23,6 +23,7 @@ import {
 import { TraceToLogsData } from 'app/core/components/TraceToLogs/TraceToLogsSettings';
 import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 import { getTimeZone } from 'app/features/profile/state/selectors';
+import { TempoJsonData } from 'app/plugins/datasource/tempo/datasource';
 import { StoreState } from 'app/types';
 import { ExploreId } from 'app/types/explore';
 
@@ -126,11 +127,19 @@ export function TraceView(props: Props) {
     }
   }, [props.queryResponse, props.topOfExploreViewRef]);
 
-  const traceToLogsOptions = (getDatasourceSrv().getInstanceSettings(datasource?.name)?.jsonData as TraceToLogsData)
-    ?.tracesToLogs;
+  const instanceSettings = getDatasourceSrv().getInstanceSettings(datasource?.name);
+  const traceToLogsOptions = (instanceSettings?.jsonData as TraceToLogsData)?.tracesToLogs;
+  const traceToMetricsOptions = (instanceSettings?.jsonData as TempoJsonData)?.tracesToMetrics;
+
   const createSpanLink = useMemo(
-    () => createSpanLinkFactory({ splitOpenFn: props.splitOpenFn, traceToLogsOptions, dataFrame: props.dataFrames[0] }),
-    [props.splitOpenFn, traceToLogsOptions, props.dataFrames]
+    () =>
+      createSpanLinkFactory({
+        splitOpenFn: props.splitOpenFn,
+        traceToLogsOptions,
+        traceToMetricsOptions,
+        dataFrame: props.dataFrames[0],
+      }),
+    [props.splitOpenFn, traceToLogsOptions, traceToMetricsOptions, props.dataFrames]
   );
   const onSlimViewClicked = useCallback(() => setSlim(!slim), [slim]);
   const timeZone = useSelector((state: StoreState) => getTimeZone(state.user));

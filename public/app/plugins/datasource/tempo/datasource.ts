@@ -51,6 +51,9 @@ export interface TempoJsonData extends DataSourceJsonData {
   lokiSearch?: {
     datasourceUid?: string;
   };
+  tracesToMetrics?: {
+    datasourceUid?: string;
+  };
 }
 
 export interface TempoQuery extends DataQuery {
