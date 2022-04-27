@@ -1,8 +1,9 @@
+import { css } from '@emotion/css';
 import React from 'react';
+import { SpanLinks } from 'src/types/links';
+
 import { GrafanaTheme2 } from '@grafana/data';
 import { useStyles2, WithContextMenu, MenuGroup, MenuItem, Icon } from '@grafana/ui';
-import { SpanLinks } from 'src/types/links';
-import { css } from '@emotion/css';
 
 interface SpanLinksProps {
   links: SpanLinks;
@@ -36,11 +37,11 @@ const renderMenuItems = (links: SpanLinks) => {
         </MenuGroup>
       ) : null}
       {links.traceLinks ? (
-        <MenuGroup label="Trace">
+        <MenuGroup label="Traces">
           {links.traceLinks.map((link, i) => (
             <MenuItem
               key={i}
-              label="Traces for this span"
+              label={link.title ?? 'View linked span'}
               onClick={link.onClick ? link.onClick : undefined}
               url={link.href}
             />

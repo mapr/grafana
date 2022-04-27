@@ -6,6 +6,7 @@ export type SpanLinkDef = {
   href: string;
   onClick?: (event: any) => void;
   content: React.ReactNode;
+  title?: string;
 };
 
 export type SpanLinks = {

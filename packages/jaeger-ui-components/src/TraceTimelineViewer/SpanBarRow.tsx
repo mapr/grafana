@@ -28,11 +28,11 @@ import { TraceSpan } from '../types/trace';
 
 import ReferencesButton from './ReferencesButton';
 import SpanBar from './SpanBar';
+import { SpanLinksMenu } from './SpanLinks';
 import SpanTreeOffset from './SpanTreeOffset';
 import Ticks from './Ticks';
 import TimelineRow from './TimelineRow';
 import { formatDuration, ViewedBoundsFunctionType } from './utils';
-import { SpanLinksMenu } from './SpanLinks';
 
 const spanBarClassName = 'spanBar';
 const spanBarLabelClassName = 'spanBarLabel';
@@ -511,27 +511,6 @@ export class UnthemedSpanBarRow extends React.PureComponent<SpanBarRowProps> {
                   return null;
                 }
               })()}
-
-            {span.references && span.references.length > 1 && (
-              <ReferencesButton
-                references={span.references}
-                tooltipText="Contains multiple references"
-                focusSpan={focusSpan}
-              >
-                <Icon name="link" />
-              </ReferencesButton>
-            )}
-            {span.subsidiarilyReferencedBy && span.subsidiarilyReferencedBy.length > 0 && (
-              <ReferencesButton
-                references={span.subsidiarilyReferencedBy}
-                tooltipText={`This span is referenced by ${
-                  span.subsidiarilyReferencedBy.length === 1 ? 'another span' : 'multiple other spans'
-                }`}
-                focusSpan={focusSpan}
-              >
-                <MdFileUpload />
-              </ReferencesButton>
-            )}
           </div>
         </TimelineRow.Cell>
         <TimelineRow.Cell
