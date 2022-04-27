@@ -19,13 +19,29 @@ type LokiAPI struct {
 	client *http.Client
 	url    string
 	log    log.Logger
+	oauth  *OAuthData
 }
 
-func newLokiAPI(client *http.Client, url string, log log.Logger) *LokiAPI {
-	return &LokiAPI{client: client, url: url, log: log}
+func newLokiAPI(client *http.Client, url string, log log.Logger, oauth *OAuthData) *LokiAPI {
+	return &LokiAPI{client: client, url: url, log: log, oauth: oauth}
 }
 
-func makeDataRequest(ctx context.Context, lokiDsUrl string, query lokiQuery) (*http.Request, error) {
+func addOauthHeaders(req *http.Request, oauth *OAuthData) {
+	if oauth != nil {
+		accessValue := oauth.AccessValue
+		idToken := oauth.IdToken
+
+		if accessValue != "" {
+			req.Header.Set("Authorization", accessValue)
+		}
+
+		if idToken != "" {
+			req.Header.Set("X-ID-Token", idToken)
+		}
+	}
+}
+
+func makeDataRequest(ctx context.Context, lokiDsUrl string, query lokiQuery, oauth *OAuthData) (*http.Request, error) {
 	qs := url.Values{}
 	qs.Set("query", query.Expr)
 
@@ -77,6 +93,8 @@ func makeDataRequest(ctx context.Context, lokiDsUrl string, query lokiQuery) (*h
 	if err != nil {
 		return nil, err
 	}
+
+	addOauthHeaders(req, oauth)
 
 	// NOTE:
 	// 1. we are missing "dynamic" http params, like OAuth data.
@@ -136,7 +154,7 @@ func makeLokiError(body io.ReadCloser) error {
 }
 
 func (api *LokiAPI) DataQuery(ctx context.Context, query lokiQuery) (*loghttp.QueryResponse, error) {
-	req, err := makeDataRequest(ctx, api.url, query)
+	req, err := makeDataRequest(ctx, api.url, query, api.oauth)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +183,7 @@ func (api *LokiAPI) DataQuery(ctx context.Context, query lokiQuery) (*loghttp.Qu
 	return &response, nil
 }
 
-func makeRawRequest(ctx context.Context, lokiDsUrl string, resourceURL string) (*http.Request, error) {
+func makeRawRequest(ctx context.Context, lokiDsUrl string, resourceURL string, oauth *OAuthData) (*http.Request, error) {
 	lokiUrl, err := url.Parse(lokiDsUrl)
 	if err != nil {
 		return nil, err
@@ -176,11 +194,19 @@ func makeRawRequest(ctx context.Context, lokiDsUrl string, resourceURL string) (
 		return nil, err
 	}
 
-	return http.NewRequestWithContext(ctx, "GET", url.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url.String(), nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	addOauthHeaders(req, oauth)
+
+	return req, nil
 }
 
 func (api *LokiAPI) RawQuery(ctx context.Context, resourceURL string) ([]byte, error) {
-	req, err := makeRawRequest(ctx, api.url, resourceURL)
+	req, err := makeRawRequest(ctx, api.url, resourceURL, api.oauth)
 	if err != nil {
 		return nil, err
 	}
@@ -201,4 +227,36 @@ func (api *LokiAPI) RawQuery(ctx context.Context, resourceURL string) ([]byte, e
 	}
 
 	return io.ReadAll(resp.Body)
+}
+
+type mockRequestCallback func(req *http.Request)
+
+type mockedRoundTripper struct {
+	statusCode      int
+	responseBytes   []byte
+	contentType     string
+	requestCallback mockRequestCallback
+}
+
+func (mockedRT *mockedRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	requestCallback := mockedRT.requestCallback
+	if requestCallback != nil {
+		requestCallback(req)
+	}
+
+	header := http.Header{}
+	header.Add("Content-Type", mockedRT.contentType)
+	return &http.Response{
+		StatusCode: mockedRT.statusCode,
+		Header:     header,
+		Body:       io.NopCloser(bytes.NewReader(mockedRT.responseBytes)),
+	}, nil
+}
+
+func makeMockedAPI(statusCode int, contentType string, responseBytes []byte, requestCallback mockRequestCallback) *LokiAPI {
+	client := http.Client{
+		Transport: &mockedRoundTripper{statusCode: statusCode, contentType: contentType, responseBytes: responseBytes, requestCallback: requestCallback},
+	}
+
+	return newLokiAPI(&client, "http://localhost:9999", log.New("test"), nil)
 }
