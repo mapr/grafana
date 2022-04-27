@@ -154,7 +154,7 @@ function legacyCreateSpanLinkFactory(
     }
 
     // Get metrics links
-    if (metricsDataSourceSettings && traceToMetricsOptions && span.operationName.length % 2 === 0) {
+    if (metricsDataSourceSettings && traceToMetricsOptions) {
       const dataLink: DataLink<LokiQuery> = {
         title: metricsDataSourceSettings.name,
         url: '',
@@ -202,6 +202,7 @@ function legacyCreateSpanLinkFactory(
           content: <Icon name="link" title="View linked span" />,
           onClick: link.onClick,
         });
+        links.count++;
       }
     }
 
@@ -215,6 +216,7 @@ function legacyCreateSpanLinkFactory(
           content: <Icon name="link" title="View linked span" />,
           onClick: link.onClick,
         });
+        links.count++;
       }
     }
 

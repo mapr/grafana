@@ -323,7 +323,6 @@ type SpanBarRowProps = {
   getViewedBounds: ViewedBoundsFunctionType;
   traceStartTime: number;
   span: TraceSpan;
-  focusSpan: (spanID: string) => void;
   hoverIndentGuideIds: Set<string>;
   addHoverIndentGuideId: (spanID: string) => void;
   removeHoverIndentGuideId: (spanID: string) => void;
@@ -371,7 +370,6 @@ export class UnthemedSpanBarRow extends React.PureComponent<SpanBarRowProps> {
       getViewedBounds,
       traceStartTime,
       span,
-      focusSpan,
       hoverIndentGuideIds,
       addHoverIndentGuideId,
       removeHoverIndentGuideId,
