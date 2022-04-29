@@ -1,4 +1,4 @@
-package prometheus
+package buffered
 
 import (
 	"context"
@@ -21,17 +21,14 @@ func BenchmarkJson(b *testing.B) {
 	api, err := makeMockedApi(resp)
 	require.NoError(b, err)
 
-	httpClient, err := makeMockHTTPClient()
-	require.NoError(b, err)
-
 	tracer, err := tracing.InitializeTracerForTest()
 	require.NoError(b, err)
 
-	s := Service{tracer: tracer}
+	s := Buffered{tracer: tracer}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, _ = s.runQueries(context.Background(), api, httpClient, []*PrometheusQuery{&query})
+		_, _ = s.runQueries(context.Background(), api, []*PrometheusQuery{&query})
 	}
 }
 

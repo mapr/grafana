@@ -1,7 +1,6 @@
 package promclient
 
 import (
-	"net/http"
 	"strings"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -47,8 +46,22 @@ func NewProvider(
 	}
 }
 
-func (p *Provider) GetPromClient(headers map[string]string) (apiv1.API, error) {
-	opts, err := p.getOptions(headers, true)
+func (p *Provider) GetClient(headers map[string]string) (apiv1.API, error) {
+	opts, err := p.settings.HTTPClientOptions()
+	if err != nil {
+		return nil, err
+	}
+
+	opts.Middlewares = p.middlewares()
+	opts.Headers = reqHeaders(headers)
+
+	// Set SigV4 service namespace
+	if opts.SigV4 != nil {
+		opts.SigV4.Service = "aps"
+	}
+
+	// Azure authentication
+	err = p.configureAzureAuthentication(&opts)
 	if err != nil {
 		return nil, err
 	}
@@ -71,45 +84,12 @@ func (p *Provider) GetPromClient(headers map[string]string) (apiv1.API, error) {
 	return apiv1.NewAPI(client), nil
 }
 
-func (p *Provider) GetHTTPClient(headers map[string]string) (*http.Client, error) {
-	opts, err := p.getOptions(headers, false)
-	if err != nil {
-		return nil, err
-	}
-	opts.Middlewares = append(opts.Middlewares)
-	return p.clientProvider.New(opts)
-}
-
-func (p *Provider) getOptions(headers map[string]string, forceGet bool) (sdkhttpclient.Options, error) {
-	opts, err := p.settings.HTTPClientOptions()
-	if err != nil {
-		return opts, err
-	}
-
-	opts.Middlewares = p.middlewares(forceGet)
-	opts.Headers = reqHeaders(headers)
-
-	// Set SigV4 service namespace
-	if opts.SigV4 != nil {
-		opts.SigV4.Service = "aps"
-	}
-
-	// Azure authentication
-	err = p.configureAzureAuthentication(&opts)
-	if err != nil {
-		return opts, err
-	}
-
-	return opts, nil
-}
-
-func (p *Provider) middlewares(forceGet bool) []sdkhttpclient.Middleware {
+func (p *Provider) middlewares() []sdkhttpclient.Middleware {
 	middlewares := []sdkhttpclient.Middleware{
-		middleware.BaseURL(p.settings.URL),
 		middleware.CustomQueryParameters(p.log),
 		sdkhttpclient.CustomHeadersMiddleware(),
 	}
-	if strings.ToLower(p.httpMethod) == "get" && forceGet {
+	if strings.ToLower(p.httpMethod) == "get" {
 		middlewares = append(middlewares, middleware.ForceHttpGet(p.log))
 	}
 

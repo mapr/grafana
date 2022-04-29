@@ -1,4 +1,4 @@
-package prometheus
+package buffered
 
 import (
 	"math"
@@ -79,7 +79,7 @@ func TestPrometheus_timeSeriesQuery_formatLeged(t *testing.T) {
 }
 
 func TestPrometheus_timeSeriesQuery_parseTimeSeriesQuery(t *testing.T) {
-	service := Service{
+	service := Buffered{
 		intervalCalculator: intervalv2.NewCalculator(),
 	}
 

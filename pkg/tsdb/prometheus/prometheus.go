@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"regexp"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -15,34 +14,26 @@ import (
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/setting"
-	"github.com/grafana/grafana/pkg/tsdb/intervalv2"
+	"github.com/grafana/grafana/pkg/tsdb/prometheus/buffered"
 	"github.com/grafana/grafana/pkg/tsdb/prometheus/promclient"
 	"github.com/grafana/grafana/pkg/util/maputil"
 	apiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
 
-var (
-	plog         = log.New("tsdb.prometheus")
-	legendFormat = regexp.MustCompile(`\{\{\s*(.+?)\s*\}\}`)
-	safeRes      = 11000
-)
+var plog = log.New("tsdb.prometheus")
 
 type Service struct {
-	intervalCalculator intervalv2.Calculator
-	im                 instancemgmt.InstanceManager
-	tracer             tracing.Tracer
+	im instancemgmt.InstanceManager
 }
 
 func ProvideService(httpClientProvider httpclient.Provider, cfg *setting.Cfg, features featuremgmt.FeatureToggles, tracer tracing.Tracer) *Service {
 	plog.Debug("initializing")
 	return &Service{
-		intervalCalculator: intervalv2.NewCalculator(),
-		im:                 datasource.NewInstanceManager(newInstanceSettings(httpClientProvider, cfg, features)),
-		tracer:             tracer,
+		im: datasource.NewInstanceManager(newInstanceSettings(httpClientProvider, cfg, features, tracer)),
 	}
 }
 
-func newInstanceSettings(httpClientProvider httpclient.Provider, cfg *setting.Cfg, features featuremgmt.FeatureToggles) datasource.InstanceFactoryFunc {
+func newInstanceSettings(httpClientProvider httpclient.Provider, cfg *setting.Cfg, features featuremgmt.FeatureToggles, tracer tracing.Tracer) datasource.InstanceFactoryFunc {
 	return func(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 		var jsonData map[string]interface{}
 		err := json.Unmarshal(settings.JSONData, &jsonData)
@@ -61,12 +52,12 @@ func newInstanceSettings(httpClientProvider httpclient.Provider, cfg *setting.Cf
 			return nil, err
 		}
 
-		mdl := DatasourceInfo{
-			ID:            settings.ID,
-			URL:           settings.URL,
-			TimeInterval:  timeInterval,
-			getPromClient: pc.GetPromClient,
-			getHTTPClient: pc.GetHTTPClient,
+		mdl := buffered.DatasourceInfo{
+			ID:           settings.ID,
+			URL:          settings.URL,
+			TimeInterval: timeInterval,
+			Buffered:     buffered.New(tracer),
+			GetClient:    pc.GetClient,
 		}
 
 		return mdl, nil
@@ -89,19 +80,19 @@ func (s *Service) QueryData(ctx context.Context, req *backend.QueryDataRequest) 
 	case "timeSeriesQuery":
 		fallthrough
 	default:
-		result, err = s.executeTimeSeriesQuery(ctx, req, dsInfo)
+		result, err = dsInfo.Buffered.ExecuteTimeSeriesQuery(ctx, req, dsInfo)
 	}
 
 	return result, err
 }
 
-func (s *Service) getDSInfo(pluginCtx backend.PluginContext) (*DatasourceInfo, error) {
+func (s *Service) getDSInfo(pluginCtx backend.PluginContext) (*buffered.DatasourceInfo, error) {
 	i, err := s.im.Get(pluginCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	instance := i.(DatasourceInfo)
+	instance := i.(buffered.DatasourceInfo)
 
 	return &instance, nil
 }

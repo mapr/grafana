@@ -1,12 +1,11 @@
-package prometheus
+package buffered
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/http"
-	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,9 +13,9 @@ import (
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/tsdb/intervalv2"
-	"github.com/grafana/grafana/pkg/util/converter"
-	jsoniter "github.com/json-iterator/go"
 	apiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/otel/attribute"
@@ -45,15 +44,26 @@ const (
 
 const legendFormatAuto = "__auto"
 
-type TimeSeriesQueryType string
-
-const (
-	RangeQueryType    TimeSeriesQueryType = "range"
-	InstantQueryType  TimeSeriesQueryType = "instant"
-	ExemplarQueryType TimeSeriesQueryType = "exemplar"
+var (
+	plog         = log.New("tsdb.prometheus.buffered")
+	legendFormat = regexp.MustCompile(`\{\{\s*(.+?)\s*\}\}`)
+	safeRes      = 11000
 )
 
-func (s *Service) runQueries(ctx context.Context, promClient apiv1.API, httpClient *http.Client, queries []*PrometheusQuery) (*backend.QueryDataResponse, error) {
+type Buffered struct {
+	intervalCalculator intervalv2.Calculator
+	tracer             tracing.Tracer
+}
+
+func New(tracer tracing.Tracer) *Buffered {
+	plog.Debug("initializing")
+	return &Buffered{
+		intervalCalculator: intervalv2.NewCalculator(),
+		tracer:             tracer,
+	}
+}
+
+func (b *Buffered) runQueries(ctx context.Context, client apiv1.API, queries []*PrometheusQuery) (*backend.QueryDataResponse, error) {
 	result := backend.QueryDataResponse{
 		Responses: backend.Responses{},
 	}
@@ -61,7 +71,7 @@ func (s *Service) runQueries(ctx context.Context, promClient apiv1.API, httpClie
 	for _, query := range queries {
 		plog.Debug("Sending query", "start", query.Start, "end", query.End, "step", query.Step, "query", query.Expr)
 
-		ctx, span := s.tracer.Start(ctx, "datasource.prometheus")
+		ctx, span := b.tracer.Start(ctx, "datasource.prometheus")
 		span.SetAttributes("expr", query.Expr, attribute.Key("expr").String(query.Expr))
 		span.SetAttributes("start_unixnano", query.Start, attribute.Key("start_unixnano").Int64(query.Start.UnixNano()))
 		span.SetAttributes("stop_unixnano", query.End, attribute.Key("stop_unixnano").Int64(query.End.UnixNano()))
@@ -77,17 +87,17 @@ func (s *Service) runQueries(ctx context.Context, promClient apiv1.API, httpClie
 		}
 
 		if query.RangeQuery {
-			res, err := s.queryRange(ctx, httpClient, query.Expr, timeRange)
+			rangeResponse, _, err := client.QueryRange(ctx, query.Expr, timeRange)
 			if err != nil {
 				plog.Error("Range query failed", "query", query.Expr, "err", err)
 				result.Responses[query.RefId] = backend.DataResponse{Error: err}
 				continue
 			}
-			response[RangeQueryType] = res
+			response[RangeQueryType] = rangeResponse
 		}
 
 		if query.InstantQuery {
-			instantResponse, _, err := promClient.Query(ctx, query.Expr, query.End)
+			instantResponse, _, err := client.Query(ctx, query.Expr, query.End)
 			if err != nil {
 				plog.Error("Instant query failed", "query", query.Expr, "err", err)
 				result.Responses[query.RefId] = backend.DataResponse{Error: err}
@@ -99,7 +109,7 @@ func (s *Service) runQueries(ctx context.Context, promClient apiv1.API, httpClie
 		// This is a special case
 		// If exemplar query returns error, we want to only log it and continue with other results processing
 		if query.ExemplarQuery {
-			exemplarResponse, err := promClient.QueryExemplars(ctx, query.Expr, timeRange.Start, timeRange.End)
+			exemplarResponse, err := client.QueryExemplars(ctx, query.Expr, timeRange.Start, timeRange.End)
 			if err != nil {
 				plog.Error("Exemplar query failed", "query", query.Expr, "err", err)
 			} else {
@@ -125,28 +135,13 @@ func (s *Service) runQueries(ctx context.Context, promClient apiv1.API, httpClie
 	return &result, nil
 }
 
-func (s *Service) queryRange(ctx context.Context, httpClient *http.Client, query string, r apiv1.Range) (*http.Response, error) {
-	u, err := url.ParseRequestURI("/api/v1/query_range")
+func (b *Buffered) ExecuteTimeSeriesQuery(ctx context.Context, req *backend.QueryDataRequest, dsInfo *DatasourceInfo) (*backend.QueryDataResponse, error) {
+	client, err := dsInfo.GetClient(req.Headers)
 	if err != nil {
 		return nil, err
 	}
 
-	q := u.Query()
-	q.Set("query", query)
-	q.Set("start", formatTime(r.Start))
-	q.Set("end", formatTime(r.End))
-	q.Set("step", strconv.FormatFloat(r.Step.Seconds(), 'f', -1, 64))
-	u.RawQuery = q.Encode()
-
-	return httpClient.Get(u.String())
-}
-
-func formatTime(t time.Time) string {
-	return strconv.FormatFloat(float64(t.Unix())+float64(t.Nanosecond())/1e9, 'f', -1, 64)
-}
-
-func (s *Service) executeTimeSeriesQuery(ctx context.Context, req *backend.QueryDataRequest, dsInfo *DatasourceInfo) (*backend.QueryDataResponse, error) {
-	queries, err := s.parseTimeSeriesQuery(req, dsInfo)
+	queries, err := b.parseTimeSeriesQuery(req, dsInfo)
 	if err != nil {
 		result := backend.QueryDataResponse{
 			Responses: backend.Responses{},
@@ -154,17 +149,7 @@ func (s *Service) executeTimeSeriesQuery(ctx context.Context, req *backend.Query
 		return &result, err
 	}
 
-	promClient, err := dsInfo.getPromClient(req.Headers)
-	if err != nil {
-		return nil, err
-	}
-
-	httpClient, err := dsInfo.getHTTPClient(req.Headers)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.runQueries(ctx, promClient, httpClient, queries)
+	return b.runQueries(ctx, client, queries)
 }
 
 func formatLegend(metric model.Metric, query *PrometheusQuery) string {
@@ -196,7 +181,7 @@ func formatLegend(metric model.Metric, query *PrometheusQuery) string {
 	return legend
 }
 
-func (s *Service) parseTimeSeriesQuery(queryContext *backend.QueryDataRequest, dsInfo *DatasourceInfo) ([]*PrometheusQuery, error) {
+func (b *Buffered) parseTimeSeriesQuery(queryContext *backend.QueryDataRequest, dsInfo *DatasourceInfo) ([]*PrometheusQuery, error) {
 	qs := []*PrometheusQuery{}
 	for _, query := range queryContext.Queries {
 		model := &QueryModel{}
@@ -205,14 +190,14 @@ func (s *Service) parseTimeSeriesQuery(queryContext *backend.QueryDataRequest, d
 			return nil, err
 		}
 		//Final interval value
-		interval, err := calculatePrometheusInterval(model, dsInfo, query, s.intervalCalculator)
+		interval, err := calculatePrometheusInterval(model, dsInfo, query, b.intervalCalculator)
 		if err != nil {
 			return nil, err
 		}
 
 		// Interpolate variables in expr
 		timeRange := query.TimeRange.To.Sub(query.TimeRange.From)
-		expr := interpolateVariables(model, interval, timeRange, s.intervalCalculator, dsInfo.TimeInterval)
+		expr := interpolateVariables(model, interval, timeRange, b.intervalCalculator, dsInfo.TimeInterval)
 		rangeQuery := model.RangeQuery
 		if !model.InstantQuery && !model.RangeQuery {
 			// In older dashboards, we were not setting range query param and !range && !instant was run as range query
@@ -252,10 +237,10 @@ func parseTimeSeriesResponse(value map[TimeSeriesQueryType]interface{}, query *P
 		nextFrames = nextFrames[:0]
 
 		switch v := value.(type) {
-		case *http.Response:
-			iter := jsoniter.Parse(jsoniter.ConfigDefault, v.Body, 1024)
-			res := converter.ReadPrometheusStyleResult(iter)
-			nextFrames = res.Frames
+		case model.Matrix:
+			nextFrames = matrixToDataFrames(v, query, nextFrames)
+		case model.Vector:
+			nextFrames = vectorToDataFrames(v, query, nextFrames)
 		case *model.Scalar:
 			nextFrames = scalarToDataFrames(v, query, nextFrames)
 		case []apiv1.ExemplarQueryResult:
@@ -347,6 +332,40 @@ func interpolateVariables(model *QueryModel, interval time.Duration, timeRange t
 	return expr
 }
 
+func matrixToDataFrames(matrix model.Matrix, query *PrometheusQuery, frames data.Frames) data.Frames {
+	for _, v := range matrix {
+		tags := make(map[string]string, len(v.Metric))
+		for k, v := range v.Metric {
+			tags[string(k)] = string(v)
+		}
+		timeField := data.NewFieldFromFieldType(data.FieldTypeTime, len(v.Values))
+		valueField := data.NewFieldFromFieldType(data.FieldTypeNullableFloat64, len(v.Values))
+
+		for i, k := range v.Values {
+			timeField.Set(i, k.Timestamp.Time().UTC())
+			value := float64(k.Value)
+
+			if !math.IsNaN(value) {
+				valueField.Set(i, &value)
+			}
+		}
+
+		name := formatLegend(v.Metric, query)
+		timeField.Name = data.TimeSeriesTimeFieldName
+		timeField.Config = &data.FieldConfig{Interval: float64(query.Step.Milliseconds())}
+		valueField.Name = data.TimeSeriesValueFieldName
+		valueField.Labels = tags
+
+		if name != "" {
+			valueField.Config = &data.FieldConfig{DisplayNameFromDS: name}
+		}
+
+		frames = append(frames, newDataFrame(name, "matrix", timeField, valueField))
+	}
+
+	return frames
+}
+
 func scalarToDataFrames(scalar *model.Scalar, query *PrometheusQuery, frames data.Frames) data.Frames {
 	timeVector := []time.Time{scalar.Timestamp.Time().UTC()}
 	values := []float64{float64(scalar.Value)}
@@ -361,6 +380,31 @@ func scalarToDataFrames(scalar *model.Scalar, query *PrometheusQuery, frames dat
 			data.NewField("Value", nil, values).SetConfig(&data.FieldConfig{DisplayNameFromDS: name}),
 		),
 	)
+}
+
+func vectorToDataFrames(vector model.Vector, query *PrometheusQuery, frames data.Frames) data.Frames {
+	for _, v := range vector {
+		name := formatLegend(v.Metric, query)
+		tags := make(map[string]string, len(v.Metric))
+		timeVector := []time.Time{v.Timestamp.Time().UTC()}
+		values := []float64{float64(v.Value)}
+
+		for k, v := range v.Metric {
+			tags[string(k)] = string(v)
+		}
+
+		frames = append(
+			frames,
+			newDataFrame(
+				name,
+				"vector",
+				data.NewField("Time", nil, timeVector),
+				data.NewField("Value", tags, values).SetConfig(&data.FieldConfig{DisplayNameFromDS: name}),
+			),
+		)
+	}
+
+	return frames
 }
 
 func exemplarToDataFrames(response []apiv1.ExemplarQueryResult, query *PrometheusQuery, frames data.Frames) data.Frames {
