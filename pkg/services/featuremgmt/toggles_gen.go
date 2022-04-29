@@ -178,4 +178,8 @@ const (
 	// FlagCloudWatchDynamicLabels
 	// Use dynamic labels instead of alias patterns in CloudWatch datasource
 	FlagCloudWatchDynamicLabels = "cloudWatchDynamicLabels"
+
+	// FlagPrometheusStreamingJSONParser
+	// Enable streaming JSON parser for Prometheus datasource
+	FlagPrometheusStreamingJSONParser = "prometheusStreamingJSONParser"
 )
