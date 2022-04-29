@@ -46,19 +46,6 @@ function processStreamFrame(frame: DataFrame, query: LokiQuery | undefined): Dat
 
   const newFields = newFrame.fields.map((field) => {
     switch (field.name) {
-      case 'labels': {
-        // the labels, when coming from the server, are json-encoded.
-        // here we decode them if needed.
-        return field.config.custom.json
-          ? {
-              name: field.name,
-              type: FieldType.other,
-              config: field.config,
-              // we are parsing the labels the same way as streaming-dataframes do
-              values: new ArrayVector(field.values.toArray().map((text) => decodeLabelsInJson(text))),
-            }
-          : field;
-      }
       case 'tsNs': {
         // we need to switch the field-type to be `time`
         return {
