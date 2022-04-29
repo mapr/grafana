@@ -1,12 +1,16 @@
 package promclient_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
+	"net/http"
 	"sort"
 	"strings"
 	"testing"
 
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana/pkg/tsdb/prometheus/promclient"
 
 	apiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -14,14 +18,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCache_GetClient(t *testing.T) {
+func TestCache_GetPromClient(t *testing.T) {
 	t.Run("it caches the client for a set of auth headers", func(t *testing.T) {
 		tc := setupCacheContext()
 
-		c, err := tc.providerCache.GetClient(headers)
+		c, err := tc.providerCache.GetPromClient(headers)
 		require.Nil(t, err)
 
-		c2, err := tc.providerCache.GetClient(headers)
+		c2, err := tc.providerCache.GetPromClient(headers)
 		require.Nil(t, err)
 
 		require.Equal(t, c, c2)
@@ -33,10 +37,10 @@ func TestCache_GetClient(t *testing.T) {
 		h1 := map[string]string{"Authorization": "token", "X-ID-Token": "id-token"}
 		h2 := map[string]string{"Authorization": "token2", "X-ID-Token": "id-token"}
 
-		c, err := tc.providerCache.GetClient(h1)
+		c, err := tc.providerCache.GetPromClient(h1)
 		require.Nil(t, err)
 
-		c2, err := tc.providerCache.GetClient(h2)
+		c2, err := tc.providerCache.GetPromClient(h2)
 		require.Nil(t, err)
 
 		require.NotEqual(t, c, c2)
@@ -48,10 +52,10 @@ func TestCache_GetClient(t *testing.T) {
 		h1 := map[string]string{"Authorization": "token", "X-ID-Token": "id-token"}
 		h2 := map[string]string{"Authorization": "token", "X-ID-Token": "id-token"}
 
-		c, err := tc.providerCache.GetClient(h1)
+		c, err := tc.providerCache.GetPromClient(h1)
 		require.Nil(t, err)
 
-		c2, err := tc.providerCache.GetClient(h2)
+		c2, err := tc.providerCache.GetPromClient(h2)
 		require.Nil(t, err)
 
 		require.Equal(t, c, c2)
@@ -62,10 +66,10 @@ func TestCache_GetClient(t *testing.T) {
 		tc := setupCacheContext()
 		tc.clientProvider.errors <- errors.New("something bad")
 
-		_, err := tc.providerCache.GetClient(headers)
+		_, err := tc.providerCache.GetPromClient(headers)
 		require.EqualError(t, err, "something bad")
 
-		c, err := tc.providerCache.GetClient(headers)
+		c, err := tc.providerCache.GetPromClient(headers)
 		require.Nil(t, err)
 
 		require.NotNil(t, c)
@@ -103,7 +107,7 @@ type fakePromClientProvider struct {
 	errors   chan error
 }
 
-func (p *fakePromClientProvider) GetClient(h map[string]string) (apiv1.API, error) {
+func (p *fakePromClientProvider) GetPromClient(h map[string]string) (apiv1.API, error) {
 	p.headers = h
 	p.numCalls++
 
@@ -121,6 +125,29 @@ func (p *fakePromClientProvider) GetClient(h map[string]string) (apiv1.API, erro
 	return &fakePromClient{config: strings.Join(config, "")}, err
 }
 
+func (p *fakePromClientProvider) GetHTTPClient(h map[string]string) (*http.Client, error) {
+	p.headers = h
+	p.numCalls++
+
+	var err error
+	select {
+	case err = <-p.errors:
+	default:
+	}
+
+	var config []string
+	for _, v := range h {
+		config = append(config, v)
+	}
+	sort.Strings(config) //because map
+	client, err := httpclient.New()
+	if err != nil {
+		return nil, err
+	}
+	client.Transport = &mockedRoundTripper{responseBytes: []byte{}}
+	return client, err
+}
+
 type fakePromClient struct {
 	apiv1.API
 	config string
@@ -128,4 +155,15 @@ type fakePromClient struct {
 
 func (c *fakePromClient) Config(ctx context.Context) (apiv1.ConfigResult, error) {
 	return apiv1.ConfigResult{YAML: c.config}, nil
+}
+
+type mockedRoundTripper struct {
+	responseBytes []byte
+}
+
+func (mockedRT *mockedRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader(mockedRT.responseBytes)),
+	}, nil
 }

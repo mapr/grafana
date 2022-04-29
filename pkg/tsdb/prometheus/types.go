@@ -1,6 +1,7 @@
 package prometheus
 
 import (
+	"net/http"
 	"time"
 
 	apiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -11,10 +12,12 @@ type DatasourceInfo struct {
 	URL          string
 	TimeInterval string
 
-	getClient clientGetter
+	getPromClient promClientGetter
+	getHTTPClient httpClientGetter
 }
 
-type clientGetter func(map[string]string) (apiv1.API, error)
+type promClientGetter func(map[string]string) (apiv1.API, error)
+type httpClientGetter func(map[string]string) (*http.Client, error)
 
 type PrometheusQuery struct {
 	Expr          string

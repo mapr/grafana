@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental"
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/prometheus/client_golang/api"
@@ -84,6 +85,15 @@ func makeMockedApi(responseBytes []byte) (apiv1.API, error) {
 	return api, nil
 }
 
+func makeMockHTTPClient() (*http.Client, error) {
+	client, err := httpclient.New()
+	if err != nil {
+		return nil, err
+	}
+	client.Transport = &mockedRoundTripper{responseBytes: []byte{}}
+	return client, err
+}
+
 // we store the prometheus query data in a json file, here is some minimal code
 // to be able to read it back. unfortunately we cannot use the PrometheusQuery
 // struct here, because it has `time.time` and `time.duration` fields that
@@ -126,11 +136,16 @@ func runQuery(response []byte, query PrometheusQuery) (*backend.QueryDataRespons
 		return nil, err
 	}
 
+	httpClient, err := makeMockHTTPClient()
+	if err != nil {
+		return nil, err
+	}
+
 	tracer, err := tracing.InitializeTracerForTest()
 	if err != nil {
 		return nil, err
 	}
 
 	s := Service{tracer: tracer}
-	return s.runQueries(context.Background(), api, []*PrometheusQuery{&query})
+	return s.runQueries(context.Background(), api, httpClient, []*PrometheusQuery{&query})
 }

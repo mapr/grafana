@@ -20,14 +20,14 @@ import (
 
 var headers = map[string]string{"Authorization": "token", "X-ID-Token": "id-token"}
 
-func TestGetClient(t *testing.T) {
+func TestGetPromClient(t *testing.T) {
 	t.Run("it sets the SigV4 service if it exists", func(t *testing.T) {
 		tc := setup(`{"sigV4Auth":true}`)
 
 		setting.SigV4AuthEnabled = true
 		defer func() { setting.SigV4AuthEnabled = false }()
 
-		_, err := tc.promClientProvider.GetClient(headers)
+		_, err := tc.promClientProvider.GetPromClient(headers)
 		require.Nil(t, err)
 
 		require.Equal(t, "aps", tc.httpProvider.opts.SigV4.Service)
@@ -36,7 +36,7 @@ func TestGetClient(t *testing.T) {
 	t.Run("it always uses the custom params and custom headers middlewares", func(t *testing.T) {
 		tc := setup()
 
-		_, err := tc.promClientProvider.GetClient(headers)
+		_, err := tc.promClientProvider.GetPromClient(headers)
 		require.Nil(t, err)
 
 		require.Len(t, tc.httpProvider.middlewares(), 2)
@@ -47,7 +47,7 @@ func TestGetClient(t *testing.T) {
 	t.Run("extra headers", func(t *testing.T) {
 		t.Run("it sets the headers when 'oauthPassThru' is true and auth headers are passed", func(t *testing.T) {
 			tc := setup(`{"oauthPassThru":true}`)
-			_, err := tc.promClientProvider.GetClient(headers)
+			_, err := tc.promClientProvider.GetPromClient(headers)
 			require.Nil(t, err)
 
 			require.Equal(t, headers, tc.httpProvider.opts.Headers)
@@ -57,7 +57,7 @@ func TestGetClient(t *testing.T) {
 			withNonAuth := map[string]string{"X-Not-Auth": "stuff"}
 
 			tc := setup(`{"oauthPassThru":true}`)
-			_, err := tc.promClientProvider.GetClient(withNonAuth)
+			_, err := tc.promClientProvider.GetPromClient(withNonAuth)
 			require.Nil(t, err)
 
 			require.Equal(t, map[string]string{"X-Not-Auth": "stuff"}, tc.httpProvider.opts.Headers)
@@ -66,7 +66,7 @@ func TestGetClient(t *testing.T) {
 		t.Run("it does not error when headers are nil", func(t *testing.T) {
 			tc := setup(`{"oauthPassThru":true}`)
 
-			_, err := tc.promClientProvider.GetClient(nil)
+			_, err := tc.promClientProvider.GetPromClient(nil)
 			require.Nil(t, err)
 		})
 	})
@@ -75,7 +75,7 @@ func TestGetClient(t *testing.T) {
 		t.Run("it add the force-get middleware when httpMethod is get", func(t *testing.T) {
 			tc := setup(`{"httpMethod":"get"}`)
 
-			_, err := tc.promClientProvider.GetClient(headers)
+			_, err := tc.promClientProvider.GetPromClient(headers)
 			require.Nil(t, err)
 
 			require.Len(t, tc.httpProvider.middlewares(), 3)
@@ -85,7 +85,7 @@ func TestGetClient(t *testing.T) {
 		t.Run("it add the force-get middleware when httpMethod is get", func(t *testing.T) {
 			tc := setup(`{"httpMethod":"GET"}`)
 
-			_, err := tc.promClientProvider.GetClient(headers)
+			_, err := tc.promClientProvider.GetPromClient(headers)
 			require.Nil(t, err)
 
 			require.Len(t, tc.httpProvider.middlewares(), 3)
@@ -95,7 +95,7 @@ func TestGetClient(t *testing.T) {
 		t.Run("it does not add the force-get middleware when httpMethod is POST", func(t *testing.T) {
 			tc := setup(`{"httpMethod":"POST"}`)
 
-			_, err := tc.promClientProvider.GetClient(headers)
+			_, err := tc.promClientProvider.GetPromClient(headers)
 			require.Nil(t, err)
 
 			require.NotContains(t, tc.httpProvider.middlewares(), "force-http-get")
@@ -104,7 +104,7 @@ func TestGetClient(t *testing.T) {
 		t.Run("it does not add the force-get middleware when json data is nil", func(t *testing.T) {
 			tc := setup()
 
-			_, err := tc.promClientProvider.GetClient(headers)
+			_, err := tc.promClientProvider.GetPromClient(headers)
 			require.Nil(t, err)
 
 			require.NotContains(t, tc.httpProvider.middlewares(), "force-http-get")
@@ -113,7 +113,7 @@ func TestGetClient(t *testing.T) {
 		t.Run("it does not add the force-get middleware when json data is empty", func(t *testing.T) {
 			tc := setup(`{}`)
 
-			_, err := tc.promClientProvider.GetClient(headers)
+			_, err := tc.promClientProvider.GetPromClient(headers)
 			require.Nil(t, err)
 
 			require.NotContains(t, tc.httpProvider.middlewares(), "force-http-get")
@@ -122,7 +122,7 @@ func TestGetClient(t *testing.T) {
 		t.Run("it does not add the force-get middleware httpMethod is null", func(t *testing.T) {
 			tc := setup(`{"httpMethod":null}`)
 
-			_, err := tc.promClientProvider.GetClient(headers)
+			_, err := tc.promClientProvider.GetPromClient(headers)
 			require.Nil(t, err)
 
 			require.NotContains(t, tc.httpProvider.middlewares(), "force-http-get")

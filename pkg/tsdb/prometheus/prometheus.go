@@ -62,10 +62,11 @@ func newInstanceSettings(httpClientProvider httpclient.Provider, cfg *setting.Cf
 		}
 
 		mdl := DatasourceInfo{
-			ID:           settings.ID,
-			URL:          settings.URL,
-			TimeInterval: timeInterval,
-			getClient:    pc.GetClient,
+			ID:            settings.ID,
+			URL:           settings.URL,
+			TimeInterval:  timeInterval,
+			getPromClient: pc.GetPromClient,
+			getHTTPClient: pc.GetHTTPClient,
 		}
 
 		return mdl, nil

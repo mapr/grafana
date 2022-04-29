@@ -1,6 +1,7 @@
 package promclient
 
 import (
+	"net/http"
 	"sort"
 	"strings"
 
@@ -9,38 +10,61 @@ import (
 )
 
 type ProviderCache struct {
-	provider promClientProvider
-	cache    *lru.Cache
+	provider        promClientProvider
+	promClientCache *lru.Cache
+	httpClientCache *lru.Cache
 }
 
 type promClientProvider interface {
-	GetClient(map[string]string) (apiv1.API, error)
+	GetPromClient(map[string]string) (apiv1.API, error)
+	GetHTTPClient(map[string]string) (*http.Client, error)
 }
 
 func NewProviderCache(p promClientProvider) (*ProviderCache, error) {
-	cache, err := lru.New(500)
+	promClientCache, err := lru.New(500)
+	if err != nil {
+		return nil, err
+	}
+
+	httpClientCache, err := lru.New(500)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ProviderCache{
-		provider: p,
-		cache:    cache,
+		provider:        p,
+		promClientCache: promClientCache,
+		httpClientCache: httpClientCache,
 	}, nil
 }
 
-func (c *ProviderCache) GetClient(headers map[string]string) (apiv1.API, error) {
+func (c *ProviderCache) GetPromClient(headers map[string]string) (apiv1.API, error) {
 	key := c.key(headers)
-	if client, ok := c.cache.Get(key); ok {
+	if client, ok := c.promClientCache.Get(key); ok {
 		return client.(apiv1.API), nil
 	}
 
-	client, err := c.provider.GetClient(headers)
+	client, err := c.provider.GetPromClient(headers)
 	if err != nil {
 		return nil, err
 	}
 
-	c.cache.Add(key, client)
+	c.promClientCache.Add(key, client)
+	return client, nil
+}
+
+func (c *ProviderCache) GetHTTPClient(headers map[string]string) (*http.Client, error) {
+	key := c.key(headers)
+	if client, ok := c.httpClientCache.Get(key); ok {
+		return client.(*http.Client), nil
+	}
+
+	client, err := c.provider.GetHTTPClient(headers)
+	if err != nil {
+		return nil, err
+	}
+
+	c.httpClientCache.Add(key, client)
 	return client, nil
 }
 
