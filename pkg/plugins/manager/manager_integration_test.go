@@ -78,7 +78,7 @@ func TestPluginManager_int_init(t *testing.T) {
 	es := elasticsearch.ProvideService(hcp)
 	grap := graphite.ProvideService(hcp, tracer)
 	idb := influxdb.ProvideService(hcp)
-	lk := loki.ProvideService(hcp, tracer)
+	lk := loki.ProvideService(hcp, features, tracer)
 	otsdb := opentsdb.ProvideService(hcp)
 	pr := prometheus.ProvideService(hcp, cfg, features, tracer)
 	tmpo := tempo.ProvideService(hcp)
