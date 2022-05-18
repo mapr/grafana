@@ -9,8 +9,8 @@ import { NumberInput } from 'app/features/dimensions/editors/NumberInput';
 
 import { PanelOptions } from '../models.gen';
 
-import { QuickPositioning } from './QuickPositioning';
 import { ConstraintSelectionBox } from './ConstraintSelectionBox';
+import { QuickPositioning } from './QuickPositioning';
 import { CanvasEditorOptions } from './elementEditor';
 
 const places: Array<keyof Placement> = ['top', 'left', 'bottom', 'right', 'width', 'height'];
