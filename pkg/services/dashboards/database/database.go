@@ -25,11 +25,8 @@ type DashboardStore struct {
 	log      log.Logger
 }
 
-var (
-	// DashboardStore implements the Store interface
-	_       dashboards.Store = (*DashboardStore)(nil)
-	dialect migrator.Dialect
-)
+// DashboardStore implements the Store interface
+var _ dashboards.Store = (*DashboardStore)(nil)
 
 func ProvideDashboardStore(sqlStore *sqlstore.SQLStore) *DashboardStore {
 	return &DashboardStore{sqlStore: sqlStore, log: log.New("dashboard-store")}
@@ -993,6 +990,7 @@ func makeQueryResult(query *models.FindPersistedDashboardsQuery, res []dashboard
 }
 
 func (d *DashboardStore) FindDashboards(ctx context.Context, query *models.FindPersistedDashboardsQuery) ([]dashboards.DashboardSearchProjection, error) {
+	dialect := d.sqlStore.Dialect
 	filters := []interface{}{
 		permissions.DashboardPermissionFilter{
 			OrgRole:         query.SignedInUser.OrgRole,
