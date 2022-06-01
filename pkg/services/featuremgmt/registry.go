@@ -226,5 +226,10 @@ var (
 			State:        FeatureStateAlpha,
 			FrontendOnly: true,
 		},
+		{
+			Name:        "dataConnectionsConsole",
+			Description: "Enables a new top-level page called Data Connections. This page is an experiment for better grouping of installing / configuring data sources and other plugins.",
+			State:       FeatureStateAlpha,
+		},
 	}
 )
