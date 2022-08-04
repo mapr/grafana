@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus"
 	"xorm.io/xorm"
@@ -44,6 +45,7 @@ type ContextSessionKey struct{}
 
 type SQLStore struct {
 	Cfg          *setting.Cfg
+	sqlxdb       *sqlx.DB
 	CacheService *localcache.CacheService
 
 	bus                         bus.Bus
@@ -179,6 +181,20 @@ func (ss *SQLStore) GetDialect() migrator.Dialect {
 	return ss.Dialect
 }
 
+func (ss *SQLStore) GetDB() *sqlx.DB {
+	if ss.sqlxdb == nil {
+		ss.sqlxdb = sqlx.NewDb(ss.engine.DB().DB, ss.GetDialect().DriverName())
+	}
+	return ss.sqlxdb
+}
+
+func (ss *SQLStore) BuildInsertWithReturningId(query string) (string, bool) {
+	if ss.Dialect.DriverName() == "postgres" {
+		return fmt.Sprintf("%s RETURNING id", query), true
+	}
+	return query, false
+}
+
 func (ss *SQLStore) ensureMainOrgAndAdminUser() error {
 	ctx := context.Background()
 	err := ss.WithTransactionalDbSession(ctx, func(sess *DBSession) error {
@@ -281,7 +297,7 @@ func (ss *SQLStore) buildConnectionString() (string, error) {
 			cnnstr += fmt.Sprintf("&tx_isolation=%s", val)
 		}
 
-		if ss.Cfg.IsFeatureToggleEnabled("mysqlAnsiQuotes") {
+		if ss.Cfg.IsFeatureToggleEnabled("mysqlAnsiQuotes") || ss.Cfg.IsFeatureToggleEnabled("newDBLibrary") {
 			cnnstr += "&sql_mode='ANSI_QUOTES'"
 		}
 
