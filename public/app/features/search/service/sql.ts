@@ -26,6 +26,7 @@ interface APIQuery {
 // Internal object to hold folderId
 interface LocationInfoEXT extends LocationInfo {
   folderId?: number;
+  type?: string;
 }
 
 export class SQLSearcher implements GrafanaSearcher {
@@ -52,6 +53,9 @@ export class SQLSearcher implements GrafanaSearcher {
     if (query.query === '*') {
       if (query.kind?.length === 1 && query.kind[0] === 'folder') {
         q.type = 'dash-folder';
+      } else if (query.kind?.length === 1 && query.kind[0] === 'dashboard') {
+        // exclude folder when the only kind that we are searching is dashboard
+        q.type = 'dash-db';
       }
     } else if (query.query?.length) {
       q.query = query.query;
