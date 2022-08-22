@@ -3582,6 +3582,9 @@ steps:
   - ./bin/grabpl artifacts-page
   depends_on:
   - grabpl
+  environment:
+    GCP_KEY:
+      from_secret: gcp_key
   image: grafana/build-container:1.5.9
   name: artifacts-page
 trigger:
@@ -5016,6 +5019,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: 710e3af4e83d49bce6403c31135075bbd2fbc302b985e0dea201157950805924
+hmac: 117229732b086a9b913a65fe83e86be13506ef2509cdf66dc86251aab4b6d313
 
 ...
