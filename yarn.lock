@@ -3989,14 +3989,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@betterer/regexp@npm:5.3.7":
-  version: 5.3.7
-  resolution: "@betterer/regexp@npm:5.3.7"
+"@betterer/regexp@npm:5.4.0":
+  version: 5.4.0
+  resolution: "@betterer/regexp@npm:5.4.0"
   dependencies:
-    "@betterer/betterer": ^5.3.7
+    "@betterer/betterer": ^5.4.0
     "@betterer/errors": ^5.3.0
     tslib: ^2.3.1
-  checksum: 76dd9104fa5249aff90e75b76d8e12612e66afa02387e16b7c02bc20fcb391a331e1a5b1fa06c641524c12fb29bd09ba93dad40c3e1c999cd1e577e17f72ad7e
+  checksum: eaa16b3ec83f587ea12f67ac76e92e40ebdc839a264baa600ea82282fff45f27351a863289e4425b753066242bd6ef017cdbef8e06d9229cf40ccbaeb8ad6b71
   languageName: node
   linkType: hard
 
@@ -21704,7 +21704,7 @@ __metadata:
     "@betterer/betterer": 5.4.0
     "@betterer/cli": 5.4.0
     "@betterer/eslint": 5.3.7
-    "@betterer/regexp": 5.3.7
+    "@betterer/regexp": 5.4.0
     "@emotion/css": 11.9.0
     "@emotion/eslint-plugin": 11.7.0
     "@emotion/react": 11.9.3
