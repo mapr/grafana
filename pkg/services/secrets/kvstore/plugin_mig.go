@@ -2,8 +2,12 @@ package kvstore
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
+	"github.com/grafana/grafana/pkg/infra/kvstore"
 	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/services/secrets"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/setting"
@@ -17,7 +21,8 @@ type PluginSecretMigrationService struct {
 	logger         log.Logger
 	sqlStore       sqlstore.Store
 	secretsService secrets.Service
-	remoteCheck    UseRemoteSecretsPluginCheck
+	kvstore        kvstore.KVStore
+	manager        plugins.SecretsPluginManager
 }
 
 func ProvidePluginSecretMigrationService(
@@ -25,54 +30,72 @@ func ProvidePluginSecretMigrationService(
 	cfg *setting.Cfg,
 	sqlStore sqlstore.Store,
 	secretsService secrets.Service,
-	remoteCheck UseRemoteSecretsPluginCheck,
+	kvstore kvstore.KVStore,
+	manager plugins.SecretsPluginManager,
 ) *PluginSecretMigrationService {
 	return &PluginSecretMigrationService{
 		secretsStore:   secretsStore,
 		cfg:            cfg,
-		logger:         log.New("sec-plugin-mig"),
+		logger:         log.New("secret.migration.plugin"),
 		sqlStore:       sqlStore,
 		secretsService: secretsService,
-		remoteCheck:    remoteCheck,
+		kvstore:        kvstore,
+		manager:        manager,
 	}
 }
 
 func (s *PluginSecretMigrationService) Migrate(ctx context.Context) error {
 	// Check if we should migrate to plugin - default false
-	if s.cfg.SectionWithEnvOverrides("secrets").Key("migrate_to_plugin").MustBool(false) &&
-		s.remoteCheck.ShouldUseRemoteSecretsPlugin() {
+	if err := EvaluateRemoteSecretsPlugin(s.manager, s.cfg); err == nil {
 		s.logger.Debug("starting migration of unified secrets to the plugin")
-		// we need to instantiate the secretsKVStore as this is not on wire, and in this scenario,
-		// the secrets store would be the plugin.
-		secretsSql := &secretsKVStoreSQL{
-			sqlStore:       s.sqlStore,
-			secretsService: s.secretsService,
-			log:            s.logger,
-			decryptionCache: decryptionCache{
-				cache: make(map[int64]cachedDecrypted),
-			},
+		// we need to get the fallback store since in this scenario the secrets store would be the plugin.
+		fallbackStore := s.secretsStore.Fallback()
+		if fallbackStore == nil {
+			return errors.New("unable to get fallback secret store for migration")
 		}
 
-		allSec, err := secretsSql.GetAll(ctx)
+		// before we start migrating, check see if plugin startup failures were already fatal
+		namespacedKVStore := GetNamespacedKVStore(s.kvstore)
+		wasFatal, err := isPluginStartupErrorFatal(ctx, namespacedKVStore)
+		if err != nil {
+			s.logger.Warn("unable to determine whether plugin startup failures are fatal - continuing migration anyway.")
+		}
+
+		allSec, err := fallbackStore.GetAll(ctx)
 		if err != nil {
 			return nil
 		}
+		totalSec := len(allSec)
 		// We just set it again as the current secret store should be the plugin secret
-		for _, sec := range allSec {
+		s.logger.Debug(fmt.Sprintf("Total amount of secrets to migrate: %d", totalSec))
+		for i, sec := range allSec {
+			s.logger.Debug(fmt.Sprintf("Migrating secret %d of %d", i+1, totalSec), "current", i+1, "secretCount", totalSec)
 			err = s.secretsStore.Set(ctx, *sec.OrgId, *sec.Namespace, *sec.Type, sec.Value)
 			if err != nil {
 				return err
 			}
 		}
-		s.logger.Debug("migrated unified secrets to plugin", "number of secrets", len(allSec))
+		s.logger.Debug("migrated unified secrets to plugin", "number of secrets", totalSec)
 		// as no err was returned, when we delete all the secrets from the sql store
-		for _, sec := range allSec {
-			err = secretsSql.Del(ctx, *sec.OrgId, *sec.Namespace, *sec.Type)
+		for index, sec := range allSec {
+			s.logger.Debug(fmt.Sprintf("Cleaning secret %d of %d", index+1, totalSec), "current", index+1, "secretCount", totalSec)
+
+			err = fallbackStore.Del(ctx, *sec.OrgId, *sec.Namespace, *sec.Type)
 			if err != nil {
+				s.logger.Error("plugin migrator encountered error while deleting unified secrets")
+				if index == 0 && !wasFatal {
+					// old unified secrets still exists, so plugin startup errors are still not fatal, unless they were before we started
+					err := setPluginStartupErrorFatal(ctx, namespacedKVStore, false)
+					if err != nil {
+						s.logger.Error("error reverting plugin failure fatal status", "error", err.Error())
+					} else {
+						s.logger.Debug("application will continue to function without the secrets plugin")
+					}
+				}
 				return err
 			}
 		}
-		s.logger.Debug("deleted unified secrets after migration", "number of secrets", len(allSec))
+		s.logger.Debug("deleted unified secrets after migration", "number of secrets", totalSec)
 	}
 	return nil
 }
