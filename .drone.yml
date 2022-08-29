@@ -67,12 +67,6 @@ steps:
   image: byrnedo/alpine-curl:0.1.8
   name: grabpl
 - commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - yarn install --immutable
   depends_on:
   - grabpl
@@ -158,12 +152,6 @@ steps:
     CGO_ENABLED: 0
   image: golang:1.17
   name: compile-build-cmd
-- commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
 - commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
@@ -270,12 +258,6 @@ steps:
   image: golang:1.17
   name: compile-build-cmd
 - commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
   - '# The following command will fail if running code generators produces any diff
@@ -312,7 +294,6 @@ steps:
 - commands:
   - ./bin/build build-backend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - wire-install
   - compile-build-cmd
   image: grafana/build-container:1.5.9
@@ -321,7 +302,6 @@ steps:
   - ./bin/build build-frontend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
   - compile-build-cmd
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -330,7 +310,6 @@ steps:
 - commands:
   - ./bin/grabpl build-frontend-packages --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -339,7 +318,6 @@ steps:
 - commands:
   - ./bin/build  build-plugins --jobs 8 --edition oss
   depends_on:
-  - gen-version
   - yarn-install
   environment: null
   image: grafana/build-container:1.5.9
@@ -639,12 +617,6 @@ steps:
   image: alpine:3.15.6
   name: identify-runner
 - commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - yarn install --immutable
   depends_on:
   - grabpl
@@ -673,7 +645,6 @@ steps:
 - commands:
   - ./bin/grabpl build-frontend-packages --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -738,12 +709,6 @@ steps:
   image: alpine:3.15.6
   name: identify-runner
 - commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - yarn install --immutable
   depends_on:
   - grabpl
@@ -772,7 +737,6 @@ steps:
 - commands:
   - ./bin/grabpl build-frontend-packages --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -837,12 +801,6 @@ steps:
   - chmod +x bin/grabpl
   image: byrnedo/alpine-curl:0.1.8
   name: grabpl
-- commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
 - commands:
   - yarn install --immutable
   depends_on:
@@ -926,12 +884,6 @@ steps:
     CGO_ENABLED: 0
   image: golang:1.17
   name: compile-build-cmd
-- commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
 - commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
@@ -1037,12 +989,6 @@ steps:
   image: golang:1.17
   name: compile-build-cmd
 - commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
   - '# The following command will fail if running code generators produces any diff
@@ -1105,7 +1051,6 @@ steps:
 - commands:
   - ./bin/build build-backend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - wire-install
   - compile-build-cmd
   image: grafana/build-container:1.5.9
@@ -1114,7 +1059,6 @@ steps:
   - ./bin/build build-frontend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
   - compile-build-cmd
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -1123,7 +1067,6 @@ steps:
 - commands:
   - ./bin/grabpl build-frontend-packages --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -1132,7 +1075,6 @@ steps:
 - commands:
   - ./bin/build  build-plugins --jobs 8 --edition oss
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     GRAFANA_API_KEY:
@@ -1578,7 +1520,6 @@ steps:
   - gcloud auth activate-service-account --key-file=gcpkey.json
   - rm gcpkey.json
   - cp C:\App\nssm-2.24.zip .
-  - .\grabpl.exe gen-version --build-id $$env:DRONE_BUILD_NUMBER
   - .\grabpl.exe windows-installer --edition oss --build-id $$env:DRONE_BUILD_NUMBER
   - $$fname = ((Get-Childitem grafana*.msi -name) -split "`n")[0]
   - gsutil cp $$fname gs://grafana-downloads/oss/main/
@@ -1667,12 +1608,6 @@ steps:
   image: byrnedo/alpine-curl:0.1.8
   name: grabpl
 - commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - go build -o ./bin/build -ldflags '-extldflags -static' ./pkg/build/cmd
   depends_on: []
   environment:
@@ -1687,7 +1622,7 @@ steps:
   - ./bin/grabpl publish packages --edition oss --gcp-key /tmp/gcpkey.json --build-id
     ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
+  - grabpl
   environment:
     GCP_KEY:
       from_secret: gcp_key
@@ -1779,12 +1714,6 @@ steps:
   image: byrnedo/alpine-curl:0.1.8
   name: grabpl
 - commands:
-  - ./bin/grabpl gen-version ${DRONE_TAG}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
   - '# The following command will fail if running code generators produces any diff
@@ -1815,7 +1744,6 @@ steps:
 - commands:
   - ./bin/build build-backend --jobs 8 --edition oss ${DRONE_TAG}
   depends_on:
-  - gen-version
   - wire-install
   - compile-build-cmd
   image: grafana/build-container:1.5.9
@@ -1824,7 +1752,6 @@ steps:
   - ./bin/build build-frontend --jobs 8 --edition oss ${DRONE_TAG}
   depends_on:
   - compile-build-cmd
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -1833,7 +1760,6 @@ steps:
 - commands:
   - ./bin/grabpl build-frontend-packages --jobs 8 --edition oss ${DRONE_TAG}
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -1842,7 +1768,6 @@ steps:
 - commands:
   - ./bin/build  build-plugins --jobs 8 --edition oss
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     GRAFANA_API_KEY:
@@ -2089,12 +2014,6 @@ steps:
   image: byrnedo/alpine-curl:0.1.8
   name: grabpl
 - commands:
-  - ./bin/grabpl gen-version ${DRONE_TAG}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
   - '# The following command will fail if running code generators produces any diff
@@ -2337,7 +2256,6 @@ steps:
   - gcloud auth activate-service-account --key-file=gcpkey.json
   - rm gcpkey.json
   - cp C:\App\nssm-2.24.zip .
-  - .\grabpl.exe gen-version ${DRONE_TAG}
   - .\grabpl.exe windows-installer --edition oss ${DRONE_TAG}
   - $$fname = ((Get-Childitem grafana*.msi -name) -split "`n")[0]
   - gsutil cp $$fname gs://%PRERELEASE_BUCKET%/artifacts/downloads/${DRONE_TAG}/oss/release/
@@ -2438,12 +2356,6 @@ steps:
   image: grafana/build-container:1.5.9
   name: yarn-install
 - commands:
-  - ./bin/grabpl gen-version ${DRONE_TAG}
-  depends_on:
-  - init-enterprise
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
   - '# The following command will fail if running code generators produces any diff
@@ -2456,7 +2368,6 @@ steps:
 - commands:
   - ./bin/build build-backend --jobs 8 --edition enterprise ${DRONE_TAG}
   depends_on:
-  - gen-version
   - wire-install
   - compile-build-cmd
   image: grafana/build-container:1.5.9
@@ -2465,7 +2376,6 @@ steps:
   - ./bin/build build-frontend --jobs 8 --edition enterprise ${DRONE_TAG}
   depends_on:
   - compile-build-cmd
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -2474,7 +2384,6 @@ steps:
 - commands:
   - ./bin/grabpl build-frontend-packages --jobs 8 --edition enterprise ${DRONE_TAG}
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -2483,7 +2392,6 @@ steps:
 - commands:
   - ./bin/build  build-plugins --jobs 8 --edition enterprise
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     GRAFANA_API_KEY:
@@ -2493,7 +2401,6 @@ steps:
 - commands:
   - ./bin/build build-backend --jobs 8 --edition enterprise2 ${DRONE_TAG}
   depends_on:
-  - gen-version
   - wire-install
   - compile-build-cmd
   image: grafana/build-container:1.5.9
@@ -2796,12 +2703,6 @@ steps:
   - init-enterprise
   image: grafana/build-container:1.5.9
   name: yarn-install
-- commands:
-  - ./bin/grabpl gen-version ${DRONE_TAG}
-  depends_on:
-  - init-enterprise
-  image: grafana/build-container:1.5.9
-  name: gen-version
 - commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
@@ -3108,7 +3009,6 @@ steps:
   - gcloud auth activate-service-account --key-file=gcpkey.json
   - rm gcpkey.json
   - cp C:\App\nssm-2.24.zip .
-  - .\grabpl.exe gen-version ${DRONE_TAG}
   - .\grabpl.exe windows-installer --edition enterprise ${DRONE_TAG}
   - $$fname = ((Get-Childitem grafana*.msi -name) -split "`n")[0]
   - gsutil cp $$fname gs://%PRERELEASE_BUCKET%/artifacts/downloads/${DRONE_TAG}/enterprise/release/
@@ -3586,15 +3486,9 @@ steps:
   image: byrnedo/alpine-curl:0.1.8
   name: grabpl
 - commands:
-  - ./bin/grabpl gen-version ${DRONE_TAG}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - ./bin/grabpl publish packages --edition oss --gcp-key /tmp/gcpkey.json ${DRONE_TAG}
   depends_on:
-  - gen-version
+  - grabpl
   environment:
     GCP_KEY:
       from_secret: gcp_key
@@ -3650,16 +3544,10 @@ steps:
   image: byrnedo/alpine-curl:0.1.8
   name: grabpl
 - commands:
-  - ./bin/grabpl gen-version ${DRONE_TAG}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - ./bin/grabpl publish packages --edition enterprise --gcp-key /tmp/gcpkey.json
     ${DRONE_TAG}
   depends_on:
-  - gen-version
+  - grabpl
   environment:
     GCP_KEY:
       from_secret: gcp_key
@@ -3753,12 +3641,6 @@ steps:
   image: byrnedo/alpine-curl:0.1.8
   name: grabpl
 - commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
   - '# The following command will fail if running code generators produces any diff
@@ -3789,7 +3671,6 @@ steps:
 - commands:
   - ./bin/build build-backend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - wire-install
   - compile-build-cmd
   image: grafana/build-container:1.5.9
@@ -3798,7 +3679,6 @@ steps:
   - ./bin/build build-frontend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
   - compile-build-cmd
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -3807,7 +3687,6 @@ steps:
 - commands:
   - ./bin/grabpl build-frontend-packages --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -3816,7 +3695,6 @@ steps:
 - commands:
   - ./bin/build  build-plugins --jobs 8 --edition oss
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     GRAFANA_API_KEY:
@@ -4033,12 +3911,6 @@ steps:
   - chmod +x bin/grabpl
   image: byrnedo/alpine-curl:0.1.8
   name: grabpl
-- commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - grabpl
-  image: grafana/build-container:1.5.9
-  name: gen-version
 - commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
@@ -4357,12 +4229,6 @@ steps:
   image: grafana/build-container:1.5.9
   name: yarn-install
 - commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - init-enterprise
-  image: grafana/build-container:1.5.9
-  name: gen-version
-- commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
   - '# The following command will fail if running code generators produces any diff
@@ -4375,7 +4241,6 @@ steps:
 - commands:
   - ./bin/build build-backend --jobs 8 --edition enterprise --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - wire-install
   - compile-build-cmd
   image: grafana/build-container:1.5.9
@@ -4384,7 +4249,6 @@ steps:
   - ./bin/build build-frontend --jobs 8 --edition enterprise --build-id ${DRONE_BUILD_NUMBER}
   depends_on:
   - compile-build-cmd
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -4394,7 +4258,6 @@ steps:
   - ./bin/grabpl build-frontend-packages --jobs 8 --edition enterprise --build-id
     ${DRONE_BUILD_NUMBER}
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     NODE_OPTIONS: --max_old_space_size=8192
@@ -4403,7 +4266,6 @@ steps:
 - commands:
   - ./bin/build  build-plugins --jobs 8 --edition enterprise
   depends_on:
-  - gen-version
   - yarn-install
   environment:
     GRAFANA_API_KEY:
@@ -4414,7 +4276,6 @@ steps:
   - ./bin/build build-backend --jobs 8 --edition enterprise2 --build-id ${DRONE_BUILD_NUMBER}
     --variants linux-amd64
   depends_on:
-  - gen-version
   - wire-install
   - compile-build-cmd
   image: grafana/build-container:1.5.9
@@ -4705,12 +4566,6 @@ steps:
   - init-enterprise
   image: grafana/build-container:1.5.9
   name: yarn-install
-- commands:
-  - ./bin/grabpl gen-version --build-id ${DRONE_BUILD_NUMBER}
-  depends_on:
-  - init-enterprise
-  image: grafana/build-container:1.5.9
-  name: gen-version
 - commands:
   - '# It is required that code generated from Thema/CUE be committed and in sync
     with its inputs.'
@@ -5175,6 +5030,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: 011db54ea09dbe5c8e9add487b5b1d46b1bbcefa480efc55c52c4cb2bcf084a2
+hmac: 6084879a3eb75e8222cbf994cc7e6f533b6893ad2a370cf99b6618eef864e120
 
 ...
