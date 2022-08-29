@@ -31,7 +31,7 @@ require (
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/facebookgo/structtag v0.0.0-20150214074306-217e25fb9691 // indirect
 	github.com/facebookgo/subset v0.0.0-20150612182917-8dac2c3c4870 // indirect
-	github.com/fatih/color v1.10.0
+	github.com/fatih/color v1.13.0
 	github.com/gchaincl/sqlhooks v1.3.0
 	github.com/getsentry/sentry-go v0.10.0
 	github.com/go-kit/kit v0.10.0
@@ -53,7 +53,7 @@ require (
 	github.com/grafana/grafana-plugin-sdk-go v0.93.0
 	github.com/grafana/loki v1.6.2-0.20210510132741-f408e05ad426
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/hashicorp/go-hclog v0.16.0
+	github.com/hashicorp/go-hclog v1.3.0
 	github.com/hashicorp/go-plugin v1.4.0
 	github.com/hashicorp/go-version v1.3.0
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec
@@ -64,7 +64,7 @@ require (
 	github.com/lib/pq v1.10.0
 	github.com/linkedin/goavro/v2 v2.10.0
 	github.com/magefile/mage v1.11.0
-	github.com/mattn/go-isatty v0.0.12
+	github.com/mattn/go-isatty v0.0.14
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -78,7 +78,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/russellhaering/goxmldsig v1.1.0
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.2
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/timberio/go-datemath v0.1.1-0.20200323150745-74ddef604fff
 	github.com/ua-parser/uap-go v0.0.0-20190826212731-daf92ba38329
@@ -108,7 +108,7 @@ require (
 	gopkg.in/redis.v5 v5.2.9
 	gopkg.in/square/go-jose.v2 v2.5.1
 	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.1
 	xorm.io/core v0.7.3
 	xorm.io/xorm v0.8.2
 )
