@@ -5,6 +5,7 @@ import {
   isQueryWithLabelFormat,
   isQueryWithParser,
   isValidQuery,
+  getParserFromQuery,
 } from './queryUtils';
 import { LokiQuery, LokiQueryType } from './types';
 
@@ -213,5 +214,18 @@ describe('isQueryWithLabelFormat', () => {
 
   it('returns false if metrics query without label format', () => {
     expect(isQueryWithLabelFormat('rate({job="grafana"} [5m])')).toBe(false);
+  });
+});
+
+describe('getParserFromQuery', () => {
+  it('returns no parser', () => {
+    expect(getParserFromQuery('{job="grafana"}')).toBeUndefined();
+  });
+
+  it.each(['json', 'logfmt', 'pattern', 'regexp', 'unpack'])('detects %s parser', (parser: string) => {
+    expect(getParserFromQuery(`{job="grafana"} | ${parser}`)).toBe(parser);
+    expect(getParserFromQuery(`sum(count_over_time({place="luna"} | ${parser} | unwrap counter )) by (place)`)).toBe(
+      parser
+    );
   });
 });
