@@ -25,6 +25,8 @@ const (
 	OpsgenieSendTags    = "tags"
 	OpsgenieSendDetails = "details"
 	OpsgenieSendBoth    = "both"
+	// https://docs.opsgenie.com/docs/alert-api - 130 characters meaning runes.
+	opsGenieMaxMessageLenRunes = 130
 )
 
 var (
@@ -194,9 +196,9 @@ func (on *OpsgenieNotifier) buildOpsgenieMessage(ctx context.Context, alerts mod
 		titleTmpl = `{{ template "default.title" . }}`
 	}
 
-	title := tmpl(titleTmpl)
-	if len(title) > 130 {
-		title = title[:127] + "..."
+	title, truncated := TruncateInRunes(tmpl(titleTmpl), opsGenieMaxMessageLenRunes)
+	if truncated {
+		on.log.Warn("Truncated message", "alert", key, "runes", opsGenieMaxMessageLenRunes)
 	}
 
 	description := tmpl(on.Description)
