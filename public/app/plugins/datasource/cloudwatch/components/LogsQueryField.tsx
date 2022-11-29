@@ -54,7 +54,7 @@ export const CloudWatchLogsQueryField = (props: CloudWatchLogsQueryFieldProps) =
   ];
 
   React.useEffect(() => {
-    if (onChange) {
+    if (onChange && !query.logGroupNames) {
       onChange({ ...query, logGroupNames: query.logGroupNames ?? datasource.logsQueryRunner.defaultLogGroups });
     }
     // Run only once
