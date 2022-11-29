@@ -57,6 +57,8 @@ export const CloudWatchLogsQueryField = (props: CloudWatchLogsQueryFieldProps) =
     if (onChange) {
       onChange({ ...query, logGroupNames: query.logGroupNames ?? datasource.logsQueryRunner.defaultLogGroups });
     }
+    // Run only once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onChangeQuery = (value: string) => {
