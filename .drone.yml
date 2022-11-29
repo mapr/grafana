@@ -4125,7 +4125,7 @@ steps:
   - name: docker
     path: /var/run/docker.sock
 - commands:
-  - ./bin/build publish github --repo grafana/grafana-ci-sandbox --path grafana-enterprise2-0.0.0-testpre-amd64.img
+  - ./bin/build publish github --repo grafana/grafana-ci-sandbox --path grafana-enterprise2-0.0.0-test-amd64.img
     --create
   depends_on:
   - fetch-images-enterprise2
@@ -4187,7 +4187,7 @@ steps:
   - name: docker
     path: /var/run/docker.sock
 - commands:
-  - ./bin/build publish github --repo grafana/grafana-ci-sandbox --path grafana-enterprise2-0.0.0-testpre-amd64.img
+  - ./bin/build publish github --repo grafana/grafana-ci-sandbox --path grafana-enterprise2-0.0.0-test-amd64.img
     --create
   depends_on:
   - fetch-images-enterprise2
@@ -6430,6 +6430,6 @@ kind: secret
 name: packages_secret_access_key
 ---
 kind: signature
-hmac: 1fcf68ff5bd3a51b252b4bc79399be39908b220feb5542f64de51d8926683b2b
+hmac: b374a2dc613cca18311a08dc12801f5d3041238bea4c58e70ac4c019018400a6
 
 ...
