@@ -1,5 +1,6 @@
 import { LanguageMap, languages as prismLanguages } from 'prismjs';
-import * as React from 'react';
+import React from 'react';
+import { useEffectOnce } from 'react-use';
 import { Node, Plugin } from 'slate';
 import { Editor } from 'slate-react';
 
@@ -53,13 +54,11 @@ export const CloudWatchLogsQueryField = (props: CloudWatchLogsQueryFieldProps) =
     ),
   ];
 
-  React.useEffect(() => {
-    if (onChange && !query.logGroupNames) {
-      onChange({ ...query, logGroupNames: query.logGroupNames ?? datasource.logsQueryRunner.defaultLogGroups });
+  useEffectOnce(() => {
+    if (!query.logGroupNames) {
+      onChange({ ...query, logGroupNames: datasource.logsQueryRunner.defaultLogGroups });
     }
-    // Run only once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  });
 
   const onChangeQuery = (value: string) => {
     // Send text change to parent
