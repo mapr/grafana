@@ -29,4 +29,6 @@ module.exports = {
     '\\.css': '<rootDir>/public/test/mocks/style.ts',
     'monaco-editor/esm/vs/editor/editor.api': '<rootDir>/public/test/mocks/monaco.ts',
   },
+  // Log the test results with dynamic Loki tags
+  reporters: ['default', ['<rootDir>/public/test/log-reporter.js', {}]],
 };
