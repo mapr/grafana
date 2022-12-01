@@ -78,6 +78,11 @@ const getStyles = (theme: GrafanaTheme2) => {
   };
 };
 
+const placeHolderScopedVars = {
+  __interval: { text: '1s', value: '1s' },
+  __interval_ms: { text: '1000', value: 1000 },
+};
+
 const MonacoQueryField = ({ history, onBlur, onRunQuery, initialValue, datasource }: Props) => {
   // we need only one instance of `overrideServices` during the lifetime of the react component
   const overrideServicesRef = useRef(getOverrideServices());
@@ -125,8 +130,13 @@ const MonacoQueryField = ({ history, onBlur, onRunQuery, initialValue, datasourc
             if (!model) {
               return;
             }
-
-            const errors = validateQuery(datasource.interpolateString(model.getValue()), model.getLinesContent()) || [];
+            const query = model.getValue();
+            const errors =
+              validateQuery(
+                query,
+                datasource.interpolateString(query, placeHolderScopedVars),
+                model.getLinesContent()
+              ) || [];
 
             const markers = errors.map(({ error, ...boundary }) => ({
               message: `${
