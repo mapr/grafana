@@ -48,7 +48,7 @@ export const meta: DataSourcePluginMeta<CloudWatchJsonData> = {
 };
 
 export const CloudWatchSettings: DataSourceInstanceSettings<CloudWatchJsonData> = {
-  jsonData: { defaultRegion: 'us-west-1', tracingDatasourceUid: 'xray' },
+  jsonData: { defaultRegion: 'us-west-1', tracingDatasourceUid: 'xray', defaultLogGroups: ['something'] },
   id: 0,
   uid: '',
   type: '',
