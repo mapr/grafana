@@ -9,12 +9,23 @@ class CustomReporter {
   }
 
   onRunComplete(testContexts, results) {
-    console.log('Custom reporter output:');
-    console.log('global config: ', this._globalConfig);
-    console.log('options for this reporter from Jest config: ', this._options);
-    console.log('reporter context passed from test scheduler: ', this._context);
-    console.log('results: ', results);
+    if (!this._options.enable) {
+      return;
+    }
 
+    console.log('Results:', results);
+    this.logStats(results);
+    this.logResults(results);
+  }
+
+  logResults(results) {
+    results.testResults.forEach((t) => {
+      // JestTestResult title="should preserve the placement" suite="when generating the legend for a panel" file= duration=1 currentRetry=1
+      printTestResult(t, result.testFilePath);
+    });
+  }
+
+  logStats(results) {
     const stats = {
       suites: results.numTotalTestSuites,
       tests: results.numTotalTests,
@@ -24,19 +35,15 @@ class CustomReporter {
     };
 
     console.log(`JestStats ${objToLogAttributes(stats)}`);
-    results.testResults.forEach((t) => {
-      // JestTestResult title="should preserve the placement" suite="when generating the legend for a panel" file= duration=1 currentRetry=1
-      printResult(t);
-    });
   }
 }
 
-function printResult(result, file = '') {
+function printTestResult(result, file = '') {
   if (result.status === 'pending') {
     return;
   }
   if (result.testResults) {
-    result.testResults.forEach((r) => printResult(r, r.file || file));
+    result.testResults.forEach((r) => printTestResult(r, file || result.testFilePath));
   } else {
     const testInfo = {
       title: result.title,
@@ -46,8 +53,11 @@ function printResult(result, file = '') {
       currentRetry: result.invocations,
     };
     console.log(`JestTestResult ${objToLogAttributes(testInfo)}`);
+    if (result.status === 'failure') {
+    }
   }
 }
+
 /**
  * Stringify object to be log friendly
  * @param {Object} obj

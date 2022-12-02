@@ -120,7 +120,7 @@ describe('DashboardModel', () => {
     });
 
     it('should have title', () => {
-      expect(model.title).toBe('No Titl');
+      expect(model.title).toBe('No Title');
     });
 
     it('should have panel id', () => {
