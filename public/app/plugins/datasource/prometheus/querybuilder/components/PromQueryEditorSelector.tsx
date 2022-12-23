@@ -4,7 +4,6 @@ import React, { SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import { CoreApp, LoadingState } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { EditorHeader, EditorRows, FlexItem, Space } from '@grafana/experimental';
-
 import { reportInteraction } from '@grafana/runtime';
 import { ConfirmModal, Button } from '@grafana/ui';
 
