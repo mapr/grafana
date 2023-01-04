@@ -759,7 +759,6 @@ export class PrometheusDatasource
     }
 
     const step = options.annotation.step || ANNOTATION_QUERY_STEP_DEFAULT;
-    // const maxDataPoints = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
     const queryModel = {
       expr,
       range: true,
@@ -768,7 +767,6 @@ export class PrometheusDatasource
       interval: step,
       refId: 'X',
       datasource: this.getRef(),
-      // maxDataPoints: maxDataPoints
     };
 
     return await lastValueFrom(
