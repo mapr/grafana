@@ -8,7 +8,6 @@ import {
   KBarPositioner,
   KBarResults,
   KBarSearch,
-  useMatches,
   VisualState,
   useRegisterActions,
   useKBar,
@@ -21,6 +20,7 @@ import { useStyles2 } from '@grafana/ui';
 
 import { ResultItem } from './ResultItem';
 import useActions from './actions/useActions';
+import { useMatches } from './useMatches';
 
 /**
  * Wrap all the components from KBar here.
