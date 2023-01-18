@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/grafana/grafana/pkg/plugins/codegen"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,7 +17,6 @@ import (
 	"github.com/grafana/codejen"
 	corecodegen "github.com/grafana/grafana/pkg/codegen"
 	"github.com/grafana/grafana/pkg/cuectx"
-	"github.com/grafana/grafana/pkg/plugins/codegen"
 	"github.com/grafana/grafana/pkg/plugins/pfs"
 )
 
@@ -56,6 +56,9 @@ func main() {
 		codegen.PluginTreeListJenny(),
 		codegen.PluginGoTypesJenny("pkg/tsdb", adaptToPipeline(corecodegen.GoTypesJenny{})),
 		codegen.PluginTSTypesJenny("public/app/plugins", adaptToPipeline(corecodegen.TSTypesJenny{})),
+		codegen.PluginDocsJenny(adaptToPipeline(corecodegen.NewDocsJenny(
+			filepath.Join("docs", "sources", "developers", "kinds", "composable"),
+		))),
 	)
 
 	pluginKindGen.AddPostprocessors(corecodegen.SlashHeaderMapper("public/app/plugins/gen.go"))
