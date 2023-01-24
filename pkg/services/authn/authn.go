@@ -61,7 +61,7 @@ type Service interface {
 	// RegisterPostLoginHook registers a hook that that is called after a login request.
 	RegisterPostLoginHook(hook PostLoginHookFn)
 	// RedirectURL will generate url that we can use to initiate auth flow for supported clients.
-	RedirectURL(ctx context.Context, client string, r *Request) (string, error)
+	RedirectURL(ctx context.Context, client string, r *Request) (*Redirect, error)
 }
 
 type Client interface {
@@ -81,7 +81,7 @@ type ContextAwareClient interface {
 
 type RedirectClient interface {
 	Client
-	RedirectURL(ctx context.Context, r *Request) (string, error)
+	RedirectURL(ctx context.Context, r *Request) (*Redirect, error)
 }
 
 type PasswordClient interface {
@@ -118,6 +118,12 @@ func (r *Request) GetMeta(k string) string {
 		r.metadata = map[string]string{}
 	}
 	return r.metadata[k]
+}
+
+type Redirect struct {
+	URL   string
+	State string
+	PKCE  string
 }
 
 const (
