@@ -60,7 +60,7 @@ type dashboardPreviewsSystemRequirements struct {
 	RequiredImageRendererPluginVersion string `json:"requiredImageRendererPluginVersion"`
 }
 
-type dashboardPreviewsSetupConfig struct {
+type DashboardPreviewsSetupConfig struct {
 	SystemRequirements dashboardPreviewsSystemRequirements `json:"systemRequirements"`
 	ThumbnailsExist    bool                                `json:"thumbnailsExist"`
 }

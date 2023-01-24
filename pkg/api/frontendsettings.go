@@ -13,10 +13,158 @@ import (
 	"github.com/grafana/grafana/pkg/services/licensing"
 	"github.com/grafana/grafana/pkg/services/pluginsettings"
 	"github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	"github.com/grafana/grafana/pkg/services/thumbs"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/tsdb/grafanads"
 	"github.com/grafana/grafana/pkg/util"
 )
+
+type FrontendSettingsAuthDTO struct {
+	OAuthSkipOrgRoleUpdateSync bool `json:"OAuthSkipOrgRoleUpdateSync"`
+	SAMLSkipOrgRoleSync        bool `json:"SAMLSkipOrgRoleSync"`
+	LDAPSkipOrgRoleSync        bool `json:"LDAPSkipOrgRoleSync"`
+	GoogleSkipOrgRoleSync      bool `json:"GoogleSkipOrgRoleSync"`
+	JWTAuthSkipOrgRoleSync     bool `json:"JWTAuthSkipOrgRoleSync"`
+	GrafanaComSkipOrgRoleSync  bool `json:"GrafanaComSkipOrgRoleSync"`
+	AzureADSkipOrgRoleSync     bool `json:"AzureADSkipOrgRoleSync"`
+	GithubSkipOrgRoleSync      bool `json:"GithubSkipOrgRoleSync"`
+	GitLabSkipOrgRoleSync      bool `json:"GitLabSkipOrgRoleSync"`
+	DisableSyncLock            bool `json:"DisableSyncLock"`
+}
+
+type FrontendSettingsBuildInfoDTO struct {
+	HideVersion   bool   `json:"hideVersion"`
+	Version       string `json:"version"`
+	Commit        string `json:"commit"`
+	Buildstamp    int64  `json:"buildstamp"`
+	Edition       string `json:"edition"`
+	LatestVersion string `json:"latestVersion"`
+	HasUpdate     bool   `json:"hasUpdate"`
+	Env           string `json:"env"`
+}
+
+type FrontendSettingsLicenseInfoDTO struct {
+	Expiry          int64           `json:"expiry"`
+	StateInfo       string          `json:"stateInfo"`
+	LicenseUrl      string          `json:"licenseUrl"`
+	Edition         string          `json:"edition"`
+	EnabledFeatures map[string]bool `json:"enabledFeatures"`
+}
+
+type FrontendSettingsAzureDTO struct {
+	Cloud                  string `json:"cloud"`
+	ManagedIdentityEnabled bool   `json:"managedIdentityEnabled"`
+}
+
+type FrontendSettingsCachingDTO struct {
+	Enabled bool `json:"enabled"`
+}
+
+type FrontendSettingsRecordedQueriesDTO struct {
+	Enabled bool `json:"enabled"`
+}
+
+type FrontendSettingsReportingDTO struct {
+	Enabled bool `json:"enabled"`
+}
+
+type FrontendSettingsUnifiedAlertingDTO struct {
+	MinInterval string `json:"minInterval"`
+}
+
+type FrontendSettingsDTO struct {
+	DefaultDatasource          string                           `json:"defaultDatasource"`
+	Datasources                map[string]plugins.DataSourceDTO `json:"datasources"`
+	MinRefreshInterval         string                           `json:"minRefreshInterval"`
+	Panels                     map[string]plugins.PanelDTO      `json:"panels"`
+	AppUrl                     string                           `json:"appUrl"`
+	AppSubUrl                  string                           `json:"appSubUrl"`
+	AllowOrgCreate             bool                             `json:"allowOrgCreate"`
+	AuthProxyEnabled           bool                             `json:"authProxyEnabled"`
+	LdapEnabled                bool                             `json:"ldapEnabled"`
+	JwtHeaderName              string                           `json:"jwtHeaderName"`
+	JwtUrlLogin                bool                             `json:"jwtUrlLogin"`
+	AlertingEnabled            *bool                            `json:"alertingEnabled"`
+	AlertingErrorOrTimeout     string                           `json:"alertingErrorOrTimeout"`
+	AlertingNoDataOrNullValues string                           `json:"alertingNoDataOrNullValues"`
+	AlertingMinInterval        int64                            `json:"alertingMinInterval"`
+	LiveEnabled                bool                             `json:"liveEnabled"`
+	AutoAssignOrg              bool                             `json:"autoAssignOrg"`
+
+	VerifyEmailEnabled  bool `json:"verifyEmailEnabled"`
+	SigV4AuthEnabled    bool `json:"sigV4AuthEnabled"`
+	AzureAuthEnabled    bool `json:"azureAuthEnabled"`
+	RbacEnabled         bool `json:"rbacEnabled"`
+	ExploreEnabled      bool `json:"exploreEnabled"`
+	HelpEnabled         bool `json:"helpEnabled"`
+	ProfileEnabled      bool `json:"profileEnabled"`
+	QueryHistoryEnabled bool `json:"queryHistoryEnabled"`
+
+	GoogleAnalyticsId                   string `json:"googleAnalyticsId"`
+	GoogleAnalytics4Id                  string `json:"googleAnalytics4Id"`
+	GoogleAnalytics4SendManualPageViews bool   `json:"GoogleAnalytics4SendManualPageViews"`
+
+	RudderstackWriteKey     string `json:"rudderstackWriteKey"`
+	RudderstackDataPlaneUrl string `json:"rudderstackDataPlaneUrl"`
+	RudderstackSdkUrl       string `json:"rudderstackSdkUrl"`
+	RudderstackConfigUrl    string `json:"rudderstackConfigUrl"`
+
+	FeedbackLinksEnabled                bool                     `json:"feedbackLinksEnabled"`
+	ApplicationInsightsConnectionString string                   `json:"applicationInsightsConnectionString"`
+	ApplicationInsightsEndpointUrl      string                   `json:"applicationInsightsEndpointUrl"`
+	DisableLoginForm                    bool                     `json:"disableLoginForm"`
+	DisableUserSignUp                   bool                     `json:"disableUserSignUp"`
+	LoginHint                           string                   `json:"loginHint"`
+	PasswordHint                        string                   `json:"passwordHint"`
+	ExternalUserMngInfo                 string                   `json:"externalUserMngInfo"`
+	ExternalUserMngLinkUrl              string                   `json:"externalUserMngLinkUrl"`
+	ExternalUserMngLinkName             string                   `json:"externalUserMngLinkName"`
+	ViewersCanEdit                      bool                     `json:"viewersCanEdit"`
+	AngularSupportEnabled               bool                     `json:"angularSupportEnabled"`
+	EditorsCanAdmin                     bool                     `json:"editorsCanAdmin"`
+	DisableSanitizeHtml                 bool                     `json:"disableSanitizeHtml"`
+	PluginsToPreload                    []*plugins.PreloadPlugin `json:"pluginsToPreload"`
+
+	Auth FrontendSettingsAuthDTO `json:"auth"`
+
+	BuildInfo FrontendSettingsBuildInfoDTO `json:"buildInfo"`
+
+	LicenseInfo FrontendSettingsLicenseInfoDTO `json:"licenseInfo"`
+
+	FeatureToggles                   map[string]bool                `json:"featureToggles"`
+	RendererAvailable                bool                           `json:"rendererAvailable"`
+	RendererVersion                  string                         `json:"rendererVersion"`
+	SecretsManagerPluginEnabled      bool                           `json:"secretsManagerPluginEnabled"`
+	Http2Enabled                     bool                           `json:"http2Enabled"`
+	Sentry                           setting.Sentry                 `json:"sentry"`
+	GrafanaJavascriptAgent           setting.GrafanaJavascriptAgent `json:"grafanaJavascriptAgent"`
+	PluginCatalogURL                 string                         `json:"pluginCatalogURL"`
+	PluginAdminEnabled               bool                           `json:"pluginAdminEnabled"`
+	PluginAdminExternalManageEnabled bool                           `json:"pluginAdminExternalManageEnabled"`
+	PluginCatalogHiddenPlugins       []string                       `json:"pluginCatalogHiddenPlugins"`
+	ExpressionsEnabled               bool                           `json:"expressionsEnabled"`
+	AwsAllowedAuthProviders          []string                       `json:"awsAllowedAuthProviders"`
+	AwsAssumeRoleEnabled             bool                           `json:"awsAssumeRoleEnabled"`
+	SupportBundlesEnabled            bool                           `json:"supportBundlesEnabled"`
+	SnapshotEnabled                  bool                           `json:"snapshotEnabled"`
+
+	Azure FrontendSettingsAzureDTO `json:"azure"`
+
+	Caching                 FrontendSettingsCachingDTO         `json:"caching"`
+	RecordedQueries         FrontendSettingsRecordedQueriesDTO `json:"recordedQueries"`
+	Reporting               FrontendSettingsReportingDTO       `json:"reporting"`
+	UnifiedAlertingEnabled  *bool                              `json:"unifiedAlertingEnabled"`
+	UnifiedAlerting         FrontendSettingsUnifiedAlertingDTO `json:"unifiedAlerting"`
+	Oauth                   map[string]interface{}             `json:"oauth"`
+	SamlEnabled             bool                               `json:"samlEnabled"`
+	SamlName                string                             `json:"samlName"`
+	TokenExpirationDayLimit int                                `json:"tokenExpirationDayLimit"`
+
+	DashboardPreviews *thumbs.DashboardPreviewsSetupConfig `json:"dashboardPreviews"`
+
+	GeomapDefaultBaseLayerConfig *map[string]interface{} `json:"geomapDefaultBaseLayerConfig"`
+	GeomapDisableCustomBaseLayer bool                    `json:"geomapDisableCustomBaseLayer"`
+}
 
 func (hs *HTTPServer) GetFrontendSettings(c *models.ReqContext) {
 	settings, err := hs.getFrontendSettingsMap(c)
@@ -29,7 +177,7 @@ func (hs *HTTPServer) GetFrontendSettings(c *models.ReqContext) {
 }
 
 // getFrontendSettingsMap returns a json object with all the settings needed for front end initialisation.
-func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (map[string]interface{}, error) {
+func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (*FrontendSettingsDTO, error) {
 	enabledPlugins, err := hs.enabledPlugins(c.Req.Context(), c.OrgID)
 	if err != nil {
 		return nil, err
@@ -96,134 +244,143 @@ func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (map[string]i
 	hasAccess := accesscontrol.HasAccess(hs.AccessControl, c)
 	secretsManagerPluginEnabled := kvstore.EvaluateRemoteSecretsPlugin(c.Req.Context(), hs.secretsPluginManager, hs.Cfg) == nil
 
-	jsonObj := map[string]interface{}{
-		"defaultDatasource":                   defaultDS,
-		"datasources":                         dataSources,
-		"minRefreshInterval":                  setting.MinRefreshInterval,
-		"panels":                              panels,
-		"appUrl":                              hs.Cfg.AppURL,
-		"appSubUrl":                           hs.Cfg.AppSubURL,
-		"allowOrgCreate":                      (setting.AllowUserOrgCreate && c.IsSignedIn) || c.IsGrafanaAdmin,
-		"authProxyEnabled":                    setting.AuthProxyEnabled,
-		"ldapEnabled":                         hs.Cfg.LDAPEnabled,
-		"jwtHeaderName":                       hs.Cfg.JWTAuthHeaderName,
-		"jwtUrlLogin":                         hs.Cfg.JWTAuthURLLogin,
-		"alertingEnabled":                     setting.AlertingEnabled,
-		"alertingErrorOrTimeout":              setting.AlertingErrorOrTimeout,
-		"alertingNoDataOrNullValues":          setting.AlertingNoDataOrNullValues,
-		"alertingMinInterval":                 setting.AlertingMinInterval,
-		"liveEnabled":                         hs.Cfg.LiveMaxConnections != 0,
-		"autoAssignOrg":                       setting.AutoAssignOrg,
-		"verifyEmailEnabled":                  setting.VerifyEmailEnabled,
-		"sigV4AuthEnabled":                    setting.SigV4AuthEnabled,
-		"azureAuthEnabled":                    setting.AzureAuthEnabled,
-		"rbacEnabled":                         hs.Cfg.RBACEnabled,
-		"exploreEnabled":                      setting.ExploreEnabled,
-		"helpEnabled":                         setting.HelpEnabled,
-		"profileEnabled":                      setting.ProfileEnabled,
-		"queryHistoryEnabled":                 hs.Cfg.QueryHistoryEnabled,
-		"googleAnalyticsId":                   setting.GoogleAnalyticsId,
-		"googleAnalytics4Id":                  setting.GoogleAnalytics4Id,
-		"GoogleAnalytics4SendManualPageViews": setting.GoogleAnalytics4SendManualPageViews,
-		"rudderstackWriteKey":                 setting.RudderstackWriteKey,
-		"rudderstackDataPlaneUrl":             setting.RudderstackDataPlaneUrl,
-		"rudderstackSdkUrl":                   setting.RudderstackSdkUrl,
-		"rudderstackConfigUrl":                setting.RudderstackConfigUrl,
-		"feedbackLinksEnabled":                hs.Cfg.FeedbackLinksEnabled,
-		"applicationInsightsConnectionString": hs.Cfg.ApplicationInsightsConnectionString,
-		"applicationInsightsEndpointUrl":      hs.Cfg.ApplicationInsightsEndpointUrl,
-		"disableLoginForm":                    setting.DisableLoginForm,
-		"disableUserSignUp":                   !setting.AllowUserSignUp,
-		"loginHint":                           setting.LoginHint,
-		"passwordHint":                        setting.PasswordHint,
-		"externalUserMngInfo":                 setting.ExternalUserMngInfo,
-		"externalUserMngLinkUrl":              setting.ExternalUserMngLinkUrl,
-		"externalUserMngLinkName":             setting.ExternalUserMngLinkName,
-		"viewersCanEdit":                      setting.ViewersCanEdit,
-		"angularSupportEnabled":               hs.Cfg.AngularSupportEnabled,
-		"editorsCanAdmin":                     hs.Cfg.EditorsCanAdmin,
-		"disableSanitizeHtml":                 hs.Cfg.DisableSanitizeHtml,
-		"pluginsToPreload":                    pluginsToPreload,
-		"auth": map[string]interface{}{
-			"OAuthSkipOrgRoleUpdateSync": hs.Cfg.OAuthSkipOrgRoleUpdateSync,
-			"SAMLSkipOrgRoleSync":        hs.Cfg.SectionWithEnvOverrides("auth.saml").Key("skip_org_role_sync").MustBool(false),
-			"LDAPSkipOrgRoleSync":        hs.Cfg.LDAPSkipOrgRoleSync,
-			"GithubSkipOrgRoleSync":      hs.Cfg.GithubSkipOrgRoleSync,
-			"GoogleSkipOrgRoleSync":      hs.Cfg.GoogleSkipOrgRoleSync,
-			"JWTAuthSkipOrgRoleSync":     hs.Cfg.JWTAuthSkipOrgRoleSync,
-			"GrafanaComSkipOrgRoleSync":  hs.Cfg.GrafanaComSkipOrgRoleSync,
-			"GitLabSkipOrgRoleSync":      hs.Cfg.GitLabSkipOrgRoleSync,
-			"AzureADSkipOrgRoleSync":     hs.Cfg.AzureADSkipOrgRoleSync,
-			"DisableSyncLock":            hs.Cfg.DisableSyncLock,
+	frontendSettings := &FrontendSettingsDTO{
+		DefaultDatasource:                   defaultDS,
+		Datasources:                         dataSources,
+		MinRefreshInterval:                  setting.MinRefreshInterval,
+		Panels:                              panels,
+		AppUrl:                              hs.Cfg.AppURL,
+		AppSubUrl:                           hs.Cfg.AppSubURL,
+		AllowOrgCreate:                      (setting.AllowUserOrgCreate && c.IsSignedIn) || c.IsGrafanaAdmin,
+		AuthProxyEnabled:                    setting.AuthProxyEnabled,
+		LdapEnabled:                         hs.Cfg.LDAPEnabled,
+		JwtHeaderName:                       hs.Cfg.JWTAuthHeaderName,
+		JwtUrlLogin:                         hs.Cfg.JWTAuthURLLogin,
+		AlertingEnabled:                     setting.AlertingEnabled,
+		AlertingErrorOrTimeout:              setting.AlertingErrorOrTimeout,
+		AlertingNoDataOrNullValues:          setting.AlertingNoDataOrNullValues,
+		AlertingMinInterval:                 setting.AlertingMinInterval,
+		LiveEnabled:                         hs.Cfg.LiveMaxConnections != 0,
+		AutoAssignOrg:                       setting.AutoAssignOrg,
+		VerifyEmailEnabled:                  setting.VerifyEmailEnabled,
+		SigV4AuthEnabled:                    setting.SigV4AuthEnabled,
+		AzureAuthEnabled:                    setting.AzureAuthEnabled,
+		RbacEnabled:                         hs.Cfg.RBACEnabled,
+		ExploreEnabled:                      setting.ExploreEnabled,
+		HelpEnabled:                         setting.HelpEnabled,
+		ProfileEnabled:                      setting.ProfileEnabled,
+		QueryHistoryEnabled:                 hs.Cfg.QueryHistoryEnabled,
+		GoogleAnalyticsId:                   setting.GoogleAnalyticsId,
+		GoogleAnalytics4Id:                  setting.GoogleAnalytics4Id,
+		GoogleAnalytics4SendManualPageViews: setting.GoogleAnalytics4SendManualPageViews,
+		RudderstackWriteKey:                 setting.RudderstackWriteKey,
+		RudderstackDataPlaneUrl:             setting.RudderstackDataPlaneUrl,
+		RudderstackSdkUrl:                   setting.RudderstackSdkUrl,
+		RudderstackConfigUrl:                setting.RudderstackConfigUrl,
+		FeedbackLinksEnabled:                hs.Cfg.FeedbackLinksEnabled,
+		ApplicationInsightsConnectionString: hs.Cfg.ApplicationInsightsConnectionString,
+		ApplicationInsightsEndpointUrl:      hs.Cfg.ApplicationInsightsEndpointUrl,
+		DisableLoginForm:                    setting.DisableLoginForm,
+		DisableUserSignUp:                   !setting.AllowUserSignUp,
+		LoginHint:                           setting.LoginHint,
+		PasswordHint:                        setting.PasswordHint,
+		ExternalUserMngInfo:                 setting.ExternalUserMngInfo,
+		ExternalUserMngLinkUrl:              setting.ExternalUserMngLinkUrl,
+		ExternalUserMngLinkName:             setting.ExternalUserMngLinkName,
+		ViewersCanEdit:                      setting.ViewersCanEdit,
+		AngularSupportEnabled:               hs.Cfg.AngularSupportEnabled,
+		EditorsCanAdmin:                     hs.Cfg.EditorsCanAdmin,
+		DisableSanitizeHtml:                 hs.Cfg.DisableSanitizeHtml,
+		PluginsToPreload:                    pluginsToPreload,
+
+		Auth: FrontendSettingsAuthDTO{
+			OAuthSkipOrgRoleUpdateSync: hs.Cfg.OAuthSkipOrgRoleUpdateSync,
+			SAMLSkipOrgRoleSync:        hs.Cfg.SectionWithEnvOverrides("auth.saml").Key("skip_org_role_sync").MustBool(false),
+			LDAPSkipOrgRoleSync:        hs.Cfg.LDAPSkipOrgRoleSync,
+			GoogleSkipOrgRoleSync:      hs.Cfg.GoogleSkipOrgRoleSync,
+			JWTAuthSkipOrgRoleSync:     hs.Cfg.JWTAuthSkipOrgRoleSync,
+			GrafanaComSkipOrgRoleSync:  hs.Cfg.GrafanaComSkipOrgRoleSync,
+			AzureADSkipOrgRoleSync:     hs.Cfg.AzureADSkipOrgRoleSync,
+			GithubSkipOrgRoleSync:      hs.Cfg.GithubSkipOrgRoleSync,
+			GitLabSkipOrgRoleSync:      hs.Cfg.GitLabSkipOrgRoleSync,
+			DisableSyncLock:            hs.Cfg.DisableSyncLock,
 		},
-		"buildInfo": map[string]interface{}{
-			"hideVersion":   hideVersion,
-			"version":       version,
-			"commit":        commit,
-			"buildstamp":    buildstamp,
-			"edition":       hs.License.Edition(),
-			"latestVersion": hs.grafanaUpdateChecker.LatestVersion(),
-			"hasUpdate":     hs.grafanaUpdateChecker.UpdateAvailable(),
-			"env":           setting.Env,
+
+		BuildInfo: FrontendSettingsBuildInfoDTO{
+			HideVersion:   hideVersion,
+			Version:       version,
+			Commit:        commit,
+			Buildstamp:    buildstamp,
+			Edition:       hs.License.Edition(),
+			LatestVersion: hs.grafanaUpdateChecker.LatestVersion(),
+			HasUpdate:     hs.grafanaUpdateChecker.UpdateAvailable(),
+			Env:           setting.Env,
 		},
-		"licenseInfo": map[string]interface{}{
-			"expiry":          hs.License.Expiry(),
-			"stateInfo":       hs.License.StateInfo(),
-			"licenseUrl":      hs.License.LicenseURL(hasAccess(accesscontrol.ReqGrafanaAdmin, licensing.PageAccess)),
-			"edition":         hs.License.Edition(),
-			"enabledFeatures": hs.License.EnabledFeatures(),
+
+		LicenseInfo: FrontendSettingsLicenseInfoDTO{
+			Expiry:          hs.License.Expiry(),
+			StateInfo:       hs.License.StateInfo(),
+			LicenseUrl:      hs.License.LicenseURL(hasAccess(accesscontrol.ReqGrafanaAdmin, licensing.PageAccess)),
+			Edition:         hs.License.Edition(),
+			EnabledFeatures: hs.License.EnabledFeatures(),
 		},
-		"featureToggles":                   hs.Features.GetEnabled(c.Req.Context()),
-		"rendererAvailable":                hs.RenderService.IsAvailable(c.Req.Context()),
-		"rendererVersion":                  hs.RenderService.Version(),
-		"secretsManagerPluginEnabled":      secretsManagerPluginEnabled,
-		"http2Enabled":                     hs.Cfg.Protocol == setting.HTTP2Scheme,
-		"sentry":                           hs.Cfg.Sentry,
-		"grafanaJavascriptAgent":           hs.Cfg.GrafanaJavascriptAgent,
-		"pluginCatalogURL":                 hs.Cfg.PluginCatalogURL,
-		"pluginAdminEnabled":               hs.Cfg.PluginAdminEnabled,
-		"pluginAdminExternalManageEnabled": hs.Cfg.PluginAdminEnabled && hs.Cfg.PluginAdminExternalManageEnabled,
-		"pluginCatalogHiddenPlugins":       hs.Cfg.PluginCatalogHiddenPlugins,
-		"expressionsEnabled":               hs.Cfg.ExpressionsEnabled,
-		"awsAllowedAuthProviders":          hs.Cfg.AWSAllowedAuthProviders,
-		"awsAssumeRoleEnabled":             hs.Cfg.AWSAssumeRoleEnabled,
-		"supportBundlesEnabled":            isSupportBundlesEnabled(hs),
-		"azure": map[string]interface{}{
-			"cloud":                  hs.Cfg.Azure.Cloud,
-			"managedIdentityEnabled": hs.Cfg.Azure.ManagedIdentityEnabled,
+
+		FeatureToggles:                   hs.Features.GetEnabled(c.Req.Context()),
+		RendererAvailable:                hs.RenderService.IsAvailable(c.Req.Context()),
+		RendererVersion:                  hs.RenderService.Version(),
+		SecretsManagerPluginEnabled:      secretsManagerPluginEnabled,
+		Http2Enabled:                     hs.Cfg.Protocol == setting.HTTP2Scheme,
+		Sentry:                           hs.Cfg.Sentry,
+		GrafanaJavascriptAgent:           hs.Cfg.GrafanaJavascriptAgent,
+		PluginCatalogURL:                 hs.Cfg.PluginCatalogURL,
+		PluginAdminEnabled:               hs.Cfg.PluginAdminEnabled,
+		PluginAdminExternalManageEnabled: hs.Cfg.PluginAdminEnabled && hs.Cfg.PluginAdminExternalManageEnabled,
+		PluginCatalogHiddenPlugins:       hs.Cfg.PluginCatalogHiddenPlugins,
+		ExpressionsEnabled:               hs.Cfg.ExpressionsEnabled,
+		AwsAllowedAuthProviders:          hs.Cfg.AWSAllowedAuthProviders,
+		AwsAssumeRoleEnabled:             hs.Cfg.AWSAssumeRoleEnabled,
+		SupportBundlesEnabled:            isSupportBundlesEnabled(hs),
+
+		Azure: FrontendSettingsAzureDTO{
+			Cloud:                  hs.Cfg.Azure.Cloud,
+			ManagedIdentityEnabled: hs.Cfg.Azure.ManagedIdentityEnabled,
 		},
-		"caching": map[string]bool{
-			"enabled": hs.Cfg.SectionWithEnvOverrides("caching").Key("enabled").MustBool(true),
+
+		Caching: FrontendSettingsCachingDTO{
+			Enabled: hs.Cfg.SectionWithEnvOverrides("caching").Key("enabled").MustBool(true),
 		},
-		"recordedQueries": map[string]bool{
-			"enabled": hs.Cfg.SectionWithEnvOverrides("recorded_queries").Key("enabled").MustBool(true),
+		RecordedQueries: FrontendSettingsRecordedQueriesDTO{
+			Enabled: hs.Cfg.SectionWithEnvOverrides("recorded_queries").Key("enabled").MustBool(true),
 		},
-		"reporting": map[string]bool{
-			"enabled": hs.Cfg.SectionWithEnvOverrides("reporting").Key("enabled").MustBool(true),
+		Reporting: FrontendSettingsReportingDTO{
+			Enabled: hs.Cfg.SectionWithEnvOverrides("reporting").Key("enabled").MustBool(true),
 		},
-		"unifiedAlertingEnabled": hs.Cfg.UnifiedAlerting.Enabled,
-		"unifiedAlerting": map[string]interface{}{
-			"minInterval": hs.Cfg.UnifiedAlerting.MinInterval.String(),
+
+		UnifiedAlertingEnabled: hs.Cfg.UnifiedAlerting.Enabled,
+		UnifiedAlerting: FrontendSettingsUnifiedAlertingDTO{
+			MinInterval: hs.Cfg.UnifiedAlerting.MinInterval.String(),
 		},
-		"oauth":                   hs.getEnabledOAuthProviders(),
-		"samlEnabled":             hs.samlEnabled(),
-		"samlName":                hs.samlName(),
-		"tokenExpirationDayLimit": hs.Cfg.SATokenExpirationDayLimit,
-		"snapshotEnabled":         hs.Cfg.SnapshotEnabled,
+
+		Oauth:                   hs.getEnabledOAuthProviders(),
+		SamlEnabled:             hs.samlEnabled(),
+		SamlName:                hs.samlName(),
+		TokenExpirationDayLimit: hs.Cfg.SATokenExpirationDayLimit,
+
+		SnapshotEnabled: hs.Cfg.SnapshotEnabled,
 	}
 
 	if hs.ThumbService != nil {
-		jsonObj["dashboardPreviews"] = hs.ThumbService.GetDashboardPreviewsSetupSettings(c)
+		frontendSettings.DashboardPreviews = hs.ThumbService.GetDashboardPreviewsSetupSettings(c)
 	}
 
 	if hs.Cfg.GeomapDefaultBaseLayerConfig != nil {
-		jsonObj["geomapDefaultBaseLayerConfig"] = hs.Cfg.GeomapDefaultBaseLayerConfig
+		frontendSettings.GeomapDefaultBaseLayerConfig = &hs.Cfg.GeomapDefaultBaseLayerConfig
 	}
 	if !hs.Cfg.GeomapEnableCustomBaseLayers {
-		jsonObj["geomapDisableCustomBaseLayer"] = true
+		frontendSettings.GeomapDisableCustomBaseLayer = true
 	}
 
-	return jsonObj, nil
+	return frontendSettings, nil
 }
 
 func isSupportBundlesEnabled(hs *HTTPServer) bool {
