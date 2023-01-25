@@ -102,6 +102,7 @@ func (hs *HTTPServer) setIndexViewData(c *models.ReqContext) (*dtos.IndexViewDat
 			GravatarUrl:                dtos.GetGravatarUrl(c.Email),
 			IsGrafanaAdmin:             c.IsGrafanaAdmin,
 			Theme:                      prefs.Theme,
+			LightTheme:                 prefs.Theme == lightTheme,
 			Timezone:                   prefs.Timezone,
 			WeekStart:                  weekStart,
 			Locale:                     locale,
