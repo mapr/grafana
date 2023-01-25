@@ -2,7 +2,6 @@ package dtos
 
 import (
 	"github.com/grafana/grafana/pkg/plugins"
-	"github.com/grafana/grafana/pkg/services/thumbs"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
@@ -14,6 +13,8 @@ type FrontendSettingsAuthDTO struct {
 	JWTAuthSkipOrgRoleSync     bool `json:"JWTAuthSkipOrgRoleSync"`
 	GrafanaComSkipOrgRoleSync  bool `json:"GrafanaComSkipOrgRoleSync"`
 	AzureADSkipOrgRoleSync     bool `json:"AzureADSkipOrgRoleSync"`
+	GithubSkipOrgRoleSync      bool `json:"GithubSkipOrgRoleSync"`
+	GitLabSkipOrgRoleSync      bool `json:"GitLabSkipOrgRoleSync"`
 	DisableSyncLock            bool `json:"DisableSyncLock"`
 }
 
@@ -57,6 +58,16 @@ type FrontendSettingsUnifiedAlertingDTO struct {
 	MinInterval string `json:"minInterval"`
 }
 
+type DashboardPreviewsSystemRequirements struct {
+	Met                                bool   `json:"met"`
+	RequiredImageRendererPluginVersion string `json:"requiredImageRendererPluginVersion"`
+}
+
+type DashboardPreviewsSetupConfig struct {
+	SystemRequirements DashboardPreviewsSystemRequirements `json:"systemRequirements"`
+	ThumbnailsExist    bool                                `json:"thumbnailsExist"`
+}
+
 type FrontendSettingsDTO struct {
 	DefaultDatasource          string                           `json:"defaultDatasource"`
 	Datasources                map[string]plugins.DataSourceDTO `json:"datasources"`
@@ -69,7 +80,7 @@ type FrontendSettingsDTO struct {
 	LdapEnabled                bool                             `json:"ldapEnabled"`
 	JwtHeaderName              string                           `json:"jwtHeaderName"`
 	JwtUrlLogin                bool                             `json:"jwtUrlLogin"`
-	AlertingEnabled            *bool                            `json:"alertingEnabled"`
+	AlertingEnabled            bool                             `json:"alertingEnabled"`
 	AlertingErrorOrTimeout     string                           `json:"alertingErrorOrTimeout"`
 	AlertingNoDataOrNullValues string                           `json:"alertingNoDataOrNullValues"`
 	AlertingMinInterval        int64                            `json:"alertingMinInterval"`
@@ -131,6 +142,7 @@ type FrontendSettingsDTO struct {
 	AwsAllowedAuthProviders          []string                       `json:"awsAllowedAuthProviders"`
 	AwsAssumeRoleEnabled             bool                           `json:"awsAssumeRoleEnabled"`
 	SupportBundlesEnabled            bool                           `json:"supportBundlesEnabled"`
+	SnapshotEnabled                  bool                           `json:"snapshotEnabled"`
 
 	Azure FrontendSettingsAzureDTO `json:"azure"`
 
@@ -144,7 +156,7 @@ type FrontendSettingsDTO struct {
 	SamlName                string                             `json:"samlName"`
 	TokenExpirationDayLimit int                                `json:"tokenExpirationDayLimit"`
 
-	DashboardPreviews *thumbs.DashboardPreviewsSetupConfig `json:"dashboardPreviews"`
+	DashboardPreviews DashboardPreviewsSetupConfig `json:"dashboardPreviews"`
 
 	GeomapDefaultBaseLayerConfig *map[string]interface{} `json:"geomapDefaultBaseLayerConfig"`
 	GeomapDisableCustomBaseLayer bool                    `json:"geomapDisableCustomBaseLayer"`
@@ -152,4 +164,6 @@ type FrontendSettingsDTO struct {
 	IsPublicDashboardView bool `json:"isPublicDashboardView"`
 
 	DateFormats setting.DateFormats `json:"dateFormats"`
+
+	LoginError string `json:"loginError"`
 }

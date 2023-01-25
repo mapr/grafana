@@ -9,7 +9,7 @@ import (
 
 type IndexViewData struct {
 	User                                *CurrentUser
-	Settings                            FrontendSettingsDTO
+	Settings                            *FrontendSettingsDTO
 	AppUrl                              string
 	AppSubUrl                           string
 	GoogleAnalyticsId                   string

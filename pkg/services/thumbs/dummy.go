@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/grafana/grafana/pkg/api/dtos"
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/models"
 )
@@ -31,9 +32,9 @@ func (ds *dummyService) Enabled() bool {
 	return false
 }
 
-func (ds *dummyService) GetDashboardPreviewsSetupSettings(c *models.ReqContext) dashboardPreviewsSetupConfig {
-	return dashboardPreviewsSetupConfig{
-		SystemRequirements: dashboardPreviewsSystemRequirements{
+func (ds *dummyService) GetDashboardPreviewsSetupSettings(c *models.ReqContext) dtos.DashboardPreviewsSetupConfig {
+	return dtos.DashboardPreviewsSetupConfig{
+		SystemRequirements: dtos.DashboardPreviewsSystemRequirements{
 			Met:                                false,
 			RequiredImageRendererPluginVersion: "",
 		},
