@@ -5,16 +5,16 @@ import (
 	"github.com/grafana/grafana/pkg/models"
 )
 
-type StateHistoryApiHandler struct {
+type HistoryApiHandler struct {
 	svc *HistorySrv
 }
 
-func NewStateHistoryApi(svc *HistorySrv) *StateHistoryApiHandler {
-	return &StateHistoryApiHandler{
+func NewStateHistoryApi(svc *HistorySrv) *HistoryApiHandler {
+	return &HistoryApiHandler{
 		svc: svc,
 	}
 }
 
-func (f *StateHistoryApiHandler) handleRouteGetStateHistory(ctx *models.ReqContext) response.Response {
+func (f *HistoryApiHandler) handleRouteGetStateHistory(ctx *models.ReqContext) response.Response {
 	return f.svc.RouteQueryStateHistory(ctx)
 }
