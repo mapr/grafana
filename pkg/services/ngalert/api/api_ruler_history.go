@@ -30,6 +30,7 @@ func (srv *HistorySrv) RouteQueryStateHistory(c *gapi.ReqContext) response.Respo
 		SignedInUser: c.SignedInUser,
 		From:         time.Unix(from, 0),
 		To:           time.Unix(to, 0),
+		Labels:       map[string]string{}, // TODO, not supported by all backends yet.
 	}
 	frame, err := srv.hist.QueryStates(c.Req.Context(), query)
 	if err != nil {
