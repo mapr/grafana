@@ -39,7 +39,8 @@ func (hs *HTTPServer) setIndexViewData(c *models.ReqContext) (*dtos.IndexViewDat
 		return nil, err
 	}
 
-	settings["dateFormats"] = hs.Cfg.DateFormats
+	// PR TODO: Should this just move to frontendsettings.go?
+	settings.DateFormats = hs.Cfg.DateFormats
 
 	prefsQuery := pref.GetPreferenceWithDefaultsQuery{UserID: c.UserID, OrgID: c.OrgID, Teams: c.Teams}
 	prefs, err := hs.preferenceService.GetWithDefaults(c.Req.Context(), &prefsQuery)
@@ -69,7 +70,7 @@ func (hs *HTTPServer) setIndexViewData(c *models.ReqContext) (*dtos.IndexViewDat
 	if c.IsRenderCall && !hs.Cfg.ServeFromSubPath {
 		appURL = fmt.Sprintf("%s://localhost:%s", hs.Cfg.Protocol, hs.Cfg.HTTPPort)
 		appSubURL = ""
-		settings["appSubUrl"] = ""
+		settings.AppSubUrl = ""
 	}
 
 	navTree, err := hs.navTreeService.GetNavTree(c, hasEditPerm, prefs)
@@ -78,7 +79,7 @@ func (hs *HTTPServer) setIndexViewData(c *models.ReqContext) (*dtos.IndexViewDat
 	}
 
 	if c.IsPublicDashboardView {
-		settings["isPublicDashboardView"] = true
+		settings.IsPublicDashboardView = true
 	}
 
 	weekStart := ""

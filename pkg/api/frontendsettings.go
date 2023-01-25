@@ -244,7 +244,7 @@ func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (*FrontendSet
 	hasAccess := accesscontrol.HasAccess(hs.AccessControl, c)
 	secretsManagerPluginEnabled := kvstore.EvaluateRemoteSecretsPlugin(c.Req.Context(), hs.secretsPluginManager, hs.Cfg) == nil
 
-	frontendSettings := &FrontendSettingsDTO{
+	frontendSettings := &setting.FrontendSettingsDTO{
 		DefaultDatasource:                   defaultDS,
 		Datasources:                         dataSources,
 		MinRefreshInterval:                  setting.MinRefreshInterval,
@@ -293,7 +293,7 @@ func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (*FrontendSet
 		DisableSanitizeHtml:                 hs.Cfg.DisableSanitizeHtml,
 		PluginsToPreload:                    pluginsToPreload,
 
-		Auth: FrontendSettingsAuthDTO{
+		Auth: setting.FrontendSettingsAuthDTO{
 			OAuthSkipOrgRoleUpdateSync: hs.Cfg.OAuthSkipOrgRoleUpdateSync,
 			SAMLSkipOrgRoleSync:        hs.Cfg.SectionWithEnvOverrides("auth.saml").Key("skip_org_role_sync").MustBool(false),
 			LDAPSkipOrgRoleSync:        hs.Cfg.LDAPSkipOrgRoleSync,
@@ -306,7 +306,7 @@ func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (*FrontendSet
 			DisableSyncLock:            hs.Cfg.DisableSyncLock,
 		},
 
-		BuildInfo: FrontendSettingsBuildInfoDTO{
+		BuildInfo: setting.FrontendSettingsBuildInfoDTO{
 			HideVersion:   hideVersion,
 			Version:       version,
 			Commit:        commit,
@@ -317,7 +317,7 @@ func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (*FrontendSet
 			Env:           setting.Env,
 		},
 
-		LicenseInfo: FrontendSettingsLicenseInfoDTO{
+		LicenseInfo: setting.FrontendSettingsLicenseInfoDTO{
 			Expiry:          hs.License.Expiry(),
 			StateInfo:       hs.License.StateInfo(),
 			LicenseUrl:      hs.License.LicenseURL(hasAccess(accesscontrol.ReqGrafanaAdmin, licensing.PageAccess)),
@@ -341,23 +341,23 @@ func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (*FrontendSet
 		AwsAssumeRoleEnabled:             hs.Cfg.AWSAssumeRoleEnabled,
 		SupportBundlesEnabled:            isSupportBundlesEnabled(hs),
 
-		Azure: FrontendSettingsAzureDTO{
+		Azure: setting.FrontendSettingsAzureDTO{
 			Cloud:                  hs.Cfg.Azure.Cloud,
 			ManagedIdentityEnabled: hs.Cfg.Azure.ManagedIdentityEnabled,
 		},
 
-		Caching: FrontendSettingsCachingDTO{
+		Caching: setting.FrontendSettingsCachingDTO{
 			Enabled: hs.Cfg.SectionWithEnvOverrides("caching").Key("enabled").MustBool(true),
 		},
-		RecordedQueries: FrontendSettingsRecordedQueriesDTO{
+		RecordedQueries: setting.FrontendSettingsRecordedQueriesDTO{
 			Enabled: hs.Cfg.SectionWithEnvOverrides("recorded_queries").Key("enabled").MustBool(true),
 		},
-		Reporting: FrontendSettingsReportingDTO{
+		Reporting: setting.FrontendSettingsReportingDTO{
 			Enabled: hs.Cfg.SectionWithEnvOverrides("reporting").Key("enabled").MustBool(true),
 		},
 
 		UnifiedAlertingEnabled: hs.Cfg.UnifiedAlerting.Enabled,
-		UnifiedAlerting: FrontendSettingsUnifiedAlertingDTO{
+		UnifiedAlerting: setting.FrontendSettingsUnifiedAlertingDTO{
 			MinInterval: hs.Cfg.UnifiedAlerting.MinInterval.String(),
 		},
 
