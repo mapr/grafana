@@ -1,8 +1,9 @@
-package setting
+package dtos
 
 import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/services/thumbs"
+	"github.com/grafana/grafana/pkg/setting"
 )
 
 type FrontendSettingsAuthDTO struct {
