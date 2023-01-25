@@ -34,7 +34,7 @@ func (hs *HTTPServer) setIndexViewData(c *models.ReqContext) (*dtos.IndexViewDat
 	hasAccess := ac.HasAccess(hs.AccessControl, c)
 	hasEditPerm := hasAccess(hs.editorInAnyFolder, ac.EvalAny(ac.EvalPermission(dashboards.ActionDashboardsCreate), ac.EvalPermission(dashboards.ActionFoldersCreate)))
 
-	settings, err := hs.getFrontendSettingsMap(c)
+	settings, err := hs.getFrontendSettings(c)
 	if err != nil {
 		return nil, err
 	}

@@ -20,7 +20,7 @@ import (
 )
 
 func (hs *HTTPServer) GetFrontendSettings(c *models.ReqContext) {
-	settings, err := hs.getFrontendSettingsMap(c)
+	settings, err := hs.getFrontendSettings(c)
 	if err != nil {
 		c.JsonApiErr(400, "Failed to get frontend settings", err)
 		return
@@ -29,8 +29,8 @@ func (hs *HTTPServer) GetFrontendSettings(c *models.ReqContext) {
 	c.JSON(http.StatusOK, settings)
 }
 
-// getFrontendSettingsMap returns a json object with all the settings needed for front end initialisation.
-func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (*dtos.FrontendSettingsDTO, error) {
+// getFrontendSettings returns a json object with all the settings needed for front end initialisation.
+func (hs *HTTPServer) getFrontendSettings(c *models.ReqContext) (*dtos.FrontendSettingsDTO, error) {
 	enabledPlugins, err := hs.enabledPlugins(c.Req.Context(), c.OrgID)
 	if err != nil {
 		return nil, err
