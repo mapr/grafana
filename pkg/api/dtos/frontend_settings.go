@@ -149,21 +149,21 @@ type FrontendSettingsDTO struct {
 	Caching                 FrontendSettingsCachingDTO         `json:"caching"`
 	RecordedQueries         FrontendSettingsRecordedQueriesDTO `json:"recordedQueries"`
 	Reporting               FrontendSettingsReportingDTO       `json:"reporting"`
-	UnifiedAlertingEnabled  *bool                              `json:"unifiedAlertingEnabled"`
+	UnifiedAlertingEnabled  bool                               `json:"unifiedAlertingEnabled"`
 	UnifiedAlerting         FrontendSettingsUnifiedAlertingDTO `json:"unifiedAlerting"`
 	Oauth                   map[string]interface{}             `json:"oauth"`
 	SamlEnabled             bool                               `json:"samlEnabled"`
 	SamlName                string                             `json:"samlName"`
 	TokenExpirationDayLimit int                                `json:"tokenExpirationDayLimit"`
 
-	DashboardPreviews DashboardPreviewsSetupConfig `json:"dashboardPreviews"`
+	DashboardPreviews DashboardPreviewsSetupConfig `json:"dashboardPreviews,omitempty"`
 
-	GeomapDefaultBaseLayerConfig *map[string]interface{} `json:"geomapDefaultBaseLayerConfig"`
+	GeomapDefaultBaseLayerConfig *map[string]interface{} `json:"geomapDefaultBaseLayerConfig,omitempty"`
 	GeomapDisableCustomBaseLayer bool                    `json:"geomapDisableCustomBaseLayer"`
 
 	IsPublicDashboardView bool `json:"isPublicDashboardView"`
 
-	DateFormats setting.DateFormats `json:"dateFormats"`
+	DateFormats setting.DateFormats `json:"dateFormats,omitempty"`
 
-	LoginError string `json:"loginError"`
+	LoginError string `json:"loginError,omitempty"`
 }
