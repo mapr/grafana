@@ -43,7 +43,7 @@ func fakeSetIndexViewData(t *testing.T) {
 	setIndexViewData = func(*HTTPServer, *models.ReqContext) (*dtos.IndexViewData, error) {
 		data := &dtos.IndexViewData{
 			User:     &dtos.CurrentUser{},
-			Settings: map[string]interface{}{},
+			Settings: &dtos.FrontendSettingsDTO{},
 			NavTree:  &navtree.NavTreeRoot{},
 		}
 		return data, nil
