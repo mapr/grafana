@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { debounce } from 'lodash';
-import React, { FormEvent, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 
 import { DataSourceInstanceSettings, GrafanaTheme2, SelectableValue } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
@@ -71,12 +71,15 @@ const RulesFilter = ({ onFilterCleared = () => undefined }: RulesFilerProps) => 
   }));
 
   const handleDataSourceChange = (dataSourceValue: DataSourceInstanceSettings) => {
-    updateFilters({ ...filterState, dataSourceName: dataSourceValue.name });
+    updateFilters({
+      ...filterState,
+      dataSourceNames: [...filterState.dataSourceNames].concat([dataSourceValue.name]),
+    });
     setFilterKey((key) => key + 1);
   };
 
   const clearDataSource = () => {
-    updateFilters({ ...filterState, dataSourceName: undefined });
+    updateFilters({ ...filterState, dataSourceNames: [] });
     setFilterKey((key) => key + 1);
   };
 
@@ -123,7 +126,7 @@ const RulesFilter = ({ onFilterCleared = () => undefined }: RulesFilerProps) => 
               alerting
               noDefault
               placeholder="All data sources"
-              current={filterState.dataSourceName}
+              current={filterState.dataSourceNames?.[0]}
               onChange={handleDataSourceChange}
               onClear={clearDataSource}
             />
@@ -218,7 +221,7 @@ function SearchQueryHelp() {
       <div className={styles.grid}>
         <div>Filter type</div>
         <div>Expression</div>
-        <HelpRow title="Datasource" expr="datasource:mimir" />
+        <HelpRow title="Datasources" expr="datasource:mimir datasource:prometheus" />
         <HelpRow title="Folder/Namespace" expr="namespace:global" />
         <HelpRow title="Group" expr="group:cpu-usage" />
         <HelpRow title="Rule" expr='rule:"cpu 80%"' />

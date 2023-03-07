@@ -51,7 +51,7 @@ export function useRulesFilter() {
       // Existing query filters takes precedence over legacy ones
       updateFilters(
         produce(filterState, (draft) => {
-          draft.dataSourceName ??= legacyFilters.dataSource;
+          draft.dataSourceNames ??= legacyFilters.dataSource ? [legacyFilters.dataSource] : [];
           if (legacyFilters.alertState && isPromAlertingRuleState(legacyFilters.alertState)) {
             draft.ruleState ??= legacyFilters.alertState;
           }
@@ -78,7 +78,7 @@ export const useFilteredRules = (namespaces: CombinedRuleNamespace[], filterStat
 
 export const filterRules = (
   namespaces: CombinedRuleNamespace[],
-  filterState: RulesFilter = { labels: [], freeFormWords: [] }
+  filterState: RulesFilter = { dataSourceNames: [], labels: [], freeFormWords: [] }
 ): CombinedRuleNamespace[] => {
   return (
     namespaces
@@ -86,8 +86,8 @@ export const filterRules = (
         filterState.namespace ? ns.name.toLowerCase().includes(filterState.namespace.toLowerCase()) : true
       )
       .filter(({ rulesSource }) =>
-        filterState.dataSourceName && isCloudRulesSource(rulesSource)
-          ? rulesSource.name === filterState.dataSourceName
+        filterState.dataSourceNames && isCloudRulesSource(rulesSource)
+          ? filterState?.dataSourceNames?.includes(rulesSource.name)
           : true
       )
       // If a namespace and group have rules that match the rules filters then keep them.
@@ -123,7 +123,7 @@ const reduceGroups = (filterState: RulesFilter) => {
       }
 
       const doesNotQueryDs = isGrafanaRulerRule(rule.rulerRule) && !isQueryingDataSource(rule.rulerRule, filterState);
-      if (filterState.dataSourceName && doesNotQueryDs) {
+      if (filterState.dataSourceNames?.length && doesNotQueryDs) {
         return false;
       }
 
@@ -191,7 +191,7 @@ function looseParseMatcher(matcherQuery: string): Matcher | undefined {
 }
 
 const isQueryingDataSource = (rulerRule: RulerGrafanaRuleDTO, filterState: RulesFilter): boolean => {
-  if (!filterState.dataSourceName) {
+  if (!filterState.dataSourceNames?.length) {
     return true;
   }
 
@@ -200,6 +200,6 @@ const isQueryingDataSource = (rulerRule: RulerGrafanaRuleDTO, filterState: Rules
       return false;
     }
     const ds = getDataSourceSrv().getInstanceSettings(query.datasourceUid);
-    return ds?.name === filterState.dataSourceName;
+    return ds?.name && filterState?.dataSourceNames?.includes(ds.name);
   });
 };
