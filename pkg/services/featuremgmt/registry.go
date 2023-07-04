@@ -607,5 +607,11 @@ var (
 			FrontendOnly: true,
 			Owner:        grafanaDashboardsSquad,
 		},
+		{
+			Name:        "awsDatasourcesTempCredentials",
+			Description: "Support temporary security credentials in AWS plugins for Grafana Cloud customers",
+			Stage:       FeatureStageExperimental,
+			Owner:       awsPluginsSquad,
+		},
 	}
 )
