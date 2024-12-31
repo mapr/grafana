@@ -1,36 +1,57 @@
+import { GrafanaRuleGroupIdentifier } from 'app/types/unified-alerting';
 import { GrafanaPromRuleDTO, PromRuleType } from 'app/types/unified-alerting-dto';
 
+import { alertRuleApi } from '../api/alertRuleApi';
 import { GrafanaRulesSource } from '../utils/datasource';
 
 import { AlertRuleListItem, RecordingRuleListItem, UnknownRuleListItem } from './components/AlertRuleListItem';
+import { AlertRuleListItemLoader } from './components/AlertRuleListItemLoader';
+import { RuleActionsButtons } from './components/RuleActionsButtons.V2';
+
+const { useGetGrafanaRulerGroupQuery } = alertRuleApi;
 
 interface GrafanaRuleLoaderProps {
   rule: GrafanaPromRuleDTO;
-  groupName: string;
+  groupIdentifier: GrafanaRuleGroupIdentifier;
   // TODO: How to improve this?
   namespaceName: string;
 }
 
-export function GrafanaRuleLoader({ rule, groupName, namespaceName }: GrafanaRuleLoaderProps) {
-  const { folderUid } = rule;
+export function GrafanaRuleLoader({ rule, groupIdentifier, namespaceName }: GrafanaRuleLoaderProps) {
+  const { data: rulerRuleGroup } = useGetGrafanaRulerGroupQuery(groupIdentifier);
+
+  const rulerRule = rulerRuleGroup?.rules.find((rulerRule) => rulerRule.grafana_alert.uid === rule.uid);
+
+  if (!rulerRule) {
+    return <AlertRuleListItemLoader />;
+  }
+
+  const {
+    grafana_alert: { title, provenance },
+    annotations = {},
+    labels = {},
+  } = rulerRule;
+
+  const isProvisioned = Boolean(provenance);
 
   switch (rule.type) {
     case PromRuleType.Alerting:
       return (
         <AlertRuleListItem
-          name={rule.name}
+          name={title}
           rulesSource={GrafanaRulesSource}
           application="grafana"
-          group={groupName}
+          group={groupIdentifier.groupName}
           namespace={namespaceName}
           href={''}
-          summary={rule.annotations?.summary}
+          summary={annotations.summary}
           state={rule.state}
           health={rule.health}
           error={rule.lastError}
-          labels={rule.labels}
-          isProvisioned={undefined}
+          labels={labels}
+          isProvisioned={isProvisioned}
           instancesCount={rule.alerts?.length}
+          actions={<RuleActionsButtons rule={rulerRule} promRule={rule} groupIdentifier={groupIdentifier} compact />}
         />
       );
     case PromRuleType.Recording:
@@ -39,26 +60,17 @@ export function GrafanaRuleLoader({ rule, groupName, namespaceName }: GrafanaRul
           name={rule.name}
           rulesSource={GrafanaRulesSource}
           application="grafana"
-          group={groupName}
+          group={groupIdentifier.groupName}
           namespace={namespaceName}
           href={''}
           health={rule.health}
           error={rule.lastError}
           labels={rule.labels}
-          isProvisioned={undefined}
+          isProvisioned={isProvisioned}
+          actions={<RuleActionsButtons rule={rulerRule} promRule={rule} groupIdentifier={groupIdentifier} compact />}
         />
       );
     default:
-      return (
-        <UnknownRuleListItem
-          rule={rule}
-          groupIdentifier={{
-            rulesSource: GrafanaRulesSource,
-            groupName,
-            namespace: { uid: folderUid },
-            groupOrigin: 'grafana',
-          }}
-        />
-      );
+      return <UnknownRuleListItem rule={rule} groupIdentifier={groupIdentifier} />;
   }
 }
