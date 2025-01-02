@@ -5,8 +5,6 @@ import { Dropdown, Icon, IconButton, Menu, Stack, Text } from '@grafana/ui';
 import { GrafanaRuleGroupIdentifier, GrafanaRulesSourceSymbol } from 'app/types/unified-alerting';
 import { GrafanaPromRuleGroupDTO } from 'app/types/unified-alerting-dto';
 
-import { GrafanaRulesSource } from '../utils/datasource';
-
 import { GrafanaRuleLoader } from './GrafanaRuleLoader';
 import { DataSourceSection } from './components/DataSourceSection';
 import { LazyPagination } from './components/LazyPagination';
@@ -82,7 +80,6 @@ interface GrafanaRuleGroupListItemProps {
 }
 export function GrafanaRuleGroupListItem({ group, namespaceName }: GrafanaRuleGroupListItemProps) {
   const groupIdentifier: GrafanaRuleGroupIdentifier = {
-    rulesSource: GrafanaRulesSource,
     groupName: group.name,
     namespace: {
       uid: group.folderUid,
