@@ -5,7 +5,7 @@ import { alertRuleApi } from '../api/alertRuleApi';
 import { GrafanaRulesSource } from '../utils/datasource';
 
 import { AlertRuleListItem, RecordingRuleListItem, UnknownRuleListItem } from './components/AlertRuleListItem';
-import { AlertRuleListItemLoader } from './components/AlertRuleListItemLoader';
+import { AlertRuleListItemLoader, RulerRuleLoadingError } from './components/AlertRuleListItemLoader';
 import { RuleActionsButtons } from './components/RuleActionsButtons.V2';
 
 const { useGetGrafanaRulerGroupQuery } = alertRuleApi;
@@ -18,11 +18,15 @@ interface GrafanaRuleLoaderProps {
 }
 
 export function GrafanaRuleLoader({ rule, groupIdentifier, namespaceName }: GrafanaRuleLoaderProps) {
-  const { data: rulerRuleGroup } = useGetGrafanaRulerGroupQuery(groupIdentifier);
+  const { data: rulerRuleGroup, isError } = useGetGrafanaRulerGroupQuery(groupIdentifier);
 
   const rulerRule = rulerRuleGroup?.rules.find((rulerRule) => rulerRule.grafana_alert.uid === rule.uid);
 
   if (!rulerRule) {
+    if (isError) {
+      return <RulerRuleLoadingError rule={rule} />;
+    }
+
     return <AlertRuleListItemLoader />;
   }
 
@@ -49,6 +53,7 @@ export function GrafanaRuleLoader({ rule, groupIdentifier, namespaceName }: Graf
           health={rule.health}
           error={rule.lastError}
           labels={labels}
+          isPaused={rulerRule.grafana_alert.is_paused}
           isProvisioned={isProvisioned}
           instancesCount={rule.alerts?.length}
           actions={<RuleActionsButtons rule={rulerRule} promRule={rule} groupIdentifier={groupIdentifier} compact />}
@@ -66,6 +71,7 @@ export function GrafanaRuleLoader({ rule, groupIdentifier, namespaceName }: Graf
           health={rule.health}
           error={rule.lastError}
           labels={rule.labels}
+          isPaused={rulerRule.grafana_alert.is_paused}
           isProvisioned={isProvisioned}
           actions={<RuleActionsButtons rule={rulerRule} promRule={rule} groupIdentifier={groupIdentifier} compact />}
         />
