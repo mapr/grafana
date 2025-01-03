@@ -3,6 +3,7 @@ import { GrafanaPromRuleDTO, PromRuleType } from 'app/types/unified-alerting-dto
 
 import { alertRuleApi } from '../api/alertRuleApi';
 import { GrafanaRulesSource } from '../utils/datasource';
+import { createRelativeUrl } from '../utils/url';
 
 import { AlertRuleListItem, RecordingRuleListItem, UnknownRuleListItem } from './components/AlertRuleListItem';
 import { AlertRuleListItemLoader, RulerRuleLoadingError } from './components/AlertRuleListItemLoader';
@@ -37,6 +38,7 @@ export function GrafanaRuleLoader({ rule, groupIdentifier, namespaceName }: Graf
   } = rulerRule;
 
   const isProvisioned = Boolean(provenance);
+  const detailsLink = createRelativeUrl(`/alerting/grafana/${rule.uid}/view`);
 
   switch (rule.type) {
     case PromRuleType.Alerting:
@@ -47,7 +49,7 @@ export function GrafanaRuleLoader({ rule, groupIdentifier, namespaceName }: Graf
           application="grafana"
           group={groupIdentifier.groupName}
           namespace={namespaceName}
-          href={''}
+          href={detailsLink}
           summary={annotations.summary}
           state={rule.state}
           health={rule.health}
@@ -67,7 +69,7 @@ export function GrafanaRuleLoader({ rule, groupIdentifier, namespaceName }: Graf
           application="grafana"
           group={groupIdentifier.groupName}
           namespace={namespaceName}
-          href={''}
+          href={detailsLink}
           health={rule.health}
           error={rule.lastError}
           labels={rule.labels}
