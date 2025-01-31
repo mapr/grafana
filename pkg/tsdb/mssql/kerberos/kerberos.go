@@ -2,7 +2,6 @@ package kerberos
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -39,23 +38,35 @@ func GetKerberosSettings(settings backend.DataSourceInstanceSettings) (kerberosA
 	}
 
 	err = json.Unmarshal(settings.JSONData, &kerberosAuth)
-	var unmarshalErr *json.UnmarshalTypeError
-	if err != nil && errors.As(err, &unmarshalErr) {
-		stringMap := map[string]any{}
-		err = json.Unmarshal(settings.JSONData, &stringMap)
-		if err != nil {
-			return kerberosAuth, err
-		}
+	if err != nil {
+		return kerberosAuth, err
+	}
 
-		if stringMap["UDPConnectionLimit"] != "" {
-			udpConnLimit, err := strconv.Atoi(stringMap["UDPConnectionLimit"].(string))
-			if err != nil {
-				return kerberosAuth, err
-			}
-			kerberosAuth.UDPConnectionLimit = udpConnLimit
+	// Environment variables take precedence over JSON settings
+	if envVal := os.Getenv("KRB5_UDP_PREFERENCE_LIMIT"); envVal != "" {
+		if udpLimit, parseErr := strconv.Atoi(envVal); parseErr == nil {
+			kerberosAuth.UDPConnectionLimit = udpLimit
+		} else {
+			logger.Error(fmt.Sprintf("invalid UDP connection limit: %s", envVal))
 		}
 	}
-	return kerberosAuth, err
+	if envVal := os.Getenv("KRB5_CC_LOOKUP_FILE"); envVal != "" {
+		kerberosAuth.CredentialCacheLookupFile = envVal
+	}
+	if envVal := os.Getenv("KRB5_DNS_LOOKUP_KDC"); envVal != "" {
+		kerberosAuth.EnableDNSLookupKDC = envVal
+	}
+	if envVal := os.Getenv("KRB5_CLIENT_KTNAME"); envVal != "" {
+		kerberosAuth.KeytabFilePath = envVal
+	}
+	if envVal := os.Getenv("KRB5CCNAME"); envVal != "" {
+		kerberosAuth.CredentialCache = envVal
+	}
+	if envVal := os.Getenv("KRB5_CONFIG"); envVal != "" {
+		kerberosAuth.ConfigFilePath = envVal
+	}
+
+	return kerberosAuth, nil
 }
 
 func Krb5ParseAuthCredentials(host string, port string, db string, user string, pass string, kerberosAuth KerberosAuth) string {
