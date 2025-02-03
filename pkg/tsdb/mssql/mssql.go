@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -273,19 +274,25 @@ func generateConnectionString(dsInfo sqleng.DataSourceInfo, azureManagedIdentity
 		dsInfo.Database,
 	)
 
-	switch dsInfo.JsonData.AuthenticationType {
-	case azureAuthentication:
-		azureCredentialDSNFragment, err := getAzureCredentialDSNFragment(azureCredentials, azureManagedIdentityClientId, azureEntraPasswordCredentialsEnabled)
-		if err != nil {
-			return "", err
-		}
-		connStr += azureCredentialDSNFragment
-	case windowsAuthentication:
-		// No user id or password. We're using windows single sign on.
-	case kerberosRaw, kerberosKeytab, kerberosCredentialCacheFile, kerberosCredentialCache:
+	krb5Enable := os.Getenv("KRB5_MSSQL_ENABLE")
+
+	if krb5Enable != "" {
 		connStr = kerberos.Krb5ParseAuthCredentials(addr.Host, addr.Port, dsInfo.Database, dsInfo.User, dsInfo.DecryptedSecureJSONData["password"], kerberosAuth)
-	default:
-		connStr += fmt.Sprintf("user id=%s;password=%s;", dsInfo.User, dsInfo.DecryptedSecureJSONData["password"])
+	} else {
+		switch dsInfo.JsonData.AuthenticationType {
+		case azureAuthentication:
+			azureCredentialDSNFragment, err := getAzureCredentialDSNFragment(azureCredentials, azureManagedIdentityClientId, azureEntraPasswordCredentialsEnabled)
+			if err != nil {
+				return "", err
+			}
+			connStr += azureCredentialDSNFragment
+		case windowsAuthentication:
+			// No user id or password. We're using windows single sign on.
+		case kerberosRaw, kerberosKeytab, kerberosCredentialCacheFile, kerberosCredentialCache:
+			connStr = kerberos.Krb5ParseAuthCredentials(addr.Host, addr.Port, dsInfo.Database, dsInfo.User, dsInfo.DecryptedSecureJSONData["password"], kerberosAuth)
+		default:
+			connStr += fmt.Sprintf("user id=%s;password=%s;", dsInfo.User, dsInfo.DecryptedSecureJSONData["password"])
+		}
 	}
 
 	// Port number 0 means to determine the port automatically, so we can let the driver choose
