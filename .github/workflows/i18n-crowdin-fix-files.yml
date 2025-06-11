@@ -41,7 +41,7 @@ jobs:
         run: yarn i18n:extract
 
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@8756aa072ef5b4a080af5dc8fef36c5d586e521d # v5.0.0
+        uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # v6.0.1
         with:
           commit_message: "Github Action: Auto-fix i18n files"
           file_pattern: public/locales/*/grafana.json
