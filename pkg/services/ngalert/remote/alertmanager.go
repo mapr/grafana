@@ -296,20 +296,6 @@ func (am *Alertmanager) isDefaultConfiguration(configHash [16]byte) bool {
 	return fmt.Sprintf("%x", configHash) == am.defaultConfigHash
 }
 
-// decryptConfiguration creates a copy of the configuration, decrypts it, and returns the decrypted configuration alongside its hash.
-// Should not be used outside of this package and the specific use case of decrypting the configuration before sending
-// it to the remote Alertmanager.
-func (am *Alertmanager) decryptConfiguration(ctx context.Context, cfg *apimodels.PostableUserConfig) (*apimodels.PostableUserConfig, error) {
-	// Decrypt the receivers in the configuration.
-	decryptedReceivers, err := legacy_storage.DecryptedReceivers(cfg.AlertmanagerConfig.Receivers, decrypter(ctx, am.crypto))
-	if err != nil {
-		return nil, fmt.Errorf("unable to decrypt receivers: %w", err)
-	}
-	cfg.AlertmanagerConfig.Receivers = decryptedReceivers
-
-	return cfg, nil
-}
-
 func decrypter(ctx context.Context, crypto Crypto) models.DecryptFn {
 	return func(value string) (string, error) {
 		decoded, err := base64.StdEncoding.DecodeString(value)
@@ -356,19 +342,21 @@ func (am *Alertmanager) loadConfig(ctx context.Context, raw []byte) (*remoteClie
 		return nil, err
 	}
 
-	decryptedCfg, err := am.decryptConfiguration(ctx, c)
+	// Decrypt the receivers in the configuration.
+	decryptedReceivers, err := legacy_storage.DecryptedReceivers(c.AlertmanagerConfig.Receivers, decrypter(ctx, am.crypto))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to decrypt receivers: %w", err)
 	}
+	c.AlertmanagerConfig.Receivers = decryptedReceivers
 
 	// Decrypt and merge extra configs
-	if err := am.mergeExtraConfigs(ctx, decryptedCfg); err != nil {
+	if err := am.mergeExtraConfigs(ctx, c); err != nil {
 		return nil, fmt.Errorf("unable to merge extra configurations: %w", err)
 	}
 
 	// TODO merge extra templates
 
-	return PostableUserConfigToGrafanaAlertmanagerConfig(decryptedCfg), nil
+	return PostableUserConfigToGrafanaAlertmanagerConfig(c), nil
 }
 
 func (am *Alertmanager) sendConfiguration(ctx context.Context, cfg *remoteClient.GrafanaAlertmanagerConfig, hash string, createdAt int64, isDefault bool) error {
