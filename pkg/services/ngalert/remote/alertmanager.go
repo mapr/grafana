@@ -274,31 +274,14 @@ func (am *Alertmanager) checkReadiness(ctx context.Context) error {
 // CompareAndSendConfiguration checks whether a given configuration is being used by the remote Alertmanager.
 // If not, it sends the configuration to the remote Alertmanager.
 func (am *Alertmanager) CompareAndSendConfiguration(ctx context.Context, config *models.AlertConfiguration) error {
-	c, err := notifier.Load([]byte(config.AlertmanagerConfiguration))
+	payload, err := am.loadConfig(ctx, []byte(config.AlertmanagerConfiguration))
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to load configuration: %w", err)
 	}
-
-	// Add auto-generated routes and decrypt before comparing.
-	if err := am.autogenFn(ctx, am.log, am.orgID, &c.AlertmanagerConfig, true); err != nil {
-		return err
-	}
-
-	decryptedCfg, err := am.decryptConfiguration(ctx, c)
-	if err != nil {
-		return err
-	}
-
-	// Decrypt and merge extra configs
-	if err := am.mergeExtraConfigs(ctx, decryptedCfg); err != nil {
-		return fmt.Errorf("unable to merge extra configurations: %w", err)
-	}
-	payload := PostableUserConfigToGrafanaAlertmanagerConfig(decryptedCfg)
 	rawPayload, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("unable to marshal decrypted configuration: %w", err)
 	}
-
 	configHash := md5.Sum(rawPayload)
 
 	// Send the configuration only if we need to.
@@ -372,6 +355,32 @@ func (am *Alertmanager) mergeExtraConfigs(ctx context.Context, config *apimodels
 	return nil
 }
 
+func (am *Alertmanager) loadConfig(ctx context.Context, raw []byte) (*remoteClient.GrafanaAlertmanagerConfig, error) {
+	c, err := notifier.Load(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add auto-generated routes and decrypt before comparing.
+	if err := am.autogenFn(ctx, am.log, am.orgID, &c.AlertmanagerConfig, true); err != nil {
+		return nil, err
+	}
+
+	decryptedCfg, err := am.decryptConfiguration(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Decrypt and merge extra configs
+	if err := am.mergeExtraConfigs(ctx, decryptedCfg); err != nil {
+		return nil, fmt.Errorf("unable to merge extra configurations: %w", err)
+	}
+
+	// TODO merge extra templates
+
+	return PostableUserConfigToGrafanaAlertmanagerConfig(decryptedCfg), nil
+}
+
 func (am *Alertmanager) sendConfiguration(ctx context.Context, cfg *remoteClient.GrafanaAlertmanagerConfig, hash string, createdAt int64, isDefault bool) error {
 	am.metrics.ConfigSyncsTotal.Inc()
 	if err := am.mimirClient.CreateGrafanaAlertmanagerConfig(
@@ -410,19 +419,16 @@ func (am *Alertmanager) SendState(ctx context.Context) error {
 
 // SaveAndApplyConfig decrypts and sends a configuration to the remote Alertmanager.
 func (am *Alertmanager) SaveAndApplyConfig(ctx context.Context, cfg *apimodels.PostableUserConfig) error {
-	// Add auto-generated routes and decrypt before sending.
-	if err := am.autogenFn(ctx, am.log, am.orgID, &cfg.AlertmanagerConfig, false); err != nil {
-		return err
-	}
-	decryptedCfg, err := am.decryptConfiguration(ctx, cfg)
+	rawCopy, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 
-	if err := am.mergeExtraConfigs(ctx, decryptedCfg); err != nil {
-		return fmt.Errorf("unable to merge extra configurations: %w", err)
+	payload, err := am.loadConfig(ctx, rawCopy)
+	if err != nil {
+		return fmt.Errorf("unable to load configuration: %w", err)
 	}
-	payload := PostableUserConfigToGrafanaAlertmanagerConfig(decryptedCfg)
+
 	rawCfg, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -434,21 +440,12 @@ func (am *Alertmanager) SaveAndApplyConfig(ctx context.Context, cfg *apimodels.P
 
 // SaveAndApplyDefaultConfig sends the default Grafana Alertmanager configuration to the remote Alertmanager.
 func (am *Alertmanager) SaveAndApplyDefaultConfig(ctx context.Context) error {
-	c, err := notifier.Load([]byte(am.defaultConfig))
+	am.log.Debug("Sending default configuration to a remote Alertmanager", "url", am.url)
+	payload, err := am.loadConfig(ctx, []byte(am.defaultConfig))
 	if err != nil {
-		return fmt.Errorf("unable to parse the default configuration: %w", err)
+		return fmt.Errorf("unable to load the default configuration: %w", err)
 	}
 
-	// Add auto-generated routes and decrypt before sending.
-	if err := am.autogenFn(ctx, am.log, am.orgID, &c.AlertmanagerConfig, true); err != nil {
-		return err
-	}
-	decryptedCfg, err := am.decryptConfiguration(ctx, c)
-	if err != nil {
-		return err
-	}
-
-	payload := PostableUserConfigToGrafanaAlertmanagerConfig(decryptedCfg)
 	rawCfg, err := json.Marshal(payload)
 	if err != nil {
 		return err
