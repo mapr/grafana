@@ -4,7 +4,7 @@ import { memo } from 'react';
 
 import { GrafanaTheme2, NavModelItem } from '@grafana/data';
 import { Components } from '@grafana/e2e-selectors';
-import { useTranslate } from '@grafana/i18n';
+import { t } from '@grafana/i18n';
 import { ScopesContextValue } from '@grafana/runtime';
 import { Dropdown, Icon, Stack, ToolbarButton, useStyles2 } from '@grafana/ui';
 import { config } from 'app/core/config';
@@ -13,7 +13,7 @@ import { useGrafana } from 'app/core/context/GrafanaContext';
 import { contextSrv } from 'app/core/core';
 import { useMediaQueryMinWidth } from 'app/core/hooks/useMediaQueryMinWidth';
 import { HOME_NAV_ID } from 'app/core/reducers/navModel';
-import { useSelector } from 'app/types';
+import { useSelector } from 'app/types/store';
 
 import { Branding } from '../../Branding/Branding';
 import { Breadcrumbs } from '../../Breadcrumbs/Breadcrumbs';
@@ -64,7 +64,7 @@ export const SingleTopBar = memo(function SingleTopBar({
   const breadcrumbs = buildBreadcrumbs(sectionNav, pageNav, homeNav);
   const unifiedHistoryEnabled = config.featureToggles.unifiedHistory;
   const isSmallScreen = !useMediaQueryMinWidth('sm');
-  const { t } = useTranslate();
+
   return (
     <>
       <div className={styles.layout}>

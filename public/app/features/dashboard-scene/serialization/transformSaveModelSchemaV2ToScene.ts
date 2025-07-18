@@ -50,7 +50,7 @@ import {
   DeprecatedInternalId,
 } from 'app/features/apiserver/types';
 import { DashboardWithAccessInfo } from 'app/features/dashboard/api/types';
-import { DashboardMeta } from 'app/types';
+import { DashboardMeta } from 'app/types/dashboard';
 
 import { addPanelsOnLoadBehavior } from '../addToDashboard/addPanelsOnLoadBehavior';
 import { DashboardAnnotationsDataLayer } from '../scene/DashboardAnnotationsDataLayer';
@@ -207,6 +207,7 @@ export function transformSaveModelSchemaV2ToScene(dto: DashboardWithAccessInfo<D
       controls: new DashboardControls({
         timePicker: new SceneTimePicker({
           quickRanges: dashboard.timeSettings.quickRanges,
+          defaultQuickRanges: config.quickRanges,
         }),
         refreshPicker: new SceneRefreshPicker({
           refresh: dashboard.timeSettings.autoRefresh,

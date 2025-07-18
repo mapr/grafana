@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync/atomic"
 
 	claims "github.com/grafana/authlib/types"
 	"go.opentelemetry.io/otel/attribute"
@@ -13,11 +14,13 @@ import (
 	"github.com/grafana/grafana/pkg/apimachinery/errutil"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/tracing"
+	"github.com/grafana/grafana/pkg/services/apiserver/client"
 	"github.com/grafana/grafana/pkg/services/authn"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/login"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/quota"
+	"github.com/grafana/grafana/pkg/services/scimutil"
 	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/setting"
 )
@@ -79,13 +82,25 @@ var (
 	errSignupNotAllowed  = errors.New("system administrator has disabled signup")
 )
 
+// StaticSCIMConfig represents the static SCIM configuration from config.ini
+type StaticSCIMConfig struct {
+	AllowNonProvisionedUsers  bool
+	IsUserProvisioningEnabled bool
+}
+
 func ProvideUserSync(userService user.Service, userProtectionService login.UserProtectionService, authInfoService login.AuthInfoService,
 	quotaService quota.Service, tracer tracing.Tracer, features featuremgmt.FeatureToggles, cfg *setting.Cfg,
+	k8sClient client.K8sHandler,
 ) *UserSync {
 	scimSection := cfg.Raw.Section("auth.scim")
+	staticConfig := &StaticSCIMConfig{
+		AllowNonProvisionedUsers:  scimSection.Key("allow_non_provisioned_users").MustBool(false),
+		IsUserProvisioningEnabled: scimSection.Key("user_sync_enabled").MustBool(false),
+	}
+
 	return &UserSync{
-		allowNonProvisionedUsers:  scimSection.Key("allow_non_provisioned_users").MustBool(false),
-		isUserProvisioningEnabled: scimSection.Key("user_sync_enabled").MustBool(false),
+		allowNonProvisionedUsers:  staticConfig.AllowNonProvisionedUsers,
+		isUserProvisioningEnabled: staticConfig.IsUserProvisioningEnabled,
 		userService:               userService,
 		authInfoService:           authInfoService,
 		userProtectionService:     userProtectionService,
@@ -94,6 +109,8 @@ func ProvideUserSync(userService user.Service, userProtectionService login.UserP
 		tracer:                    tracer,
 		features:                  features,
 		lastSeenSF:                &singleflight.Group{},
+		scimUtil:                  scimutil.NewSCIMUtil(k8sClient),
+		staticConfig:              staticConfig,
 	}
 }
 
@@ -108,6 +125,20 @@ type UserSync struct {
 	tracer                    tracing.Tracer
 	features                  featuremgmt.FeatureToggles
 	lastSeenSF                *singleflight.Group
+	scimUtil                  *scimutil.SCIMUtil
+	staticConfig              *StaticSCIMConfig
+	scimSuccessfulLogin       atomic.Bool
+}
+
+// GetUsageStats implements registry.ProvidesUsageStats
+func (s *UserSync) GetUsageStats(ctx context.Context) map[string]any {
+	stats := map[string]any{}
+	if s.scimSuccessfulLogin.Load() {
+		stats["stats.features.scim.has_successful_login.count"] = 1
+	} else {
+		stats["stats.features.scim.has_successful_login.count"] = 0
+	}
+	return stats
 }
 
 // ValidateUserProvisioningHook validates if a user should be allowed access based on provisioning status and configuration
@@ -115,7 +146,6 @@ func (s *UserSync) ValidateUserProvisioningHook(ctx context.Context, currentIden
 	log := s.log.FromContext(ctx).New("auth_module", currentIdentity.AuthenticatedBy, "auth_id", currentIdentity.AuthID)
 
 	if !currentIdentity.ClientParams.SyncUser {
-		log.Debug("Skipping user provisioning validation, syncUser is disabled")
 		return nil
 	}
 
@@ -152,6 +182,8 @@ func (s *UserSync) ValidateUserProvisioningHook(ctx context.Context, currentIden
 			return errUserExternalUIDMismatch.Errorf("the provisioned user.ExternalUID does not match the authinfo.ExternalUID")
 		}
 		log.Debug("User is provisioned, access granted")
+		s.scimSuccessfulLogin.Store(true)
+
 		return nil
 	}
 
@@ -163,12 +195,22 @@ func (s *UserSync) ValidateUserProvisioningHook(ctx context.Context, currentIden
 func (s *UserSync) skipProvisioningValidation(ctx context.Context, currentIdentity *authn.Identity) bool {
 	log := s.log.FromContext(ctx).New("auth_module", currentIdentity.AuthenticatedBy, "auth_id", currentIdentity.AuthID, "id", currentIdentity.ID)
 
-	if !s.isUserProvisioningEnabled {
+	// Use dynamic SCIM settings if available, otherwise fall back to static config
+	effectiveUserSyncEnabled := s.isUserProvisioningEnabled
+	effectiveAllowNonProvisionedUsers := s.allowNonProvisionedUsers
+
+	if s.scimUtil != nil {
+		orgID := currentIdentity.GetOrgID()
+		effectiveUserSyncEnabled = s.scimUtil.IsUserSyncEnabled(ctx, orgID, s.staticConfig.IsUserProvisioningEnabled)
+		effectiveAllowNonProvisionedUsers = s.scimUtil.AreNonProvisionedUsersAllowed(ctx, orgID, s.staticConfig.AllowNonProvisionedUsers)
+	}
+
+	if !effectiveUserSyncEnabled {
 		log.Debug("User provisioning is disabled, skipping validation")
 		return true
 	}
 
-	if s.allowNonProvisionedUsers {
+	if effectiveAllowNonProvisionedUsers {
 		log.Debug("Non-provisioned users are allowed, skipping validation")
 		return true
 	}
@@ -418,25 +460,52 @@ func (s *UserSync) updateUserAttributes(ctx context.Context, usr *user.User, id 
 		needsConnectionCreation = false
 		authInfo, err := s.authInfoService.GetAuthInfo(ctx, &login.GetAuthInfoQuery{UserId: usr.ID, AuthModule: id.AuthenticatedBy})
 		if err != nil {
-			s.log.Error("Error getting auth info", "error", err)
+			s.log.Error("Error getting auth info for provisioned user", "error", err)
 			return err
 		}
 
 		if id.ExternalUID == "" {
-			s.log.Error("externalUID is empty", "id", id.UID)
+			s.log.Error("externalUID is empty for provisioned user", "id", id.UID)
 			return errEmptyExternalUID.Errorf("externalUID is empty")
 		}
 
 		if id.ExternalUID != authInfo.ExternalUID {
-			s.log.Error("mismatched externalUID", "provisioned_externalUID", authInfo.ExternalUID, "identity_externalUID", id.ExternalUID)
-			return errMismatchedExternalUID.Errorf("externalUID mistmatch")
+			s.log.Error("mismatched externalUID for provisioned user", "provisioned_externalUID", authInfo.ExternalUID, "identity_externalUID", id.ExternalUID)
+			return errMismatchedExternalUID.Errorf("externalUID mismatch")
 		}
 	}
 
-	if needsUpdate && !usr.IsProvisioned {
-		s.log.FromContext(ctx).Debug("Syncing user info", "id", id.ID, "update", fmt.Sprintf("%v", updateCmd))
-		if err := s.userService.Update(ctx, updateCmd); err != nil {
-			return err
+	if needsUpdate {
+		finalCmdToExecute := &user.UpdateUserCommand{UserID: usr.ID}
+		shouldExecuteUpdate := false
+
+		if !usr.IsProvisioned {
+			finalCmdToExecute = updateCmd
+			shouldExecuteUpdate = true
+			s.log.FromContext(ctx).Debug("Syncing all differing attributes for non-provisioned user", "id", id.ID,
+				"login", finalCmdToExecute.Login, "email", finalCmdToExecute.Email, "name", finalCmdToExecute.Name,
+				"isGrafanaAdmin", finalCmdToExecute.IsGrafanaAdmin, "emailVerified", finalCmdToExecute.EmailVerified)
+		} else {
+			if updateCmd.IsGrafanaAdmin != nil {
+				finalCmdToExecute.IsGrafanaAdmin = updateCmd.IsGrafanaAdmin
+				shouldExecuteUpdate = true
+				s.log.FromContext(ctx).Debug("Syncing IsGrafanaAdmin for provisioned user", "id", id.ID, "isAdmin", fmt.Sprintf("%v", *updateCmd.IsGrafanaAdmin))
+			}
+
+			if !shouldExecuteUpdate {
+				s.log.FromContext(ctx).Debug("SAML attributes differed, but no SCIM-overridable attributes changed for provisioned user", "id", id.ID,
+					"login", updateCmd.Login, "email", updateCmd.Email, "name", updateCmd.Name,
+					"isGrafanaAdmin", updateCmd.IsGrafanaAdmin, "emailVerified", updateCmd.EmailVerified)
+			}
+		}
+
+		if shouldExecuteUpdate {
+			if err := s.userService.Update(ctx, finalCmdToExecute); err != nil {
+				s.log.FromContext(ctx).Error("Failed to update user attributes", "error", err, "id", id.ID, "isProvisioned", usr.IsProvisioned,
+					"login", finalCmdToExecute.Login, "email", finalCmdToExecute.Email, "name", finalCmdToExecute.Name,
+					"isGrafanaAdmin", finalCmdToExecute.IsGrafanaAdmin, "emailVerified", finalCmdToExecute.EmailVerified)
+				return err
+			}
 		}
 	}
 

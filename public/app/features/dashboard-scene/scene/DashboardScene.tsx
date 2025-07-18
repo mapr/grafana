@@ -1,7 +1,7 @@
 import * as H from 'history';
 
 import { CoreApp, DataQueryRequest, NavIndex, NavModelItem, locationUtil } from '@grafana/data';
-import { t } from '@grafana/i18n/internal';
+import { t } from '@grafana/i18n';
 import { config, locationService, RefreshEvent } from '@grafana/runtime';
 import {
   sceneGraph,
@@ -31,7 +31,7 @@ import { PanelModel } from 'app/features/dashboard/state/PanelModel';
 import { dashboardWatcher } from 'app/features/live/dashboard/dashboardWatcher';
 import { DashboardJson } from 'app/features/manage-dashboards/types';
 import { VariablesChanged } from 'app/features/variables/types';
-import { DashboardDTO, DashboardMeta, KioskMode, SaveDashboardResponseDTO } from 'app/types';
+import { DashboardMeta, KioskMode, SaveDashboardResponseDTO, DashboardDTO } from 'app/types/dashboard';
 import { ShowConfirmModalEvent } from 'app/types/events';
 
 import {
@@ -59,7 +59,7 @@ import { buildGridItemForPanel, transformSaveModelToScene } from '../serializati
 import { gridItemToPanel } from '../serialization/transformSceneToSaveModel';
 import { DecoratedRevisionModel } from '../settings/VersionsEditView';
 import { DashboardEditView } from '../settings/utils';
-import { historySrv } from '../settings/version-history';
+import { historySrv } from '../settings/version-history/HistorySrv';
 import { DashboardModelCompatibilityWrapper } from '../utils/DashboardModelCompatibilityWrapper';
 import { isInCloneChain } from '../utils/clone';
 import { dashboardSceneGraph } from '../utils/dashboardSceneGraph';
@@ -682,6 +682,7 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> impleme
       panelId,
       panelName: panel?.state?.title,
       panelPluginId: panel?.state.pluginId,
+      dashboardTitle: this.state.title,
     };
   }
 

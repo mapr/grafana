@@ -16,6 +16,10 @@ on:
         required: true
         type: string
         description: The version of Grafana that is being released (without the `v` prefix)`
+      target:
+        required: false
+        type: string
+        description: 'Unused: left here for backwards compatibility'
       changelog:
         required: false
         type: boolean
@@ -39,7 +43,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   capture-date:
@@ -205,7 +208,7 @@ jobs:
         if: ${{ inputs.bump == true || inputs.bump == 'true' }}
         run: |
           git add package.json lerna.json yarn.lock packages public
-          test -e e2e/test-plugins && git add e2e/test-plugins
+          test -e e2e-playwright/test-plugins && git add e2e-playwright/test-plugins
           git commit -m "Update version to $VERSION"
 
       - name: Git push
