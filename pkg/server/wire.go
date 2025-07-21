@@ -122,6 +122,7 @@ import (
 	pluginDashboards "github.com/grafana/grafana/pkg/services/pluginsintegration/dashboards"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginaccesscontrol"
 	"github.com/grafana/grafana/pkg/services/preference/prefimpl"
+	promTypeMigration "github.com/grafana/grafana/pkg/services/promtypemigration"
 	"github.com/grafana/grafana/pkg/services/publicdashboards"
 	publicdashboardsApi "github.com/grafana/grafana/pkg/services/publicdashboards/api"
 	publicdashboardsStore "github.com/grafana/grafana/pkg/services/publicdashboards/database"
@@ -194,7 +195,6 @@ import (
 	"github.com/grafana/grafana/pkg/tsdb/opentsdb"
 	"github.com/grafana/grafana/pkg/tsdb/parca"
 	"github.com/grafana/grafana/pkg/tsdb/prometheus"
-	promtypemigrations "github.com/grafana/grafana/pkg/tsdb/prometheus/migration"
 	"github.com/grafana/grafana/pkg/tsdb/tempo"
 	"github.com/grafana/grafana/pkg/tsdb/zipkin"
 )
@@ -389,9 +389,9 @@ var wireBasicSet = wire.NewSet(
 	secretsMigrations.ProvideDataSourceMigrationService,
 	secretsMigrations.ProvideSecretMigrationProvider,
 	wire.Bind(new(secretsMigrations.SecretMigrationProvider), new(*secretsMigrations.SecretMigrationProviderImpl)),
-	promtypemigrations.ProvidePromTypeMigrationProvider,
-	promtypemigrations.ProvidePromMigrationService,
-	wire.Bind(new(promtypemigrations.PromTypeMigrationProvider), new(*promtypemigrations.PromTypeMigrationProviderImpl)),
+	promTypeMigration.ProvidePromMigrationService,
+	promTypeMigration.ProvidePromTypeMigrationProvider,
+	wire.Bind(new(promTypeMigration.PromTypeMigrationProvider), new(*promTypeMigration.PromTypeMigrationProviderImpl)),
 	resourcepermissions.NewActionSetService,
 	wire.Bind(new(accesscontrol.ActionResolver), new(resourcepermissions.ActionSetService)),
 	wire.Bind(new(pluginaccesscontrol.ActionSetRegistry), new(resourcepermissions.ActionSetService)),
