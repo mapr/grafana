@@ -90,9 +90,11 @@ export const VizTooltipFooter = ({ dataLinks, actions = [], annotate, onFilterCl
       {!hasOneClickAction && renderDataLinks(dataLinks, styles)}
       {!hasOneClickLink && renderActions(actions, styles)}
       {onFilterClick && (
-        <Button icon="filter" variant="secondary" size="sm" onClick={onFilterClick}>
-          Filter for value
-        </Button>
+        <div className={styles.addAnnotations}>
+          <Button icon="filter" variant="secondary" size="sm" onClick={onFilterClick}>
+            <Trans i18nKey="grafana-ui.viz-tooltip.footer-filter-for-value">Filter for value</Trans>
+          </Button>
+        </div>
       )}
       {!hasOneClickLink && !hasOneClickAction && annotate != null && (
         <div className={styles.addAnnotations}>
