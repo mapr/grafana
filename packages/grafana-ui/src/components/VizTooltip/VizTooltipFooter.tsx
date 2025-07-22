@@ -88,13 +88,6 @@ export const VizTooltipFooter = ({ dataLinks, actions = [], annotate }: VizToolt
     <div className={styles.wrapper}>
       {!hasOneClickAction && renderDataLinks(dataLinks, styles)}
       {!hasOneClickLink && renderActions(actions, styles)}
-      {!hasOneClickLink && !hasOneClickAction && annotate != null && (
-        <div className={styles.addAnnotations}>
-          <Button icon="comment-alt" variant="secondary" size="sm" id={ADD_ANNOTATION_ID} onClick={annotate}>
-            <Trans i18nKey="grafana-ui.viz-tooltip.footer-add-annotation">Add annotation</Trans>
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
