@@ -89,8 +89,8 @@ export const VizTooltipFooter = ({ dataLinks, actions = [], annotate, onFilterCl
     <div className={styles.wrapper}>
       {!hasOneClickAction && renderDataLinks(dataLinks, styles)}
       {!hasOneClickLink && renderActions(actions, styles)}
-      {onFilterClick && (
-        <div className={styles.addAnnotations}>
+      {!hasOneClickLink && !hasOneClickAction && onFilterClick && (
+        <div className={styles.filterForValue}>
           <Button icon="filter" variant="secondary" size="sm" onClick={onFilterClick}>
             <Trans i18nKey="grafana-ui.viz-tooltip.footer-filter-for-value">Filter for value</Trans>
           </Button>
@@ -119,6 +119,10 @@ const getStyles = (theme: GrafanaTheme2) => ({
     padding: theme.spacing(1),
   }),
   addAnnotations: css({
+    borderTop: `1px solid ${theme.colors.border.medium}`,
+    padding: theme.spacing(1),
+  }),
+  filterForValue: css({
     borderTop: `1px solid ${theme.colors.border.medium}`,
     padding: theme.spacing(1),
   }),
