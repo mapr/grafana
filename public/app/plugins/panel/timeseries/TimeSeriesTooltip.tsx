@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 
 import { DataFrame, Field, FieldType, formattedValueToString, InterpolateFunction, LinkModel } from '@grafana/data';
 import { SortOrder, TooltipDisplayMode } from '@grafana/schema/dist/esm/common/common.gen';
+import { AdHocFilterItem } from '@grafana/ui';
 import {
   VizTooltipContent,
   VizTooltipFooter,
@@ -16,7 +17,6 @@ import { getFieldActions } from '../status-history/utils';
 import { fmt } from '../xychart/utils';
 
 import { isTooltipScrollable } from './utils';
-import { AdHocFilterItem } from '@grafana/ui';
 
 // exemplar / annotation / time region hovering?
 // add annotation UI / alert dismiss UI?
