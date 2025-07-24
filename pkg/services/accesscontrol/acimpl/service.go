@@ -435,7 +435,7 @@ func (s *Service) RegisterFixedRoles(ctx context.Context) error {
 		for br := range accesscontrol.BuiltInRolesWithParents(registration.Grants) {
 			if basicRole, ok := s.roles[br]; ok {
 				for _, p := range registration.Role.Permissions {
-					if p.Action == pluginaccesscontrol.ActionAppAccess {
+					if registration.Role.IsPlugin() && p.Action == pluginaccesscontrol.ActionAppAccess {
 						s.log.Warn("Plugin is attempting to grant access permission, but this permission is already granted by default and will be ignored",
 							"role", registration.Role.Name, "permission", p.Action, "scope", p.Scope)
 						continue
@@ -704,7 +704,7 @@ func PermissionMatchesSearchOptions(permission accesscontrol.Permission, searchO
 	if searchOptions.Scope != "" {
 		// Permissions including the scope should also match
 		scopes := append(searchOptions.Wildcards(), searchOptions.Scope)
-		if !slices.Contains[[]string, string](scopes, permission.Scope) {
+		if !slices.Contains(scopes, permission.Scope) {
 			return false
 		}
 	}
