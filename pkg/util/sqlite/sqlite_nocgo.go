@@ -6,6 +6,8 @@ import "modernc.org/sqlite"
 
 type Driver = sqlite.Driver
 
+const DriverName = "sqlite"
+
 func IsBusyOrLocked(err error) bool {
 	return false // FIXME
 }
