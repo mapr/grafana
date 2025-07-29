@@ -22,6 +22,8 @@ type TestDB struct {
 	DriverName string
 	ConnStr    string
 	Path       string
+	Host       string
+	Port       string
 	Cleanup    func()
 }
 
@@ -132,6 +134,8 @@ func mySQLTestDB() (*TestDB, error) {
 	return &TestDB{
 		DriverName: "mysql",
 		ConnStr:    conn_str,
+		Host:       host,
+		Port:       port,
 		Cleanup:    func() {},
 	}, nil
 }
@@ -149,6 +153,8 @@ func postgresTestDB() (*TestDB, error) {
 	return &TestDB{
 		DriverName: "postgres",
 		ConnStr:    connStr,
+		Host:       host,
+		Port:       port,
 		Cleanup:    func() {},
 	}, nil
 }
