@@ -96,6 +96,8 @@ func StartGrafanaEnv(t *testing.T, grafDir, cfgPath string) (string, *server.Tes
 	dbCfg.Key("type").SetValue(testDB.DriverName)
 	dbCfg.Key("host").SetValue(testDB.Host)
 	dbCfg.Key("port").SetValue(testDB.Port)
+	dbCfg.Key("user").SetValue(testDB.User)
+	dbCfg.Key("password").SetValue(testDB.Password)
 
 	env, err := server.InitializeForTest(t, t, cfg, serverOpts, apiServerOpts)
 	require.NoError(t, err)

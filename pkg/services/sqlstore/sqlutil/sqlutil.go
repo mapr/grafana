@@ -24,6 +24,8 @@ type TestDB struct {
 	Path       string
 	Host       string
 	Port       string
+	User       string
+	Password   string
 	Cleanup    func()
 }
 
@@ -136,6 +138,8 @@ func mySQLTestDB() (*TestDB, error) {
 		ConnStr:    conn_str,
 		Host:       host,
 		Port:       port,
+		User:       "grafana",
+		Password:   "password",
 		Cleanup:    func() {},
 	}, nil
 }
@@ -155,6 +159,8 @@ func postgresTestDB() (*TestDB, error) {
 		ConnStr:    connStr,
 		Host:       host,
 		Port:       port,
+		User:       "grafanatest",
+		Password:   "grafanatest",
 		Cleanup:    func() {},
 	}, nil
 }
