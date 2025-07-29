@@ -26,6 +26,7 @@ type TestDB struct {
 	Port       string
 	User       string
 	Password   string
+	Database   string
 	Cleanup    func()
 }
 
@@ -140,6 +141,7 @@ func mySQLTestDB() (*TestDB, error) {
 		Port:       port,
 		User:       "grafana",
 		Password:   "password",
+		Database:   "grafana_tests",
 		Cleanup:    func() {},
 	}, nil
 }
@@ -161,6 +163,7 @@ func postgresTestDB() (*TestDB, error) {
 		Port:       port,
 		User:       "grafanatest",
 		Password:   "grafanatest",
+		Database:   "grafanatest",
 		Cleanup:    func() {},
 	}, nil
 }
