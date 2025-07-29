@@ -1881,7 +1881,7 @@ var (
 			Name:              "restrictedPluginApis",
 			Description:       "Enables sharing a list of APIs with a list of plugins",
 			Stage:             FeatureStageExperimental,
-			Owner:             grafanaAppPlatformSquad,
+			Owner:             grafanaPluginsPlatformSquad,
 			HideFromAdminPage: true,
 			HideFromDocs:      true,
 			FrontendOnly:      true,
