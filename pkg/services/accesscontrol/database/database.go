@@ -3,12 +3,14 @@ package database
 import (
 	"context"
 	"fmt"
+	"github.com/grafana/grafana/pkg/registry"
 	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/otel"
 
 	"github.com/grafana/grafana/pkg/infra/db"
+	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 )
 
@@ -41,11 +43,16 @@ const (
 )
 
 func ProvideService(sql db.DB) *AccessControlStore {
-	return &AccessControlStore{sql}
+	return &AccessControlStore{
+		sql:    sql,
+		logger: log.New("accesscontrol.store"),
+	}
 }
 
 type AccessControlStore struct {
-	sql db.DB
+	registry.ProvidesUsageStats
+	sql    db.DB
+	logger log.Logger
 }
 
 func (s *AccessControlStore) GetUserPermissions(ctx context.Context, query accesscontrol.GetUserPermissionsQuery) ([]accesscontrol.Permission, error) {
