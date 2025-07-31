@@ -655,7 +655,7 @@
           "csvContent": "x,y,c\n0,0,0\n50,50,25\n100,100,50",
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_content"

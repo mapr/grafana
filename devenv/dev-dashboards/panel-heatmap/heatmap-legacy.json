@@ -59,7 +59,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "exponential_heatmap_bucket_data"
@@ -112,7 +112,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "max": 70,
           "min": 10,
@@ -170,7 +170,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "exponential_heatmap_bucket_data"
@@ -223,7 +223,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "exponential_heatmap_bucket_data"
@@ -334,7 +334,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "exponential_heatmap_bucket_data"

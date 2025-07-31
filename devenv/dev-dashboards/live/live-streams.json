@@ -40,7 +40,7 @@
       {
         "datasource": {
           "type": "grafana-testdata-datasource",
-          "uid": "PD8C576611E62080A"
+          "uid": "gdev-testdata"
         },
         "fieldConfig": {
           "defaults": {
@@ -178,7 +178,7 @@
             "channel": "random-20Hz-stream",
             "datasource": {
               "type": "grafana-testdata-datasource",
-              "uid": "PD8C576611E62080A"
+              "uid": "gdev-testdata"
             },
             "refId": "A",
             "scenarioId": "live"
@@ -354,7 +354,7 @@
       {
         "datasource": {
           "type": "grafana-testdata-datasource",
-          "uid": "PD8C576611E62080A"
+          "uid": "gdev-testdata"
         },
         "fieldConfig": {
           "defaults": {
@@ -434,7 +434,7 @@
             "channel": "random-2s-stream",
             "datasource": {
               "type": "grafana-testdata-datasource",
-              "uid": "PD8C576611E62080A"
+              "uid": "gdev-testdata"
             },
             "refId": "A",
             "scenarioId": "live"
@@ -610,7 +610,7 @@
       {
         "datasource": {
           "type": "grafana-testdata-datasource",
-          "uid": "PD8C576611E62080A"
+          "uid": "gdev-testdata"
         },
         "fieldConfig": {
           "defaults": {
@@ -690,7 +690,7 @@
             "channel": "random-labeled-stream",
             "datasource": {
               "type": "grafana-testdata-datasource",
-              "uid": "PD8C576611E62080A"
+              "uid": "gdev-testdata"
             },
             "refId": "A",
             "scenarioId": "live"

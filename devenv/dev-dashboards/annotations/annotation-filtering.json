@@ -33,7 +33,7 @@
       {
         "datasource": {
           "type": "testdata",
-          "uid": "PD8C576611E62080A"
+          "uid": "gdev-testdata"
         },
         "enable": true,
         "filter": {
@@ -53,7 +53,7 @@
       {
         "datasource": {
           "type": "testdata",
-          "uid": "PD8C576611E62080A"
+          "uid": "gdev-testdata"
         },
         "enable": true,
         "filter": {
@@ -73,7 +73,7 @@
       {
         "datasource": {
           "type": "testdata",
-          "uid": "PD8C576611E62080A"
+          "uid": "gdev-testdata"
         },
         "enable": true,
         "filter": {

@@ -117,7 +117,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "random_walk",
@@ -322,7 +322,7 @@
           "csvContent": "OrderID,CustomerID,Time\n100,A,10000\n101,B,20000\n102,C,30000",
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "Orders",
           "scenarioId": "csv_content"
@@ -331,7 +331,7 @@
           "csvContent": "CustomerID,Name,Country\nA,Customer A,USA\nB,Customer B,Germany\nC,Customer C,Spain\nD,Customer D,Canada",
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "hide": false,
           "refId": "Customers",

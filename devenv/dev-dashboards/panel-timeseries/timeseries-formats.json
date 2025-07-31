@@ -900,7 +900,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "random_walk",

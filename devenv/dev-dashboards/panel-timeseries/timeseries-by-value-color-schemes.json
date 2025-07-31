@@ -30,7 +30,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "description": "",
       "fieldConfig": {
@@ -117,7 +117,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -130,7 +130,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "description": "",
       "fieldConfig": {
@@ -217,7 +217,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -230,7 +230,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -316,7 +316,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -329,7 +329,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -411,7 +411,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -522,7 +522,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -609,7 +609,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "max": 40,
           "min": 0,
@@ -932,7 +932,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1022,7 +1022,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "max": 45,
           "min": 20,
@@ -1035,7 +1035,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "hide": false,
           "max": 20,

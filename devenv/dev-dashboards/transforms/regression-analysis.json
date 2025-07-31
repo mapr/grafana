@@ -25,7 +25,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -107,7 +107,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "random_walk"
@@ -133,7 +133,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -215,7 +215,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "random_walk"
@@ -240,7 +240,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -323,7 +323,7 @@
           "csvContent": "time, val\n2023-11-20 12:09:00, 1\n2023-11-20 12:09:02, 2\n2023-11-20 12:09:03, 3\n2023-11-20 12:09:04, 4\n2023-11-20 12:09:05, 5\n2023-11-20 12:09:06, 6\n2023-11-20 12:09:07, 2\n2023-11-20 12:09:08, 3\n2023-11-20 12:09:09, 4\n2023-11-20 12:09:10, 1\n2023-11-20 12:09:11, 2\n2023-11-20 12:09:12, 3\n2023-11-20 12:09:13, 4",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_content"
@@ -369,7 +369,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -452,7 +452,7 @@
           "csvContent": "time, val\n2023-11-20 12:09:00, 1\n2023-11-20 12:09:02, 2\n2023-11-20 12:09:03, 3\n2023-11-20 12:09:04, 4\n2023-11-20 12:09:05, null\n2023-11-20 12:09:06, 6\n2023-11-20 12:09:07, 2\n2023-11-20 12:09:08, null\n2023-11-20 12:09:09, 4\n2023-11-20 12:09:10, 1\n2023-11-20 12:09:11, 2\n2023-11-20 12:09:12, 3\n2023-11-20 12:09:13, 4",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_content"
@@ -499,7 +499,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -619,7 +619,7 @@
           "csvContent": "x,y\n1,4\n2,1\n3,2\n4,-2\n5,6\n3,2\n1,7\n3,9\n6,3\n5,-3\n2,-2\n7,15",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_content"
@@ -677,7 +677,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -757,7 +757,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -865,7 +865,7 @@
           "csvContent": "x, val\n6,2\n8,1\n10,5\n15,1\n22,10\n",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_content"
@@ -910,7 +910,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1029,7 +1029,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "usa",

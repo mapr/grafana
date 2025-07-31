@@ -30,7 +30,7 @@
     "panels": [
       {
         "datasource": {
-          "uid": "PD8C576611E62080A",
+          "uid": "gdev-testdata",
           "type": "testdata"
         },
         "fieldConfig": {
@@ -73,7 +73,7 @@
             "scenarioId": "csv_content",
             "refId": "A",
             "datasource": {
-              "uid": "PD8C576611E62080A",
+              "uid": "gdev-testdata",
               "type": "testdata"
             },
             "csvContent": "AAA\n1\n2\n3\n4"
@@ -82,7 +82,7 @@
             "scenarioId": "csv_content",
             "refId": "B",
             "datasource": {
-              "uid": "PD8C576611E62080A",
+              "uid": "gdev-testdata",
               "type": "testdata"
             },
             "csvContent": "BBB\n1\n2\n3\n4\n",

@@ -37,7 +37,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -108,7 +108,7 @@
           "alias": "__house_locations",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "labels": "",
           "min": 0,
@@ -124,7 +124,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -195,7 +195,7 @@
           "alias": "__house_locations",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "min": 0,
           "noise": 10,
@@ -211,7 +211,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -282,7 +282,7 @@
           "alias": "__house_locations",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "min": 0,
           "noise": 10,
@@ -298,7 +298,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -369,7 +369,7 @@
           "alias": "__server_names",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "min": 0,
           "refId": "A",
@@ -384,7 +384,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -454,7 +454,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "random_walk"
@@ -462,7 +462,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "B",
           "scenarioId": "random_walk"
@@ -470,7 +470,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "C",
           "scenarioId": "random_walk"
@@ -478,7 +478,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "D",
           "scenarioId": "random_walk"
@@ -486,7 +486,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "E",
           "scenarioId": "random_walk"
@@ -494,7 +494,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "F",
           "scenarioId": "random_walk"
@@ -502,7 +502,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "G",
           "scenarioId": "random_walk"
@@ -514,7 +514,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -584,7 +584,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "random_walk"
@@ -592,7 +592,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "B",
           "scenarioId": "random_walk"
@@ -600,7 +600,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "C",
           "scenarioId": "random_walk"
@@ -608,7 +608,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "D",
           "scenarioId": "random_walk"
@@ -616,7 +616,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "E",
           "scenarioId": "random_walk"
@@ -624,7 +624,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "F",
           "scenarioId": "random_walk"
@@ -632,7 +632,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "G",
           "scenarioId": "random_walk"
@@ -644,7 +644,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -717,7 +717,7 @@
           "alias": "__server_names",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "max": 200,
           "min": 0,
@@ -735,7 +735,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -808,7 +808,7 @@
           "alias": "__server_names",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "max": 200,
           "min": 0,
@@ -826,7 +826,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -899,7 +899,7 @@
           "alias": "__server_names",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "max": 200,
           "min": 0,
@@ -930,7 +930,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1001,7 +1001,7 @@
           "alias": "__house_locations",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "labels": "",
           "min": 0,
@@ -1017,7 +1017,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1088,7 +1088,7 @@
           "alias": "__house_locations",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "min": 0,
           "noise": 10,
@@ -1104,7 +1104,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1175,7 +1175,7 @@
           "alias": "__house_locations",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "min": 0,
           "noise": 10,
@@ -1191,7 +1191,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1262,7 +1262,7 @@
           "alias": "__server_names",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "min": 0,
           "refId": "A",
@@ -1277,7 +1277,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1347,7 +1347,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "random_walk"
@@ -1355,7 +1355,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "B",
           "scenarioId": "random_walk"
@@ -1363,7 +1363,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "C",
           "scenarioId": "random_walk"
@@ -1371,7 +1371,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "D",
           "scenarioId": "random_walk"
@@ -1379,7 +1379,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "E",
           "scenarioId": "random_walk"
@@ -1387,7 +1387,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "F",
           "scenarioId": "random_walk"
@@ -1395,7 +1395,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "G",
           "scenarioId": "random_walk"
@@ -1407,7 +1407,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1477,7 +1477,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "random_walk"
@@ -1485,7 +1485,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "B",
           "scenarioId": "random_walk"
@@ -1493,7 +1493,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "C",
           "scenarioId": "random_walk"
@@ -1501,7 +1501,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "D",
           "scenarioId": "random_walk"
@@ -1509,7 +1509,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "E",
           "scenarioId": "random_walk"
@@ -1517,7 +1517,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "F",
           "scenarioId": "random_walk"
@@ -1525,7 +1525,7 @@
         {
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "G",
           "scenarioId": "random_walk"
@@ -1537,7 +1537,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1610,7 +1610,7 @@
           "alias": "__server_names",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "max": 200,
           "min": 0,
@@ -1628,7 +1628,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1701,7 +1701,7 @@
           "alias": "__server_names",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "max": 200,
           "min": 0,
@@ -1719,7 +1719,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1792,7 +1792,7 @@
           "alias": "__server_names",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "max": 200,
           "min": 0,
@@ -1810,7 +1810,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1864,7 +1864,7 @@
           "csvContent": "time, value\n2023-12-13T00:00:00Z, 0\n2023-12-13T00:00:00Z, 100",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_content"
@@ -1877,7 +1877,7 @@
       "datasource": {
         "default": true,
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1931,7 +1931,7 @@
           "csvContent": "time, value\n2023-12-13T00:00:00Z, 50\n2023-12-13T00:00:00Z, 100\n2023-12-13T00:00:00Z, 50",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_content"
@@ -1943,7 +1943,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -1997,7 +1997,7 @@
           "csvContent": "time, value\n2023-12-13T00:00:00Z, 0\n2023-12-13T00:00:00Z, 0",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_content"
@@ -2009,7 +2009,7 @@
     {
       "datasource": {
         "type": "grafana-testdata-datasource",
-        "uid": "PD8C576611E62080A"
+        "uid": "gdev-testdata"
       },
       "fieldConfig": {
         "defaults": {
@@ -2063,7 +2063,7 @@
           "csvContent": "Name, value\nName1, 10\nName2, 20",
           "datasource": {
             "type": "grafana-testdata-datasource",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_content"

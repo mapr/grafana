@@ -31,7 +31,7 @@
       {
         "datasource": {
           "type": "testdata",
-          "uid": "PD8C576611E62080A"
+          "uid": "gdev-testdata"
         },
         "gridPos": {
           "h": 3,
@@ -50,7 +50,7 @@
       {
         "datasource": {
           "type": "testdata",
-          "uid": "PD8C576611E62080A"
+          "uid": "gdev-testdata"
         },
         "fieldConfig": {
           "defaults": {
@@ -101,7 +101,7 @@
             "csvFileName": "flight_info_by_state.csv",
             "datasource": {
               "type": "testdata",
-              "uid": "PD8C576611E62080A"
+              "uid": "gdev-testdata"
             },
             "refId": "A",
             "scenarioId": "csv_file"
@@ -110,7 +110,7 @@
             "csvFileName": "population_by_state.csv",
             "datasource": {
               "type": "testdata",
-              "uid": "PD8C576611E62080A"
+              "uid": "gdev-testdata"
             },
             "refId": "B",
             "scenarioId": "csv_file"

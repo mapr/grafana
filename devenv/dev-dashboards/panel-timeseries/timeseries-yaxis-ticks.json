@@ -119,7 +119,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -210,7 +210,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -301,7 +301,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -392,7 +392,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -483,7 +483,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -574,7 +574,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -666,7 +666,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -758,7 +758,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -849,7 +849,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -936,7 +936,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -1023,7 +1023,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -1111,7 +1111,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -1200,7 +1200,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -1289,7 +1289,7 @@
         {
           "datasource": {
             "type": "testdata",
-            "uid": "PD8C576611E62080A"
+            "uid": "gdev-testdata"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
