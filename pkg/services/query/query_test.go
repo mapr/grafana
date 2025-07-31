@@ -69,7 +69,7 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 				"type": "postgres"
 			}
 		}`)
-		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr)
+		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr, false)
 		require.NoError(t, err)
 		require.NotNil(t, parsedReq)
 		assert.False(t, parsedReq.hasExpression)
@@ -128,7 +128,7 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 			"type": "math",
 			"expression": "$A - 50"
 		}`)
-		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr)
+		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr, false)
 		require.NoError(t, err)
 		require.NotNil(t, parsedReq)
 		require.True(t, parsedReq.hasExpression)
@@ -171,7 +171,7 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 				"type": "testdata"
 			}
 		}`)
-		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr)
+		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr, false)
 		require.NoError(t, err)
 		require.NotNil(t, parsedReq)
 		assert.False(t, parsedReq.hasExpression)
@@ -231,7 +231,7 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 			"type": "math",
 			"expression": "$A_resample + $B_resample"
 		}`)
-		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr)
+		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr, false)
 		require.NoError(t, err)
 		require.NotNil(t, parsedReq)
 		assert.True(t, parsedReq.hasExpression)
@@ -271,18 +271,18 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 		reqCtx.Req = httpreq
 
 		httpreq.Header.Add("X-Datasource-Uid", "gIEkMvIVz")
-		_, err = tc.queryService.parseMetricRequest(httpreq.Context(), tc.signedInUser, true, mr)
+		_, err = tc.queryService.parseMetricRequest(httpreq.Context(), tc.signedInUser, true, mr, false)
 		require.NoError(t, err)
 
 		// With the second value it is OK
 		httpreq.Header.Add("X-Datasource-Uid", "sEx6ZvSVk")
-		_, err = tc.queryService.parseMetricRequest(httpreq.Context(), tc.signedInUser, true, mr)
+		_, err = tc.queryService.parseMetricRequest(httpreq.Context(), tc.signedInUser, true, mr, false)
 		require.NoError(t, err)
 
 		// Single header with comma syntax
 		httpreq, _ = http.NewRequest(http.MethodPost, "http://localhost/", bytes.NewReader([]byte{}))
 		httpreq.Header.Set("X-Datasource-Uid", "gIEkMvIVz, sEx6ZvSVk")
-		_, err = tc.queryService.parseMetricRequest(httpreq.Context(), tc.signedInUser, true, mr)
+		_, err = tc.queryService.parseMetricRequest(httpreq.Context(), tc.signedInUser, true, mr, false)
 		require.NoError(t, err)
 	})
 
@@ -301,7 +301,7 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 				"type": "postgres"
 			}
 		}`)
-		_, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr)
+		_, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr, false)
 		require.Error(t, err)
 	})
 
@@ -322,7 +322,7 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 		}`)
 		mr.From = "1753944628000"
 		mr.To = "1753944629000"
-		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr)
+		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr, false)
 		require.NoError(t, err)
 		require.NotNil(t, parsedReq)
 		assert.Len(t, parsedReq.parsedQueries, 1)
@@ -359,7 +359,7 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 		}`)
 		mr.From = ""
 		mr.To = ""
-		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr)
+		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr, true)
 		require.NoError(t, err)
 		require.NotNil(t, parsedReq)
 		assert.Len(t, parsedReq.parsedQueries, 1)
@@ -372,6 +372,23 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 
 		assert.Equal(t, int64(1753944628000), queries[1].query.TimeRange.From.UnixMilli())
 		assert.Equal(t, int64(1753944629000), queries[1].query.TimeRange.To.UnixMilli())
+
+		// now we try it with the flag disabled
+
+		parsedReq2, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr, false)
+		require.NoError(t, err)
+		require.NotNil(t, parsedReq2)
+		assert.Len(t, parsedReq2.parsedQueries, 1)
+		assert.Contains(t, parsedReq2.parsedQueries, "gIEkMvIVz")
+		queries2 := parsedReq2.getFlattenedQueries()
+		assert.Len(t, queries2, 2)
+
+		assert.Equal(t, int64(0), queries2[0].query.TimeRange.From.UnixMilli())
+		assert.Equal(t, int64(0), queries2[0].query.TimeRange.To.UnixMilli())
+
+		assert.Equal(t, int64(0), queries2[1].query.TimeRange.From.UnixMilli())
+		assert.Equal(t, int64(0), queries2[1].query.TimeRange.To.UnixMilli())
+
 	})
 
 	t.Run("Test a datasource query with malformed local time range", func(t *testing.T) {
@@ -396,7 +413,7 @@ func TestIntegrationParseMetricRequest(t *testing.T) {
 		}`)
 		mr.From = ""
 		mr.To = ""
-		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr)
+		parsedReq, err := tc.queryService.parseMetricRequest(context.Background(), tc.signedInUser, true, mr, false)
 		require.NoError(t, err)
 		require.NotNil(t, parsedReq)
 		assert.Len(t, parsedReq.parsedQueries, 1)
