@@ -309,5 +309,13 @@ export const alertmanagerApi = alertingApi.injectEndpoints({
       },
       providesTags: ['ContactPointsStatus'],
     }),
+
+    // List external Alertmanager configurations
+    listExternalAlertmanagerConfigs: build.query<Array<{ identifier: string }>, void>({
+      query: () => ({
+        url: `/api/convert/api/v1/alertmanager/configs`,
+      }),
+      providesTags: ['AlertmanagerConfiguration'],
+    }),
   }),
 });

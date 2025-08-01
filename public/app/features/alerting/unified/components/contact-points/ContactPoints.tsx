@@ -44,6 +44,10 @@ export enum ActiveTab {
 
 const DEFAULT_PAGE_SIZE = 10;
 
+function isExternalConfig(name: string): boolean {
+  return name.startsWith('__grafana-converted-external-config-');
+}
+
 const ContactPointsTab = () => {
   const { selectedAlertmanager } = useAlertmanager();
   const [queryParams] = useURLSearchParams();
@@ -141,7 +145,10 @@ const ContactPointsTab = () => {
         <ContactPointsList contactPoints={contactPoints} search={search} pageSize={DEFAULT_PAGE_SIZE} />
       )}
       {/* Grafana manager Alertmanager does not support global config, Mimir and Cortex do */}
-      {!isGrafanaManagedAlertmanager && <GlobalConfigAlert alertManagerName={selectedAlertmanager!} />}
+      {/* External configs also don't support global config */}
+      {!isGrafanaManagedAlertmanager && !isExternalConfig(selectedAlertmanager!) && (
+        <GlobalConfigAlert alertManagerName={selectedAlertmanager!} />
+      )}
       {ExportDrawer}
     </>
   );
