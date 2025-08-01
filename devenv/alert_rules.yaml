@@ -13,7 +13,7 @@ groups:
               relativeTimeRange:
                 from: 600
                 to: 0
-              datasourceUid: gdev-testdata
+              datasourceUid: PD8C576611E62080A
               model:
                 intervalMs: 1000
                 maxDataPoints: 43200
@@ -91,7 +91,7 @@ groups:
               relativeTimeRange:
                 from: 600
                 to: 0
-              datasourceUid: gdev-testdata
+              datasourceUid: PD8C576611E62080A
               model:
                 intervalMs: 1000
                 maxDataPoints: 43200

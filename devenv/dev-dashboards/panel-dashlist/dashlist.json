@@ -24,8 +24,7 @@
   "panels": [
     {
       "datasource": {
-        "type": "grafana-testdata-datasource",
-        "uid": "gdev-testdata"
+        "type": "grafana-testdata-datasource"
       },
       "gridPos": {
         "h": 12,
@@ -53,7 +52,10 @@
   ],
   "refresh": "",
   "schemaVersion": 39,
-  "tags": ["gdev", "panel-tests"],
+  "tags": [
+    "gdev",
+    "panel-tests"
+  ],
   "templating": {
     "list": [
       {

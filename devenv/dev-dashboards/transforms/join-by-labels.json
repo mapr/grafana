@@ -29,7 +29,9 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -77,8 +79,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "labels": "site=A,measure=speed,state=CA",
           "refId": "A",
@@ -86,8 +87,7 @@
         },
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "hide": false,
           "labels": "site=B,measure=speed,state=OR",
@@ -96,8 +96,7 @@
         },
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "hide": false,
           "labels": "site=B,measure=temp",
@@ -106,8 +105,7 @@
         },
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "hide": false,
           "labels": "site=A,measure=temp",

@@ -22,8 +22,7 @@
   "panels": [
     {
       "datasource": {
-        "type": "grafana-testdata-datasource",
-        "uid": "gdev-testdata"
+        "type": "grafana-testdata-datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -81,8 +80,7 @@
         {
           "alias": "test1",
           "datasource": {
-            "type": "grafana-testdata-datasource",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",

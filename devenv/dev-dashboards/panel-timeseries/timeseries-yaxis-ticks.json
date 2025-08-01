@@ -39,7 +39,9 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -118,8 +120,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -130,7 +131,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -209,8 +212,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -221,7 +223,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -300,8 +304,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -312,7 +315,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -391,8 +396,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -403,7 +407,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -482,8 +488,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -494,7 +499,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -573,8 +580,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -585,7 +591,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -665,8 +673,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -677,7 +684,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -757,8 +766,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -769,7 +777,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -848,8 +858,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -860,7 +869,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -935,8 +946,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -947,7 +957,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1022,8 +1034,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -1034,7 +1045,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -1110,8 +1123,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -1122,7 +1134,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1199,8 +1213,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",
@@ -1211,7 +1224,9 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1288,8 +1303,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "csv_metric_values",

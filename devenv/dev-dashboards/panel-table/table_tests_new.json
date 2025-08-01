@@ -36,8 +36,7 @@
     },
     {
       "datasource": {
-        "type": "testdata",
-        "uid": "gdev-testdata"
+        "type": "grafana-testdata-datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -157,8 +156,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "random_walk",
@@ -182,7 +180,9 @@
       "type": "table"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -294,8 +294,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "random_walk_table",
@@ -329,7 +328,9 @@
       "type": "table"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -436,8 +437,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "labels": "cluster=eu,service=checkout",
           "min": 0.1,
@@ -466,7 +466,9 @@
       "type": "table"
     },
     {
-      "datasource": { "type": "testdata" },
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -610,8 +612,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "labels": "cluster=eu,service=checkout",
           "min": 0.1,
@@ -621,8 +622,7 @@
         },
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "hide": false,
           "labels": "cluster=eu,service=checkout",
@@ -678,8 +678,7 @@
     },
     {
       "datasource": {
-        "type": "testdata",
-        "uid": "gdev-testdata"
+        "type": "grafana-testdata-datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -775,8 +774,7 @@
         {
           "alias": "S1",
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "labels": "server=A",
           "refId": "A",
@@ -787,8 +785,7 @@
         {
           "alias": "S2",
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "labels": "server=B",
           "refId": "B",
@@ -799,8 +796,7 @@
         {
           "alias": "S3",
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "labels": "server=C",
           "refId": "C",
@@ -820,8 +816,7 @@
     },
     {
       "datasource": {
-        "type": "testdata",
-        "uid": "gdev-testdata"
+        "type": "grafana-testdata-datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -891,8 +886,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A",
           "scenarioId": "random_walk_table",
@@ -925,8 +919,7 @@
     },
     {
       "datasource": {
-        "type": "testdata",
-        "uid": "gdev-testdata"
+        "type": "grafana-testdata-datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -980,8 +973,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "testdata",
-            "uid": "gdev-testdata"
+            "type": "grafana-testdata-datasource"
           },
           "refId": "A"
         }

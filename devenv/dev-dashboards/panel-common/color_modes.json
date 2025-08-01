@@ -18,7 +18,9 @@
   "links": [],
   "panels": [
     {
-      "datasource": "gdev-testdata",
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -120,7 +122,12 @@
         {
           "id": "reduce",
           "options": {
-            "reducers": ["max", "mean", "last", "min"]
+            "reducers": [
+              "max",
+              "mean",
+              "last",
+              "min"
+            ]
           }
         },
         {
@@ -174,7 +181,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["mean"],
+          "calcs": [
+            "mean"
+          ],
           "fields": "",
           "values": false
         },
@@ -217,7 +226,9 @@
       "type": "stat"
     },
     {
-      "datasource": "gdev-testdata",
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -277,7 +288,9 @@
         "displayMode": "lcd",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["mean"],
+          "calcs": [
+            "mean"
+          ],
           "fields": "",
           "values": false
         },
@@ -321,7 +334,10 @@
     }
   ],
   "schemaVersion": 26,
-  "tags": ["gdev", "demo"],
+  "tags": [
+    "gdev",
+    "demo"
+  ],
   "templating": {
     "list": []
   },

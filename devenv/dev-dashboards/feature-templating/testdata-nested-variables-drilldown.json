@@ -43,7 +43,11 @@
       "cacheTimeout": null,
       "colorBackground": false,
       "colorValue": false,
-      "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
+      "colors": [
+        "#299c46",
+        "rgba(237, 129, 40, 0.89)",
+        "#d44a3a"
+      ],
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -128,7 +132,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "gdev-testdata",
+      "datasource": {
+        "type": "grafana-testdata-datasource"
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -212,16 +218,23 @@
   ],
   "refresh": false,
   "schemaVersion": 19,
-  "tags": ["gdev", "templating"],
+  "tags": [
+    "gdev",
+    "templating"
+  ],
   "templating": {
     "list": [
       {
         "allValue": null,
         "current": {
           "text": "A",
-          "value": ["A"]
+          "value": [
+            "A"
+          ]
         },
-        "datasource": "gdev-testdata",
+        "datasource": {
+          "type": "grafana-testdata-datasource"
+        },
         "definition": "*",
         "hide": 0,
         "includeAll": true,
@@ -244,9 +257,13 @@
         "allValue": null,
         "current": {
           "text": "AA",
-          "value": ["AA"]
+          "value": [
+            "AA"
+          ]
         },
-        "datasource": "gdev-testdata",
+        "datasource": {
+          "type": "grafana-testdata-datasource"
+        },
         "definition": "$datacenter.*",
         "hide": 0,
         "includeAll": true,
@@ -269,9 +286,13 @@
         "allValue": null,
         "current": {
           "text": "All",
-          "value": ["$__all"]
+          "value": [
+            "$__all"
+          ]
         },
-        "datasource": "gdev-testdata",
+        "datasource": {
+          "type": "grafana-testdata-datasource"
+        },
         "definition": "$datacenter.$server.*",
         "hide": 0,
         "includeAll": true,
@@ -297,7 +318,18 @@
     "to": "now"
   },
   "timepicker": {
-    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
   },
   "timezone": "",
   "title": "Templating - Nested Variables Drilldown",

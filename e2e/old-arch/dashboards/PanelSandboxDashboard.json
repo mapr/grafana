@@ -24,8 +24,7 @@
   "panels": [
     {
       "datasource": {
-        "type": "testdata",
-        "uid": "gdev-testdata"
+        "type": "grafana-testdata-datasource"
       },
       "gridPos": {
         "h": 8,
