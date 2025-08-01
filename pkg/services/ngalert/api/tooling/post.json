@@ -1127,6 +1127,14 @@
    },
    "type": "object"
   },
+  "ExtraAlertmanagerConfig": {
+   "properties": {
+    "identifier": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  },
   "ExtraConfiguration": {
    "properties": {
     "alertmanager_config": {
@@ -6861,6 +6869,35 @@
      }
     },
     "summary": "Gets a single rule group in Prometheus-compatible format if it was imported from a Prometheus-compatible source.",
+    "tags": [
+     "convert_prometheus"
+    ]
+   }
+  },
+  "/convert/api/v1/alertmanager/configs": {
+   "get": {
+    "operationId": "RouteConvertPrometheusListAlertmanagerConfigs",
+    "produces": [
+     "application/yaml"
+    ],
+    "responses": {
+     "200": {
+      "description": "ExtraAlertmanagerConfig",
+      "schema": {
+       "items": {
+        "$ref": "#/definitions/ExtraAlertmanagerConfig"
+       },
+       "type": "array"
+      }
+     },
+     "403": {
+      "description": "ForbiddenError",
+      "schema": {
+       "$ref": "#/definitions/ForbiddenError"
+      }
+     }
+    },
+    "summary": "Get a list of all extra Alertmanager configurations imported into Grafana.",
     "tags": [
      "convert_prometheus"
     ]

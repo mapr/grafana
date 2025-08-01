@@ -634,6 +634,32 @@ func (srv *ConvertPrometheusSrv) RouteConvertPrometheusDeleteAlertmanagerConfig(
 	return successfulResponse()
 }
 
+func (srv *ConvertPrometheusSrv) RouteConvertPrometheusListAlertmanagerConfigs(c *contextmodel.ReqContext) response.Response {
+	if !srv.featureToggles.IsEnabledGlobally(featuremgmt.FlagAlertingImportAlertmanagerAPI) {
+		return response.Error(http.StatusNotImplemented, "Not Implemented", nil)
+	}
+
+	logger := srv.logger.FromContext(c.Req.Context())
+	ctx := c.Req.Context()
+
+	cfg, err := srv.am.GetAlertmanagerConfiguration(ctx, c.GetOrgID(), false)
+	if err != nil {
+		logger.Error("failed to get alertmanager configuration", "err", err)
+		return errorToResponse(err)
+	}
+
+	respData := []apimodels.ExtraAlertmanagerConfig{}
+
+	for i := range cfg.ExtraConfigs {
+		extraCfg := &cfg.ExtraConfigs[i]
+		respData = append(respData, apimodels.ExtraAlertmanagerConfig{
+			Identifier: extraCfg.Identifier,
+		})
+	}
+
+	return response.JSON(http.StatusOK, respData)
+}
+
 // parseBooleanHeader parses a boolean header value, returning an error if the header
 // is present but invalid. If the header is not present, returns (false, nil).
 func parseBooleanHeader(header string, headerName string) (bool, error) {

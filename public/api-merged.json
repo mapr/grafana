@@ -15942,6 +15942,14 @@
         }
       }
     },
+    "ExtraAlertmanagerConfig": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        }
+      }
+    },
     "ExtraConfiguration": {
       "type": "object",
       "properties": {

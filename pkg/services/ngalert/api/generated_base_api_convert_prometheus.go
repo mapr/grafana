@@ -33,6 +33,7 @@ type ConvertPrometheusApi interface {
 	RouteConvertPrometheusGetNamespace(*contextmodel.ReqContext) response.Response
 	RouteConvertPrometheusGetRuleGroup(*contextmodel.ReqContext) response.Response
 	RouteConvertPrometheusGetRules(*contextmodel.ReqContext) response.Response
+	RouteConvertPrometheusListAlertmanagerConfigs(*contextmodel.ReqContext) response.Response
 	RouteConvertPrometheusPostAlertmanagerConfig(*contextmodel.ReqContext) response.Response
 	RouteConvertPrometheusPostRuleGroup(*contextmodel.ReqContext) response.Response
 	RouteConvertPrometheusPostRuleGroups(*contextmodel.ReqContext) response.Response
@@ -101,6 +102,9 @@ func (f *ConvertPrometheusApiHandler) RouteConvertPrometheusGetRuleGroup(ctx *co
 }
 func (f *ConvertPrometheusApiHandler) RouteConvertPrometheusGetRules(ctx *contextmodel.ReqContext) response.Response {
 	return f.handleRouteConvertPrometheusGetRules(ctx)
+}
+func (f *ConvertPrometheusApiHandler) RouteConvertPrometheusListAlertmanagerConfigs(ctx *contextmodel.ReqContext) response.Response {
+	return f.handleRouteConvertPrometheusListAlertmanagerConfigs(ctx)
 }
 func (f *ConvertPrometheusApiHandler) RouteConvertPrometheusPostAlertmanagerConfig(ctx *contextmodel.ReqContext) response.Response {
 	return f.handleRouteConvertPrometheusPostAlertmanagerConfig(ctx)
@@ -281,6 +285,18 @@ func (api *API) RegisterConvertPrometheusApiEndpoints(srv ConvertPrometheusApi, 
 				http.MethodGet,
 				"/api/convert/prometheus/config/v1/rules",
 				api.Hooks.Wrap(srv.RouteConvertPrometheusGetRules),
+				m,
+			),
+		)
+		group.Get(
+			toMacaronPath("/api/convert/api/v1/alertmanager/configs"),
+			requestmeta.SetOwner(requestmeta.TeamAlerting),
+			requestmeta.SetSLOGroup(requestmeta.SLOGroupHighSlow),
+			api.authorize(http.MethodGet, "/api/convert/api/v1/alertmanager/configs"),
+			metrics.Instrument(
+				http.MethodGet,
+				"/api/convert/api/v1/alertmanager/configs",
+				api.Hooks.Wrap(srv.RouteConvertPrometheusListAlertmanagerConfigs),
 				m,
 			),
 		)

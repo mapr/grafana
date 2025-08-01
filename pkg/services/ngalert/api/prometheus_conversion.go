@@ -142,3 +142,7 @@ func (f *ConvertPrometheusApiHandler) handleRouteConvertPrometheusGetAlertmanage
 func (f *ConvertPrometheusApiHandler) handleRouteConvertPrometheusDeleteAlertmanagerConfig(ctx *contextmodel.ReqContext) response.Response {
 	return f.svc.RouteConvertPrometheusDeleteAlertmanagerConfig(ctx)
 }
+
+func (f *ConvertPrometheusApiHandler) handleRouteConvertPrometheusListAlertmanagerConfigs(ctx *contextmodel.ReqContext) response.Response {
+	return f.svc.RouteConvertPrometheusListAlertmanagerConfigs(ctx)
+}

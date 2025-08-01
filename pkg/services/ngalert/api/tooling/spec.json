@@ -1367,6 +1367,35 @@
         }
       }
     },
+    "/convert/api/v1/alertmanager/configs": {
+      "get": {
+        "produces": [
+          "application/yaml"
+        ],
+        "tags": [
+          "convert_prometheus"
+        ],
+        "summary": "Get a list of all extra Alertmanager configurations imported into Grafana.",
+        "operationId": "RouteConvertPrometheusListAlertmanagerConfigs",
+        "responses": {
+          "200": {
+            "description": "ExtraAlertmanagerConfig",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExtraAlertmanagerConfig"
+              }
+            }
+          },
+          "403": {
+            "description": "ForbiddenError",
+            "schema": {
+              "$ref": "#/definitions/ForbiddenError"
+            }
+          }
+        }
+      }
+    },
     "/convert/api/v1/alerts": {
       "get": {
         "description": "Returns a specific imported Alertmanager configuration by its identifier.",
@@ -5427,6 +5456,14 @@
         },
         "wechat_configs": {
           "$ref": "#/definitions/WechatConfig"
+        }
+      }
+    },
+    "ExtraAlertmanagerConfig": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
         }
       }
     },

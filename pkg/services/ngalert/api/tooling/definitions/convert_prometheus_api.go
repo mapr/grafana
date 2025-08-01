@@ -244,6 +244,17 @@ import (
 //       202: ConvertPrometheusResponse
 //       403: ForbiddenError
 
+// swagger:route GET /convert/api/v1/alertmanager/configs convert_prometheus RouteConvertPrometheusListAlertmanagerConfigs
+//
+// Get a list of all extra Alertmanager configurations imported into Grafana.
+//
+//     Produces:
+//     - application/yaml
+//
+//     Responses:
+//       200: []ExtraAlertmanagerConfig
+//       403: ForbiddenError
+
 // swagger:parameters RouteConvertPrometheusPostRuleGroup RouteConvertPrometheusCortexPostRuleGroup
 type RouteConvertPrometheusPostRuleGroupParams struct {
 	// in: path
@@ -349,4 +360,9 @@ type AlertmanagerUserConfig struct {
 	// in: body
 	AlertmanagerConfig string            `yaml:"alertmanager_config" json:"alertmanager_config"`
 	TemplateFiles      map[string]string `yaml:"template_files" json:"template_files"`
+}
+
+// swagger:model
+type ExtraAlertmanagerConfig struct {
+	Identifier string `json:"identifier"`
 }

@@ -5410,6 +5410,14 @@
         },
         "type": "object"
       },
+      "ExtraAlertmanagerConfig": {
+        "properties": {
+          "identifier": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "ExtraConfiguration": {
         "properties": {
           "alertmanager_config": {
