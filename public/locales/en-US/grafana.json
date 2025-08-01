@@ -493,7 +493,11 @@
       "title-muting-grouping-and-timings": "Muting, grouping, and timings"
     },
     "alert-manager-picker": {
-      "noOptionsMessage-no-datasources-found": "No datasources found"
+      "converted-configs-group": "Converted Configurations",
+      "external-alertmanagers-group": "External Alertmanagers",
+      "noOptionsMessage-no-datasources-found": "No datasources found",
+      "read-only-badge": "Read-only",
+      "read-only-badge-description": "This is a converted configuration that cannot be edited"
     },
     "alert-menu": {
       "copy-link": "Copy link",

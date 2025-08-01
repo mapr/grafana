@@ -3,7 +3,7 @@ import { ComponentProps, useMemo } from 'react';
 
 import { GrafanaTheme2, SelectableValue } from '@grafana/data';
 import { t } from '@grafana/i18n';
-import { InlineField, Select, SelectMenuOptions, useStyles2 } from '@grafana/ui';
+import { Badge, InlineField, Select, SelectMenuOptions, useStyles2 } from '@grafana/ui';
 
 import { useAlertmanager } from '../state/AlertmanagerContext';
 import { AlertManagerDataSource, GRAFANA_RULES_SOURCE_NAME } from '../utils/datasource';
@@ -13,7 +13,19 @@ interface Props {
 }
 
 function getAlertManagerLabel(alertManager: AlertManagerDataSource) {
-  return alertManager.name === GRAFANA_RULES_SOURCE_NAME ? 'Grafana' : alertManager.name;
+  if (alertManager.name === GRAFANA_RULES_SOURCE_NAME) {
+    return 'Grafana';
+  }
+
+  return alertManager.displayName || alertManager.name;
+}
+
+function isExtraConfig(name: string): boolean {
+  return name.startsWith('__grafana-converted-extra-config-');
+}
+
+function getExtraConfigIdentifier(name: string): string {
+  return name.replace('__grafana-converted-extra-config-', '');
 }
 
 export const AlertManagerPicker = ({ disabled = false }: Props) => {
@@ -21,12 +33,53 @@ export const AlertManagerPicker = ({ disabled = false }: Props) => {
   const { selectedAlertmanager, availableAlertManagers, setSelectedAlertmanager } = useAlertmanager();
 
   const options = useMemo(() => {
-    return availableAlertManagers.map<SelectableValue<string>>((ds) => ({
-      label: getAlertManagerLabel(ds),
-      value: ds.name,
-      imgUrl: ds.imgUrl,
-      meta: ds.meta,
-    }));
+    // Group alertmanagers
+    const grafanaAM = availableAlertManagers.find((am) => am.name === GRAFANA_RULES_SOURCE_NAME);
+    const extraConfigs = availableAlertManagers.filter((am) => isExtraConfig(am.name));
+    const datasourceAMs = availableAlertManagers.filter(
+      (am) => am.name !== GRAFANA_RULES_SOURCE_NAME && !isExtraConfig(am.name)
+    );
+
+    const groupedOptions: Array<SelectableValue<string> | { label: string; options: Array<SelectableValue<string>> }> =
+      [];
+
+    // Add Grafana alertmanager first
+    if (grafanaAM) {
+      groupedOptions.push({
+        label: getAlertManagerLabel(grafanaAM),
+        value: grafanaAM.name,
+        imgUrl: grafanaAM.imgUrl,
+        meta: grafanaAM.meta,
+      });
+    }
+
+    // Add extra configs as a group
+    if (extraConfigs.length > 0) {
+      groupedOptions.push({
+        label: t('alerting.alert-manager-picker.converted-configs-group', 'Converted Configurations'),
+        options: extraConfigs.map((ec) => ({
+          label: getAlertManagerLabel(ec),
+          value: ec.name,
+          imgUrl: ec.imgUrl,
+          meta: ec.meta,
+        })),
+      });
+    }
+
+    // Add datasource alertmanagers in a group
+    if (datasourceAMs.length > 0) {
+      groupedOptions.push({
+        label: t('alerting.alert-manager-picker.external-alertmanagers-group', 'External Alertmanagers'),
+        options: datasourceAMs.map((ds) => ({
+          label: getAlertManagerLabel(ds),
+          value: ds.name,
+          imgUrl: ds.imgUrl,
+          meta: ds.meta,
+        })),
+      });
+    }
+
+    return groupedOptions;
   }, [availableAlertManagers]);
 
   const isDisabled = disabled || options.length === 1;
@@ -61,12 +114,47 @@ const getStyles = (theme: GrafanaTheme2) => ({
   field: css({
     margin: 0,
   }),
+  optionContent: css({
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    whiteSpace: 'pre-line',
+  }),
 });
 
 // custom option that overwrites the default "white-space: nowrap" for Alertmanager names that are really long
-const CustomOption = (props: ComponentProps<typeof SelectMenuOptions>) => (
-  <SelectMenuOptions
-    {...props}
-    renderOptionLabel={({ label }) => <div style={{ whiteSpace: 'pre-line' }}>{label}</div>}
-  />
-);
+// and adds read-only badge for converted configs
+const CustomOption = (props: ComponentProps<typeof SelectMenuOptions>) => {
+  const styles = useStyles2(getStyles);
+  const { data } = props;
+  const alertManagerName = String(data?.value || '');
+
+  if (isExtraConfig(alertManagerName)) {
+    const identifier = getExtraConfigIdentifier(alertManagerName);
+    return (
+      <SelectMenuOptions
+        {...props}
+        renderOptionLabel={() => (
+          <div className={styles.optionContent}>
+            <span>{identifier}</span>
+            <Badge
+              text={t('alerting.alert-manager-picker.read-only-badge', 'Read-only')}
+              color="darkgrey"
+              aria-label={t(
+                'alerting.alert-manager-picker.read-only-badge-description',
+                'This is a converted configuration that cannot be edited'
+              )}
+            />
+          </div>
+        )}
+      />
+    );
+  }
+
+  return (
+    <SelectMenuOptions
+      {...props}
+      renderOptionLabel={({ label }) => <div className={styles.optionContent}>{label}</div>}
+    />
+  );
+};
