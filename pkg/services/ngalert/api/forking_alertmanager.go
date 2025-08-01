@@ -1,36 +1,71 @@
 package api
 
 import (
+	"strings"
+
+	amv2 "github.com/prometheus/alertmanager/api/v2/models"
+	"gopkg.in/yaml.v3"
+
 	"github.com/grafana/grafana/pkg/api/response"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	apimodels "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
+	"github.com/grafana/grafana/pkg/util"
+	"github.com/grafana/grafana/pkg/web"
 )
+
+const externalConfigPrefix = "__grafana-converted-external-config-"
 
 type AlertmanagerApiHandler struct {
 	AMSvc           *LotexAM
 	GrafanaSvc      *AlertmanagerSrv
+	ConvertSvc      *ConvertPrometheusSrv
 	DatasourceCache datasources.CacheService
 }
 
 // NewForkingAM implements a set of routes that proxy to various Alertmanager-compatible backends.
-func NewForkingAM(datasourceCache datasources.CacheService, proxy *LotexAM, grafana *AlertmanagerSrv) *AlertmanagerApiHandler {
+func NewForkingAM(datasourceCache datasources.CacheService, proxy *LotexAM, grafana *AlertmanagerSrv, convertSvc *ConvertPrometheusSrv) *AlertmanagerApiHandler {
 	return &AlertmanagerApiHandler{
 		AMSvc:           proxy,
 		GrafanaSvc:      grafana,
+		ConvertSvc:      convertSvc,
 		DatasourceCache: datasourceCache,
 	}
 }
 
 func (f *AlertmanagerApiHandler) getService(ctx *contextmodel.ReqContext) (*LotexAM, error) {
-	_, err := getDatasourceByUID(ctx, f.DatasourceCache, apimodels.AlertmanagerBackend)
-	if err != nil {
-		return nil, err
+	// If this is not an external config request, we should check that the datasource exists and is of the correct type.
+	if isExternal, _ := f.isExternalConfig(ctx); !isExternal {
+		_, err := getDatasourceByUID(ctx, f.DatasourceCache, apimodels.AlertmanagerBackend)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return f.AMSvc, nil
 }
 
+// isExternalConfig checks if the datasourceUID represents an external config.
+// External configs are the alertmanager configurations that were saved using the Prometheus conversion API.
+func (f *AlertmanagerApiHandler) isExternalConfig(ctx *contextmodel.ReqContext) (bool, string) {
+	datasourceUID := web.Params(ctx.Req)[":DatasourceUID"]
+	if strings.HasPrefix(datasourceUID, externalConfigPrefix) {
+		identifier := strings.TrimPrefix(datasourceUID, externalConfigPrefix)
+		return true, identifier
+	}
+	return false, ""
+}
+
 func (f *AlertmanagerApiHandler) handleRouteGetAMStatus(ctx *contextmodel.ReqContext, dsUID string) response.Response {
+	if isExternal, _ := f.isExternalConfig(ctx); isExternal {
+		status := apimodels.GettableStatus{
+			Cluster: &amv2.ClusterStatus{
+				Status: util.Pointer("ready"),
+			},
+		}
+		return response.JSON(200, status)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -40,6 +75,10 @@ func (f *AlertmanagerApiHandler) handleRouteGetAMStatus(ctx *contextmodel.ReqCon
 }
 
 func (f *AlertmanagerApiHandler) handleRouteCreateSilence(ctx *contextmodel.ReqContext, body apimodels.PostableSilence, dsUID string) response.Response {
+	if isExternal, _ := f.isExternalConfig(ctx); isExternal {
+		return f.GrafanaSvc.RouteCreateSilence(ctx, body)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -49,6 +88,11 @@ func (f *AlertmanagerApiHandler) handleRouteCreateSilence(ctx *contextmodel.ReqC
 }
 
 func (f *AlertmanagerApiHandler) handleRouteDeleteAlertingConfig(ctx *contextmodel.ReqContext, dsUID string) response.Response {
+	if isExternal, identifier := f.isExternalConfig(ctx); isExternal {
+		ctx.Req.Header.Set(configIdentifierHeader, identifier)
+		return f.ConvertSvc.RouteConvertPrometheusDeleteAlertmanagerConfig(ctx)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -58,6 +102,10 @@ func (f *AlertmanagerApiHandler) handleRouteDeleteAlertingConfig(ctx *contextmod
 }
 
 func (f *AlertmanagerApiHandler) handleRouteDeleteSilence(ctx *contextmodel.ReqContext, silenceID string, dsUID string) response.Response {
+	if isExternal, _ := f.isExternalConfig(ctx); isExternal {
+		return f.GrafanaSvc.RouteDeleteSilence(ctx, silenceID)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -67,6 +115,22 @@ func (f *AlertmanagerApiHandler) handleRouteDeleteSilence(ctx *contextmodel.ReqC
 }
 
 func (f *AlertmanagerApiHandler) handleRouteGetAlertingConfig(ctx *contextmodel.ReqContext, dsUID string) response.Response {
+	if isExternal, identifier := f.isExternalConfig(ctx); isExternal {
+		ctx.Req.Header.Set(configIdentifierHeader, identifier)
+
+		conversionResp := f.ConvertSvc.RouteConvertPrometheusGetAlertmanagerConfig(ctx)
+		if conversionResp.Status() != 200 {
+			return conversionResp
+		}
+
+		var gettableUserConfig apimodels.GettableUserConfig
+		if err := yaml.Unmarshal(conversionResp.Body(), &gettableUserConfig); err != nil {
+			return response.Error(500, "Failed to parse alertmanager config", err)
+		}
+
+		return response.JSON(200, gettableUserConfig)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -76,6 +140,10 @@ func (f *AlertmanagerApiHandler) handleRouteGetAlertingConfig(ctx *contextmodel.
 }
 
 func (f *AlertmanagerApiHandler) handleRouteGetAMAlertGroups(ctx *contextmodel.ReqContext, dsUID string) response.Response {
+	if isExternal, _ := f.isExternalConfig(ctx); isExternal {
+		return f.GrafanaSvc.RouteGetAMAlertGroups(ctx)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -85,6 +153,10 @@ func (f *AlertmanagerApiHandler) handleRouteGetAMAlertGroups(ctx *contextmodel.R
 }
 
 func (f *AlertmanagerApiHandler) handleRouteGetAMAlerts(ctx *contextmodel.ReqContext, dsUID string) response.Response {
+	if isExternal, _ := f.isExternalConfig(ctx); isExternal {
+		return f.GrafanaSvc.RouteGetAMAlerts(ctx)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -94,6 +166,10 @@ func (f *AlertmanagerApiHandler) handleRouteGetAMAlerts(ctx *contextmodel.ReqCon
 }
 
 func (f *AlertmanagerApiHandler) handleRouteGetSilence(ctx *contextmodel.ReqContext, silenceID string, dsUID string) response.Response {
+	if isExternal, _ := f.isExternalConfig(ctx); isExternal {
+		return f.GrafanaSvc.RouteGetSilence(ctx, silenceID)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -103,6 +179,10 @@ func (f *AlertmanagerApiHandler) handleRouteGetSilence(ctx *contextmodel.ReqCont
 }
 
 func (f *AlertmanagerApiHandler) handleRouteGetSilences(ctx *contextmodel.ReqContext, dsUID string) response.Response {
+	if isExternal, _ := f.isExternalConfig(ctx); isExternal {
+		return f.GrafanaSvc.RouteGetSilences(ctx)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -112,6 +192,20 @@ func (f *AlertmanagerApiHandler) handleRouteGetSilences(ctx *contextmodel.ReqCon
 }
 
 func (f *AlertmanagerApiHandler) handleRoutePostAlertingConfig(ctx *contextmodel.ReqContext, body apimodels.PostableUserConfig, dsUID string) response.Response {
+	if isExternal, identifier := f.isExternalConfig(ctx); isExternal {
+		ctx.Req.Header.Set(configIdentifierHeader, identifier)
+
+		configBytes, err := yaml.Marshal(body.AlertmanagerConfig)
+		if err != nil {
+			return errorToResponse(err)
+		}
+		amConfig := apimodels.AlertmanagerUserConfig{
+			AlertmanagerConfig: string(configBytes),
+			TemplateFiles:      body.TemplateFiles,
+		}
+		return f.ConvertSvc.RouteConvertPrometheusPostAlertmanagerConfig(ctx, amConfig)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
@@ -123,6 +217,10 @@ func (f *AlertmanagerApiHandler) handleRoutePostAlertingConfig(ctx *contextmodel
 }
 
 func (f *AlertmanagerApiHandler) handleRoutePostAMAlerts(ctx *contextmodel.ReqContext, body apimodels.PostableAlerts, dsUID string) response.Response {
+	if isExternal, _ := f.isExternalConfig(ctx); isExternal {
+		return response.Error(400, "External configurations do not accept posted alerts", nil)
+	}
+
 	s, err := f.getService(ctx)
 	if err != nil {
 		return errorToResponse(err)
