@@ -129,12 +129,7 @@
               {
                 "destinationType": "enum",
                 "enumConfig": {
-                  "text": [
-                    "OK",
-                    "ERROR",
-                    "NO_DATA",
-                    "WARNING"
-                  ]
+                  "text": ["OK", "ERROR", "NO_DATA", "WARNING"]
                 },
                 "targetField": "state"
               }
@@ -145,9 +140,7 @@
         {
           "id": "partitionByValues",
           "options": {
-            "fields": [
-              "channel"
-            ],
+            "fields": ["channel"],
             "keepFields": false,
             "naming": {
               "asLabels": false
@@ -243,12 +236,7 @@
   ],
   "refresh": "",
   "schemaVersion": 39,
-  "tags": [
-    "gdev",
-    "panel-tests",
-    "graph-ng",
-    "demo"
-  ],
+  "tags": ["gdev", "panel-tests", "graph-ng", "demo"],
   "templating": {
     "list": []
   },

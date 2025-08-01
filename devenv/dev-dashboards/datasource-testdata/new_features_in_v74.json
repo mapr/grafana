@@ -1038,9 +1038,7 @@
       "maxDataPoints": 50,
       "options": {
         "legend": {
-          "calcs": [
-            "last"
-          ],
+          "calcs": ["last"],
           "displayMode": "list",
           "placement": "bottom"
         },
@@ -1226,10 +1224,7 @@
             },
             "lineInterpolation": "linear",
             "lineStyle": {
-              "dash": [
-                10,
-                10
-              ],
+              "dash": [10, 10],
               "fill": "dash"
             },
             "lineWidth": 2,
@@ -1266,10 +1261,7 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [
-                    10,
-                    20
-                  ],
+                  "dash": [10, 20],
                   "fill": "dash"
                 }
               }
@@ -1284,10 +1276,7 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [
-                    10,
-                    30
-                  ],
+                  "dash": [10, 30],
                   "fill": "dash"
                 }
               }
@@ -1302,11 +1291,7 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [
-                    30,
-                    3,
-                    3
-                  ],
+                  "dash": [30, 3, 3],
                   "fill": "dash"
                 }
               }
@@ -1332,10 +1317,7 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [
-                    0,
-                    10
-                  ],
+                  "dash": [0, 10],
                   "fill": "dot"
                 }
               }
@@ -1551,10 +1533,7 @@
             },
             "lineInterpolation": "linear",
             "lineStyle": {
-              "dash": [
-                10,
-                10
-              ],
+              "dash": [10, 10],
               "fill": "solid"
             },
             "lineWidth": 1,
@@ -1679,10 +1658,7 @@
             },
             "lineInterpolation": "linear",
             "lineStyle": {
-              "dash": [
-                10,
-                10
-              ],
+              "dash": [10, 10],
               "fill": "solid"
             },
             "lineWidth": 1,
@@ -2115,9 +2091,7 @@
       "maxDataPoints": 500,
       "options": {
         "legend": {
-          "calcs": [
-            "last"
-          ],
+          "calcs": ["last"],
           "displayMode": "list",
           "placement": "bottom"
         },
@@ -2203,11 +2177,7 @@
   ],
   "refresh": false,
   "schemaVersion": 27,
-  "tags": [
-    "gdev",
-    "graph-ng",
-    "demo"
-  ],
+  "tags": ["gdev", "graph-ng", "demo"],
   "templating": {
     "list": []
   },
@@ -2216,17 +2186,7 @@
     "to": "now"
   },
   "timepicker": {
-    "refresh_intervals": [
-      "10s",
-      "30s",
-      "1m",
-      "5m",
-      "15m",
-      "30m",
-      "1h",
-      "2h",
-      "1d"
-    ]
+    "refresh_intervals": ["10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
   },
   "timezone": "America/New_York",
   "title": "New Features in v7.4",

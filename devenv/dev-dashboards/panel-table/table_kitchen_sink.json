@@ -354,13 +354,8 @@
         "footer": {
           "countRows": false,
           "enablePagination": false,
-          "fields": [
-            "Min",
-            "Max"
-          ],
-          "reducer": [
-            "max"
-          ],
+          "fields": ["Min", "Max"],
+          "reducer": ["max"],
           "show": true
         },
         "frameIndex": 0,
@@ -486,9 +481,7 @@
         "cellHeight": "sm",
         "footer": {
           "show": false,
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "countRows": false,
           "fields": ""
         }

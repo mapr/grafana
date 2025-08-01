@@ -74,9 +74,7 @@
         "bucketOffset": 0,
         "combine": false,
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -144,9 +142,7 @@
         "bucketSize": 3,
         "combine": false,
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -213,9 +209,7 @@
         "bucketSize": 1,
         "combine": false,
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -237,9 +231,7 @@
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "names": [
-                "Height"
-              ]
+              "names": ["Height"]
             }
           }
         }
@@ -294,9 +286,7 @@
         "bucketSize": 5,
         "combine": false,
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -318,9 +308,7 @@
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "names": [
-                "Weight"
-              ]
+              "names": ["Weight"]
             }
           }
         }
@@ -372,9 +360,7 @@
         "footer": {
           "countRows": false,
           "fields": [],
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
@@ -403,9 +389,7 @@
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "names": [
-                "Height"
-              ]
+              "names": ["Height"]
             }
           }
         },
@@ -465,9 +449,7 @@
         "footer": {
           "countRows": false,
           "fields": [],
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -489,9 +471,7 @@
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "names": [
-                "Weight"
-              ]
+              "names": ["Weight"]
             }
           }
         },
@@ -567,9 +547,7 @@
       "options": {
         "bucketOffset": 0,
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -650,9 +628,7 @@
       "options": {
         "bucketOffset": 0,
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -733,9 +709,7 @@
       "options": {
         "bucketOffset": 0,
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -900,11 +874,7 @@
   ],
   "refresh": "",
   "schemaVersion": 39,
-  "tags": [
-    "gdev",
-    "panel-tests",
-    "graph-ng"
-  ],
+  "tags": ["gdev", "panel-tests", "graph-ng"],
   "templating": {
     "list": []
   },

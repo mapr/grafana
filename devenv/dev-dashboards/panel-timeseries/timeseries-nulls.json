@@ -29,10 +29,7 @@
     {
       "asDropdown": true,
       "icon": "external link",
-      "tags": [
-        "gdev",
-        "graph-ng"
-      ],
+      "tags": ["gdev", "graph-ng"],
       "title": "Graph Tests",
       "type": "dashboards"
     }
@@ -182,11 +179,7 @@
               {
                 "destinationType": "enum",
                 "enumConfig": {
-                  "text": [
-                    "OFF",
-                    "STANDBY",
-                    "ON"
-                  ]
+                  "text": ["OFF", "STANDBY", "ON"]
                 },
                 "targetField": "Status"
               }
@@ -302,11 +295,7 @@
               {
                 "destinationType": "enum",
                 "enumConfig": {
-                  "text": [
-                    "OFF",
-                    "STANDBY",
-                    "ON"
-                  ]
+                  "text": ["OFF", "STANDBY", "ON"]
                 },
                 "targetField": "Status"
               }
@@ -3412,15 +3401,7 @@
   "preload": false,
   "refresh": false,
   "schemaVersion": 41,
-  "tags": [
-    "gdev",
-    "panel-tests",
-    "graph-ng",
-    "timeseries",
-    "trend",
-    "state-timeline",
-    "transform"
-  ],
+  "tags": ["gdev", "panel-tests", "graph-ng", "timeseries", "trend", "state-timeline", "transform"],
   "templating": {
     "list": []
   },

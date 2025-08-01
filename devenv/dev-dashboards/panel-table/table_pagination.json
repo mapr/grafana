@@ -265,9 +265,7 @@
         "footer": {
           "enablePagination": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
@@ -594,9 +592,7 @@
         "footer": {
           "enablePagination": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": true
         },
         "showHeader": true,
@@ -924,9 +920,7 @@
         "footer": {
           "enablePagination": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": false,
@@ -1252,9 +1246,7 @@
         "footer": {
           "enablePagination": true,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
@@ -1581,9 +1573,7 @@
         "footer": {
           "enablePagination": true,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": true
         },
         "showHeader": true,
@@ -1910,9 +1900,7 @@
         "footer": {
           "enablePagination": true,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": false,
@@ -2239,9 +2227,7 @@
         "footer": {
           "enablePagination": true,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": true
         },
         "showHeader": false,
@@ -2568,9 +2554,7 @@
         "footer": {
           "enablePagination": true,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": true
         },
         "showHeader": false,
@@ -2660,11 +2644,7 @@
     }
   ],
   "schemaVersion": 32,
-  "tags": [
-    "gdev",
-    "panel-tests",
-    "table"
-  ],
+  "tags": ["gdev", "panel-tests", "table"],
   "templating": {
     "list": []
   },

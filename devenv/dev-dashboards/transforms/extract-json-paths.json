@@ -14,13 +14,7 @@
         "target": {
           "limit": 100,
           "matchAny": false,
-          "tags": [
-            "gdev",
-            "transform",
-            "transformations",
-            "extract",
-            "json"
-          ],
+          "tags": ["gdev", "transform", "transformations", "extract", "json"],
           "type": "dashboard"
         },
         "type": "dashboard"
@@ -99,9 +93,7 @@
         "showHeader": true,
         "footer": {
           "show": false,
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "countRows": false,
           "fields": ""
         }
@@ -270,9 +262,7 @@
         "showHeader": true,
         "footer": {
           "show": false,
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "countRows": false,
           "fields": ""
         }
@@ -292,10 +282,7 @@
   ],
   "revision": 1,
   "schemaVersion": 37,
-  "tags": [
-    "gdev",
-    "transform"
-  ],
+  "tags": ["gdev", "transform"],
   "templating": {
     "list": []
   },

@@ -307,9 +307,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "min"
-          ],
+          "calcs": ["min"],
           "fields": "",
           "values": false
         },
@@ -368,9 +366,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "max"
-          ],
+          "calcs": ["max"],
           "fields": "",
           "values": false
         },
@@ -456,9 +452,7 @@
       "options": {
         "footer": {
           "fields": "",
-          "reducer": [
-            "max"
-          ],
+          "reducer": ["max"],
           "show": true
         },
         "showHeader": true
@@ -479,11 +473,7 @@
     }
   ],
   "schemaVersion": 37,
-  "tags": [
-    "gdev",
-    "panel-tests",
-    "geomap"
-  ],
+  "tags": ["gdev", "panel-tests", "geomap"],
   "templating": {
     "list": []
   },

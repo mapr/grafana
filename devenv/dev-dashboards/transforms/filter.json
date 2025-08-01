@@ -92,9 +92,7 @@
         {
           "id": "reduce",
           "options": {
-            "reducers": [
-              "min"
-            ],
+            "reducers": ["min"],
             "mode": "reduceFields",
             "includeTimeField": false
           },
@@ -106,9 +104,7 @@
         {
           "id": "reduce",
           "options": {
-            "reducers": [
-              "max"
-            ],
+            "reducers": ["max"],
             "mode": "reduceFields",
             "includeTimeField": false
           },
@@ -137,9 +133,7 @@
         "showHeader": true,
         "footer": {
           "show": false,
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "countRows": false,
           "fields": ""
         },
@@ -149,10 +143,7 @@
     }
   ],
   "schemaVersion": 37,
-  "tags": [
-    "gdev",
-    "transform"
-  ],
+  "tags": ["gdev", "transform"],
   "templating": {
     "list": []
   },

@@ -384,12 +384,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": [
-    "gdev",
-    "panel-tests",
-    "barchart",
-    "graph-ng"
-  ],
+  "tags": ["gdev", "panel-tests", "barchart", "graph-ng"],
   "templating": {
     "list": []
   },

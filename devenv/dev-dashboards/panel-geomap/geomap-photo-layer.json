@@ -130,11 +130,7 @@
     }
   ],
   "schemaVersion": 37,
-  "tags": [
-    "gdev",
-    "panel-tests",
-    "geomap"
-  ],
+  "tags": ["gdev", "panel-tests", "geomap"],
   "templating": {
     "list": []
   },

@@ -255,25 +255,14 @@
   ],
   "refresh": "",
   "schemaVersion": 38,
-  "tags": [
-    "gdev",
-    "templating"
-  ],
+  "tags": ["gdev", "templating"],
   "templating": {
     "list": [
       {
         "current": {
           "selected": false,
-          "text": [
-            "A",
-            "B",
-            "C"
-          ],
-          "value": [
-            "A",
-            "B",
-            "C"
-          ]
+          "text": ["A", "B", "C"],
+          "value": ["A", "B", "C"]
         },
         "hide": 0,
         "includeAll": true,
@@ -359,12 +348,8 @@
       {
         "current": {
           "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
+          "text": ["All"],
+          "value": ["$__all"]
         },
         "hide": 0,
         "includeAll": true,

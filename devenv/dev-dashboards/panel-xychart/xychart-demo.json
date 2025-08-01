@@ -175,9 +175,7 @@
         {
           "id": "partitionByValues",
           "options": {
-            "fields": [
-              "Origin"
-            ]
+            "fields": ["Origin"]
           }
         }
       ],
@@ -279,9 +277,7 @@
           "showLegend": true
         },
         "mapping": "auto",
-        "series": [
-          {}
-        ],
+        "series": [{}],
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
@@ -304,9 +300,7 @@
         {
           "id": "partitionByValues",
           "options": {
-            "fields": [
-              "Gender"
-            ]
+            "fields": ["Gender"]
           }
         }
       ],
@@ -673,9 +667,7 @@
         {
           "id": "partitionByValues",
           "options": {
-            "fields": [
-              "Origin"
-            ]
+            "fields": ["Origin"]
           }
         }
       ],
@@ -1187,10 +1179,7 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [
-                    10,
-                    15
-                  ],
+                  "dash": [10, 15],
                   "fill": "dash"
                 }
               }
@@ -1273,9 +1262,7 @@
           "showLegend": true
         },
         "mapping": "auto",
-        "series": [
-          {}
-        ],
+        "series": [{}],
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
@@ -1436,12 +1423,7 @@
   "preload": false,
   "refresh": "",
   "schemaVersion": 41,
-  "tags": [
-    "gdev",
-    "panel-tests",
-    "graph-ng",
-    "demo"
-  ],
+  "tags": ["gdev", "panel-tests", "graph-ng", "demo"],
   "templating": {
     "list": []
   },

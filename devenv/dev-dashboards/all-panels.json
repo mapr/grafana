@@ -26,10 +26,7 @@
       "icon": "external link",
       "includeVars": false,
       "keepTime": false,
-      "tags": [
-        "gdev",
-        "panel-tests"
-      ],
+      "tags": ["gdev", "panel-tests"],
       "targetBlank": false,
       "title": "Dropdown link",
       "tooltip": "",
@@ -397,8 +394,7 @@
       "type": "alertlist"
     },
     {
-      "cards": {
-      },
+      "cards": {},
       "color": {
         "cardColor": "#b4ff00",
         "colorScale": "sqrt",
@@ -476,9 +472,7 @@
         "displayMode": "gradient",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -527,9 +521,7 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -579,9 +571,7 @@
       "id": 18,
       "options": {
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -704,9 +694,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -883,11 +871,7 @@
   ],
   "refresh": "",
   "schemaVersion": 36,
-  "tags": [
-    "gdev",
-    "panel-tests",
-    "all-panels"
-  ],
+  "tags": ["gdev", "panel-tests", "all-panels"],
   "templating": {
     "list": [
       {
