@@ -105,7 +105,7 @@ require (
 	go.opentelemetry.io/otel/exporters/jaeger v1.10.0 // @grafana/backend-platform
 	go.opentelemetry.io/otel/sdk v1.21.0 // @grafana/backend-platform
 	go.opentelemetry.io/otel/trace v1.21.0 // @grafana/backend-platform
-	golang.org/x/crypto v0.17.0 // @grafana/backend-platform
+	golang.org/x/crypto v0.19.0 // @grafana/backend-platform
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // @grafana/alerting-squad-backend
 	golang.org/x/net v0.19.0 // @grafana/oss-big-tent @grafana/partner-datasources
 	golang.org/x/oauth2 v0.15.0 // @grafana/grafana-authnz-team
@@ -121,7 +121,7 @@ require (
 	gopkg.in/mail.v2 v2.3.1 // @grafana/backend-platform
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // @grafana/alerting-squad-backend
-	xorm.io/builder v0.3.6 // @grafana/backend-platform
+	xorm.io/builder v0.3.6 // indirect; @grafana/backend-platform
 	xorm.io/core v0.7.3 // @grafana/backend-platform
 	xorm.io/xorm v0.8.2 // @grafana/alerting-squad-backend
 )
@@ -173,7 +173,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.1-0.20191002090509-6af20e3a5340 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // @grafana/alerting-squad
+	github.com/hashicorp/go-multierror v1.1.1 // indirect; @grafana/alerting-squad
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/golang-lru v0.6.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
@@ -214,7 +214,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.11.0 // @grafana/alerting-squad-backend
 	go.uber.org/goleak v1.3.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // @grafana/backend-platform
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
@@ -256,7 +256,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1 // @grafana/grafana-delivery
 	github.com/alicebob/miniredis/v2 v2.30.1 // @grafana/alerting-squad-backend
 	github.com/dave/dst v0.27.2 // @grafana/grafana-as-code
-	github.com/go-jose/go-jose/v3 v3.0.1 // @grafana/grafana-authnz-team
+	github.com/go-jose/go-jose/v3 v3.0.4 // @grafana/grafana-authnz-team
 	github.com/grafana/dataplane/examples v0.0.1 // @grafana/observability-metrics
 	github.com/grafana/dataplane/sdata v0.0.6 // @grafana/observability-metrics
 	github.com/grafana/kindsys v0.0.0-20230508162304-452481b63482 //  @grafana/grafana-as-code
@@ -401,7 +401,7 @@ require (
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/term v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231002182017-d307bd883b97 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	gopkg.in/fsnotify/fsnotify.v1 v1.4.7 // indirect
