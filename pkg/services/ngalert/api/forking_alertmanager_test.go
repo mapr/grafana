@@ -5,10 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/grafana/grafana/pkg/api/response"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	apimodels "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
@@ -143,61 +141,4 @@ func TestAlertmanagerApiHandler_ExtraConfigRouting(t *testing.T) {
 		resp = handler.handleRoutePostAMAlerts(ctx, apimodels.PostableAlerts{}, "__grafana-converted-extra-config-test")
 		assert.Equal(t, http.StatusForbidden, resp.Status())
 	})
-
-	t.Run("GET extra config", func(t *testing.T) {
-		req := &http.Request{
-			Header: make(http.Header),
-		}
-		ctx := &contextmodel.ReqContext{
-			Context: &web.Context{
-				Req: req,
-			},
-			SignedInUser: &user.SignedInUser{
-				OrgID: 1,
-			},
-		}
-
-		ctx.Req = web.SetURLParams(req, map[string]string{
-			":DatasourceUID": "__grafana-converted-extra-config-test-identifier",
-		})
-
-		mockConvertSvc := &mockConvertService{}
-
-		yamlConfig := `alertmanager_config: |
-  global: {}
-  route:
-    receiver: test-receiver
-  receivers:
-    - name: test-receiver`
-
-		mockResponse := response.Respond(http.StatusOK, yamlConfig).
-			SetHeader("Content-Type", "application/yaml")
-
-		mockConvertSvc.On("RouteConvertPrometheusGetAlertmanagerConfig", mock.Anything).
-			Run(func(args mock.Arguments) {
-				passedCtx := args.Get(0).(*contextmodel.ReqContext)
-				assert.Equal(t, "test-identifier", passedCtx.Req.Header.Get(configIdentifierHeader))
-				assert.Equal(t, "application/yaml", passedCtx.Req.Header.Get("Accept"))
-			}).
-			Return(mockResponse)
-
-		handler := &AlertmanagerApiHandler{
-			FeatureManager: featuremgmt.WithFeatures(featuremgmt.FlagAlertingImportAlertmanagerUI),
-			ConvertSvc:     mockConvertSvc,
-		}
-
-		resp := handler.handleRouteGetAlertingConfig(ctx, "__grafana-converted-extra-config-test-identifier")
-		assert.Equal(t, http.StatusOK, resp.Status())
-
-		mockConvertSvc.AssertExpectations(t)
-	})
-}
-
-type mockConvertService struct {
-	mock.Mock
-}
-
-func (m *mockConvertService) RouteConvertPrometheusGetAlertmanagerConfig(ctx *contextmodel.ReqContext) response.Response {
-	args := m.Called(ctx)
-	return args.Get(0).(response.Response)
 }

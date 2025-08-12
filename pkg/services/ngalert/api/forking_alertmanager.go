@@ -11,11 +11,94 @@ import (
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	apimodels "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
+	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/util"
 	"github.com/grafana/grafana/pkg/web"
 )
 
 const extraConfigPrefix = "__grafana-converted-extra-config-"
+
+func convertPostableToGettableReceivers(postableReceivers []*apimodels.PostableApiReceiver) []*apimodels.GettableApiReceiver {
+	if postableReceivers == nil {
+		return nil
+	}
+
+	gettableReceivers := make([]*apimodels.GettableApiReceiver, 0, len(postableReceivers))
+
+	for _, postableReceiver := range postableReceivers {
+		gettableGrafanaReceivers := make([]*apimodels.GettableGrafanaReceiver, 0, len(postableReceiver.GrafanaManagedReceivers))
+
+		for _, postableGrafanaReceiver := range postableReceiver.GrafanaManagedReceivers {
+			secureFields := make(map[string]bool, len(postableGrafanaReceiver.SecureSettings))
+			for key := range postableGrafanaReceiver.SecureSettings {
+				secureFields[key] = true
+			}
+
+			gettableGrafanaReceiver := &apimodels.GettableGrafanaReceiver{
+				UID:                   postableGrafanaReceiver.UID,
+				Name:                  postableGrafanaReceiver.Name,
+				Type:                  postableGrafanaReceiver.Type,
+				DisableResolveMessage: postableGrafanaReceiver.DisableResolveMessage,
+				Settings:              postableGrafanaReceiver.Settings,
+				SecureFields:          secureFields,
+			}
+			gettableGrafanaReceivers = append(gettableGrafanaReceivers, gettableGrafanaReceiver)
+		}
+
+		gettableReceiver := &apimodels.GettableApiReceiver{
+			GettableGrafanaReceivers: apimodels.GettableGrafanaReceivers{
+				GrafanaManagedReceivers: gettableGrafanaReceivers,
+			},
+		}
+		gettableReceiver.Name = postableReceiver.Name
+
+		gettableReceivers = append(gettableReceivers, gettableReceiver)
+	}
+
+	return gettableReceivers
+}
+
+func convertGettableToPostableReceivers(gettableReceivers []*apimodels.GettableApiReceiver) []*apimodels.PostableApiReceiver {
+	if gettableReceivers == nil {
+		return nil
+	}
+
+	postableReceivers := make([]*apimodels.PostableApiReceiver, 0, len(gettableReceivers))
+
+	for _, gettableReceiver := range gettableReceivers {
+		postableGrafanaReceivers := make([]*apimodels.PostableGrafanaReceiver, 0, len(gettableReceiver.GrafanaManagedReceivers))
+
+		for _, gettableGrafanaReceiver := range gettableReceiver.GrafanaManagedReceivers {
+			secureSettings := make(map[string]string, len(gettableGrafanaReceiver.SecureFields))
+			for key, isSecure := range gettableGrafanaReceiver.SecureFields {
+				if isSecure {
+					secureSettings[key] = ""
+				}
+			}
+
+			postableGrafanaReceiver := &apimodels.PostableGrafanaReceiver{
+				UID:                   gettableGrafanaReceiver.UID,
+				Name:                  gettableGrafanaReceiver.Name,
+				Type:                  gettableGrafanaReceiver.Type,
+				DisableResolveMessage: gettableGrafanaReceiver.DisableResolveMessage,
+				Settings:              gettableGrafanaReceiver.Settings,
+				SecureSettings:        secureSettings,
+			}
+			postableGrafanaReceivers = append(postableGrafanaReceivers, postableGrafanaReceiver)
+		}
+
+		postableReceiver := &apimodels.PostableApiReceiver{
+			PostableGrafanaReceivers: apimodels.PostableGrafanaReceivers{
+				GrafanaManagedReceivers: postableGrafanaReceivers,
+			},
+		}
+		postableReceiver.Name = gettableReceiver.Name
+
+		postableReceivers = append(postableReceivers, postableReceiver)
+	}
+
+	return postableReceivers
+}
 
 type ConvertService interface {
 	RouteConvertPrometheusGetAlertmanagerConfig(ctx *contextmodel.ReqContext) response.Response
@@ -127,20 +210,57 @@ func (f *AlertmanagerApiHandler) handleRouteDeleteSilence(ctx *contextmodel.ReqC
 
 func (f *AlertmanagerApiHandler) handleRouteGetAlertingConfig(ctx *contextmodel.ReqContext, dsUID string) response.Response {
 	if isExtra, identifier := f.isExtraConfig(ctx); isExtra {
-		ctx.Req.Header.Set(configIdentifierHeader, identifier)
-		ctx.Req.Header.Set("Accept", "application/yaml")
-
-		conversionResp := f.ConvertSvc.RouteConvertPrometheusGetAlertmanagerConfig(ctx)
-		if conversionResp.Status() != http.StatusOK {
-			return conversionResp
-		}
-
-		config, err := yamlExtractor(&apimodels.GettableUserConfig{})(conversionResp.(*response.NormalResponse))
+		// Get the full Grafana configuration with the requested extra config
+		canSeeAutogen := ctx.HasRole(org.RoleAdmin)
+		config, err := f.GrafanaSvc.mam.GetAlertmanagerConfiguration(ctx.Req.Context(), ctx.GetOrgID(), canSeeAutogen)
 		if err != nil {
-			return response.Error(http.StatusInternalServerError, "Failed to parse alertmanager config", err)
+			return response.Error(http.StatusInternalServerError, "Failed to get alertmanager config", err)
 		}
 
-		return response.JSON(http.StatusOK, config)
+		var foundExtraConfig *apimodels.ExtraConfiguration
+		for i := range config.ExtraConfigs {
+			if config.ExtraConfigs[i].Identifier == identifier {
+				foundExtraConfig = &config.ExtraConfigs[i]
+				break
+			}
+		}
+
+		if foundExtraConfig == nil {
+			return response.Error(http.StatusNotFound, "Extra configuration not found", nil)
+		}
+
+		postableConfig := apimodels.PostableUserConfig{
+			TemplateFiles: config.TemplateFiles,
+			AlertmanagerConfig: apimodels.PostableApiAlertingConfig{
+				Config:    config.AlertmanagerConfig.Config,
+				Receivers: convertGettableToPostableReceivers(config.AlertmanagerConfig.Receivers),
+			},
+			ExtraConfigs: []apimodels.ExtraConfiguration{*foundExtraConfig},
+		}
+
+		mergeResult, err := postableConfig.GetMergedAlertmanagerConfig()
+		if err != nil {
+			return response.Error(http.StatusInternalServerError, "Failed to merge configuration", err)
+		}
+
+		// TODO: kind
+		mergedTemplates := postableConfig.GetMergedTemplateDefinitions()
+		mergedTemplateFiles := make(map[string]string, len(mergedTemplates))
+		for _, t := range mergedTemplates {
+			mergedTemplateFiles[t.Name] = t.Content
+		}
+
+		convertedReceivers := convertPostableToGettableReceivers(mergeResult.Config.Receivers)
+
+		result := apimodels.GettableUserConfig{
+			TemplateFiles: mergedTemplateFiles,
+			AlertmanagerConfig: apimodels.GettableApiAlertingConfig{
+				Config:    mergeResult.Config.Config,
+				Receivers: convertedReceivers,
+			},
+		}
+
+		return response.JSON(http.StatusOK, result)
 	}
 
 	s, err := f.getService(ctx)
