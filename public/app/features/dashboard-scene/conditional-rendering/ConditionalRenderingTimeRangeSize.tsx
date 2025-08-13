@@ -37,8 +37,8 @@ export class ConditionalRenderingTimeRangeSize extends ConditionalRenderingBase<
     );
   }
 
-  public constructor(state: Omit<ConditionalRenderingTimeRangeSizeState, 'result' | 'force'>) {
-    super({ ...state, result: true, force: true });
+  public constructor(state: ConditionalRenderingTimeRangeSizeState) {
+    super(state);
 
     this.addActivationHandler(() => this._activationHandler());
   }
@@ -50,15 +50,15 @@ export class ConditionalRenderingTimeRangeSize extends ConditionalRenderingBase<
   public evaluate(): ConditionEvaluationResult {
     try {
       if (!validateIntervalRegex.test(this.state.value)) {
-        return this.getForceTrue();
+        return undefined;
       }
 
       const interval = rangeUtil.intervalToSeconds(this.state.value);
       const timeRange = sceneGraph.getTimeRange(this);
 
-      return this.getActualResult(timeRange.state.value.to.unix() - timeRange.state.value.from.unix() <= interval);
+      return timeRange.state.value.to.unix() - timeRange.state.value.from.unix() <= interval;
     } catch {
-      return this.getForceFalse();
+      return undefined;
     }
   }
 
@@ -67,11 +67,11 @@ export class ConditionalRenderingTimeRangeSize extends ConditionalRenderingBase<
   }
 
   public static deserialize(model: ConditionalRenderingTimeRangeSizeKind): ConditionalRenderingTimeRangeSize {
-    return new ConditionalRenderingTimeRangeSize({ value: model.spec.value });
+    return new ConditionalRenderingTimeRangeSize({ value: model.spec.value, result: undefined });
   }
 
   public static createEmpty(): ConditionalRenderingTimeRangeSize {
-    return new ConditionalRenderingTimeRangeSize({ value: '7d' });
+    return new ConditionalRenderingTimeRangeSize({ value: '7d', result: undefined });
   }
 }
 

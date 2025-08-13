@@ -44,19 +44,19 @@ export class ConditionalRenderingVariable extends ConditionalRenderingBase<Condi
     },
   });
 
-  public constructor(state: Omit<ConditionalRenderingVariableState, 'result' | 'force'>) {
-    super({ ...state, result: true, force: true });
+  public constructor(state: ConditionalRenderingVariableState) {
+    super(state);
   }
 
   public evaluate(): ConditionEvaluationResult {
     if (!this.state.value.name) {
-      return this.getForceTrue();
+      return undefined;
     }
 
     const variable = sceneGraph.getVariables(this).getByName(this.state.value.name);
 
     if (!variable) {
-      return this.getForceTrue();
+      return undefined;
     }
 
     const variableValue = variable.getValue() ?? '';
@@ -65,7 +65,7 @@ export class ConditionalRenderingVariable extends ConditionalRenderingBase<Condi
       ? variableValue.includes(this.state.value.value)
       : variableValue === this.state.value.value;
 
-    return this.getActualResult(this.state.value.operator === '!=' ? !hit : hit);
+    return this.state.value.operator === '!=' ? !hit : hit;
   }
 
   public serialize(): ConditionalRenderingVariableKind {
@@ -86,11 +86,12 @@ export class ConditionalRenderingVariable extends ConditionalRenderingBase<Condi
         operator: model.spec.operator === 'equals' ? '=' : '!=',
         value: model.spec.value,
       },
+      result: undefined,
     });
   }
 
   public static createEmpty(name: string): ConditionalRenderingVariable {
-    return new ConditionalRenderingVariable({ value: { name, operator: '=', value: '' } });
+    return new ConditionalRenderingVariable({ value: { name, operator: '=', value: '' }, result: undefined });
   }
 }
 
