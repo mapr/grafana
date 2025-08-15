@@ -377,7 +377,6 @@ export function getRowHeight(
       if (cellValueRaw != null) {
         const colWidth = columnWidths[fieldIdx];
         const estimatedHeight = measurer(cellValueRaw, colWidth, field, rowIdx, lineHeight);
-        console.log(estimatedHeight);
         if (estimatedHeight > maxHeight) {
           maxHeight = estimatedHeight;
           maxValue = cellValueRaw;
