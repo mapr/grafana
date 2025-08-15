@@ -118,6 +118,7 @@ export const plugin = new PanelPlugin<Options, FieldConfig>(TablePanel)
           name: t('table.text-wrap-options.label-max-height', 'Max cell height'),
           category,
           settings: {
+            placeholder: t('table.text-wrap-options.placeholder-max-height', 'none'),
             min: 0,
           },
           showIf: (cfg) => cfg.wrapText,
