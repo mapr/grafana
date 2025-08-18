@@ -32,7 +32,6 @@ type PluginManagementCfg struct {
 type Features struct {
 	SkipHostEnvVarsEnabled bool
 	SriChecksEnabled       bool
-	LocalizationForPlugins bool
 	// Needed only until Tempo Alerting / metrics TraceQL is stable
 	// https://github.com/grafana/grafana/issues/106888
 	TempoAlertingEnabled bool

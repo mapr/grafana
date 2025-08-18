@@ -1869,7 +1869,8 @@
       "metadata": {
         "name": "localizationForPlugins",
         "resourceVersion": "1753448760331",
-        "creationTimestamp": "2025-03-31T04:38:38Z"
+        "creationTimestamp": "2025-03-31T04:38:38Z",
+        "deletionTimestamp": "2025-08-18T06:47:15Z"
       },
       "spec": {
         "description": "Enables localization for plugins",

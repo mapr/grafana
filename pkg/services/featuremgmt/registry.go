@@ -1609,13 +1609,6 @@ var (
 			Owner:        awsDatasourcesSquad,
 		},
 		{
-			Name:         "localizationForPlugins",
-			Description:  "Enables localization for plugins",
-			Stage:        FeatureStageExperimental,
-			Owner:        grafanaPluginsPlatformSquad,
-			FrontendOnly: false,
-		},
-		{
 			Name:         "unifiedNavbars",
 			Description:  "Enables unified navbars",
 			Stage:        FeatureStageGeneralAvailability,
