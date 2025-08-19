@@ -40,7 +40,6 @@ import (
 	"github.com/grafana/grafana/pkg/registry/apis/dashboard/legacysearcher"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/apiserver"
-	"github.com/grafana/grafana/pkg/services/apiserver/client"
 	"github.com/grafana/grafana/pkg/services/apiserver/endpoints/request"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/dashboards/dashboardaccess"
@@ -94,7 +93,7 @@ type DashboardServiceImpl struct {
 	dashboardPermissions   accesscontrol.DashboardPermissionsService
 	ac                     accesscontrol.AccessControl
 	acService              accesscontrol.Service
-	k8sclient              client.K8sHandler
+	k8sclient              dashboardclient.K8sHandlerWithFallback
 	metrics                *dashboardsMetrics
 	publicDashboardService publicdashboards.ServiceWrapper
 	serverLockService      *serverlock.ServerLockService
@@ -382,8 +381,8 @@ func ProvideDashboardServiceImpl(
 	resourceClient resource.ResourceClient, dual dualwrite.Service, sorter sort.Service,
 	serverLockService *serverlock.ServerLockService,
 	kvstore kvstore.KVStore,
+	clientWithFallback dashboardclient.K8sHandlerWithFallback,
 ) (*DashboardServiceImpl, error) {
-	k8sclient := dashboardclient.NewK8sClientWithFallback(cfg, restConfigProvider, dashboardStore, userService, resourceClient, sorter, dual, r, features)
 	dashSvc := &DashboardServiceImpl{
 		cfg:                       cfg,
 		log:                       log.New("dashboard-service"),
@@ -395,7 +394,7 @@ func ProvideDashboardServiceImpl(
 		folderStore:               folderStore,
 		folderService:             folderSvc,
 		orgService:                orgService,
-		k8sclient:                 k8sclient,
+		k8sclient:                 clientWithFallback,
 		metrics:                   newDashboardsMetrics(r),
 		dashboardPermissionsReady: make(chan struct{}),
 		publicDashboardService:    publicDashboardService,
