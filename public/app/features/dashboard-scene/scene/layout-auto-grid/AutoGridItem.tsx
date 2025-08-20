@@ -16,7 +16,7 @@ import {
 } from '@grafana/scenes';
 import { OptionsPaneCategoryDescriptor } from 'app/features/dashboard/components/PanelEditor/OptionsPaneCategoryDescriptor';
 
-import { ConditionalRendering } from '../../conditional-rendering/ConditionalRendering';
+import { ConditionalRenderingGroup } from '../../conditional-rendering/group/ConditionalRenderingGroup';
 import { getCloneKey } from '../../utils/clone';
 import { getMultiVariableValues } from '../../utils/utils';
 import { scrollCanvasElementIntoView } from '../layouts-shared/scrollCanvasElementIntoView';
@@ -33,7 +33,7 @@ export interface AutoGridItemState extends SceneObjectState {
   repeatedPanels?: VizPanel[];
   variableName?: string;
   isHidden?: boolean;
-  conditionalRendering?: ConditionalRendering;
+  conditionalRendering?: ConditionalRenderingGroup;
 }
 
 export class AutoGridItem extends SceneObjectBase<AutoGridItemState> implements DashboardLayoutItem {
@@ -49,7 +49,7 @@ export class AutoGridItem extends SceneObjectBase<AutoGridItemState> implements 
   private _prevRepeatValues?: VariableValueSingle[];
 
   public constructor(state: AutoGridItemState) {
-    super({ ...state, conditionalRendering: state?.conditionalRendering ?? ConditionalRendering.createEmpty() });
+    super({ ...state, conditionalRendering: state?.conditionalRendering ?? ConditionalRenderingGroup.createEmpty() });
     this.addActivationHandler(() => this._activationHandler());
   }
 
