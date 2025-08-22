@@ -80,14 +80,17 @@ test.describe('Panels test: Table - Kitchen Sink', { tag: ['@panels', '@table'] 
     // FIXME very bad selector to get the correct field override for the "Long text" field.
     // toggle the lorem ipsum column's wrap text toggle and confirm that the height shrinks.
     const longTextFieldOverrides = page.locator('[id="Override 13"]');
-    const maxCellHeightInput = longTextFieldOverrides.getByLabel('Max cell height');
 
-    await maxCellHeightInput.fill('80');
-    await expect(getCellHeight(page, 1, longTextColIdx)).resolves.toBeLessThan(100);
-    await maxCellHeightInput.clear();
+    // TODO: this depends on the work Luminessa's doing to make labels work better in the panel editor.
+    // // we have added a null value for max height to the field overrides in the JSON,
+    // // because there's no good way to add a field override in an e2e at this point.
+    // const maxCellHeightInput = longTextFieldOverrides.getByLabel('Max cell height');
 
-    await longTextFieldOverrides.getByLabel('Text wrap')
-      .click();
+    // await maxCellHeightInput.fill('80');
+    // await expect(getCellHeight(page, 1, longTextColIdx)).resolves.toBeLessThan(100);
+    // await maxCellHeightInput.clear();
+
+    await longTextFieldOverrides.getByLabel('Text wrap').click();
     await expect(getCellHeight(page, 1, longTextColIdx)).resolves.toBeLessThan(100);
 
     // test that hover overflow works.
