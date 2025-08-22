@@ -84,7 +84,7 @@ export function shouldTextWrap(field: Field): boolean {
 }
 
 export function getMaxHeight(field: Field): number | undefined {
-  return field.config?.custom?.cellOptions?.maxHeight;
+  return field.config?.custom?.maxHeight;
 }
 
 /**

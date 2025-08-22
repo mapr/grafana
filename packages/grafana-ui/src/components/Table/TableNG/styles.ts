@@ -187,6 +187,8 @@ export const getTooltipStyles = (theme: GrafanaTheme2, textAlign: TextAlign) => 
   tooltipContent: css({
     height: '100%',
     width: '100%',
+    display: 'flex',
+    alignItems: 'center',
   }),
   tooltipWrapper: css({
     background: theme.colors.background.primary,
@@ -208,10 +210,5 @@ export const getTooltipStyles = (theme: GrafanaTheme2, textAlign: TextAlign) => 
     '&:hover, &[aria-pressed=true]': {
       background: caretTriangle(textAlign === 'right' ? 'right' : 'left', theme.colors.border.strong),
     },
-  }),
-  tooltipMaxHeightContainer: css({
-    height: '100%',
-    display: 'flex',
-    verticalAlign: 'center',
   }),
 });
