@@ -90,7 +90,7 @@ test.describe('Panels test: Table - Kitchen Sink', { tag: ['@panels', '@table'] 
     // await expect(getCellHeight(page, 1, longTextColIdx)).resolves.toBeLessThan(100);
     // await maxCellHeightInput.clear();
 
-    await longTextFieldOverrides.getByLabel('Text wrap').click();
+    await longTextFieldOverrides.getByLabel('Wrap text').click({ force: true });
     await expect(getCellHeight(page, 1, longTextColIdx)).resolves.toBeLessThan(100);
 
     // test that hover overflow works.
