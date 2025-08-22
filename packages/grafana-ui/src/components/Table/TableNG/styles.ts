@@ -209,4 +209,9 @@ export const getTooltipStyles = (theme: GrafanaTheme2, textAlign: TextAlign) => 
       background: caretTriangle(textAlign === 'right' ? 'right' : 'left', theme.colors.border.strong),
     },
   }),
+  tooltipMaxHeightContainer: css({
+    height: '100%',
+    display: 'flex',
+    verticalAlign: 'center',
+  }),
 });
