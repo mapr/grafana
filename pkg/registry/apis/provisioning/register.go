@@ -563,6 +563,10 @@ func (b *APIBuilder) Validate(ctx context.Context, a admission.Attributes, o adm
 		return err
 	}
 
+	fmt.Printf("\n\nVALIDATE secure.token:\n")
+	fmt.Printf(" create: %s\n", string(repo.Config().Secure.Token.Create))
+	fmt.Printf(" name: %s\n\n\n", string(repo.Config().Secure.Token.Name))
+
 	list := repository.ValidateRepository(repo)
 	cfg := repo.Config()
 

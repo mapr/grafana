@@ -3,6 +3,7 @@ package git
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -147,12 +148,18 @@ func (r *gitRepository) Test(ctx context.Context) (*provisioning.TestResults, er
 	ctx, _ = r.logger(ctx, "")
 
 	t := string(r.config.Spec.Type)
+	fmt.Printf("\n\nTEST GIT ACCESS: %s\n", string(r.gitConfig.Token))
 
 	if ok, err := r.client.IsAuthorized(ctx); err != nil || !ok {
-		detail := "not authorized"
+		detail := "git not authorized"
 		if err != nil {
 			detail = fmt.Sprintf("failed check if authorized: %v", err)
+		} else if r.gitConfig.Token.IsZero() {
+			detail = "missing git access token"
 		}
+
+		jj, _ := json.MarshalIndent(r.config, "", "  ")
+		fmt.Printf("TEST FAILED: %s\n\n\n", string(jj))
 
 		return &provisioning.TestResults{
 			Code:    http.StatusBadRequest,
