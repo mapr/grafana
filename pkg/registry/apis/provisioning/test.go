@@ -100,9 +100,11 @@ func (s *testConnector) Connect(ctx context.Context, name string, opts runtime.O
 						secure := old.Config().Secure
 						if cfg.Secure.Token.IsZero() {
 							cfg.Secure.Token = secure.Token
+							fmt.Printf("COPY OLD TOKEN: %s / CREATE(%s)\n", secure.Token.Name, string(secure.Token.Create))
 						}
 						if cfg.Secure.WebhookSecret.IsZero() {
 							cfg.Secure.WebhookSecret = secure.WebhookSecret
+							fmt.Printf("COPY OLD WEBHOOK SECRET: %s / CREATE(%s)\n", secure.WebhookSecret.Name, string(secure.WebhookSecret.Create))
 						}
 					}
 				}

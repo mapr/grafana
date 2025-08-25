@@ -45,6 +45,7 @@ func (s *secureValues) get(ctx context.Context, sv common.InlineSecureValue) (co
 }
 
 func (s *secureValues) Token(ctx context.Context) (common.RawSecureValue, error) {
+	fmt.Printf("\nGET TOKEN: %s / CREATE(%s)\n\n", s.names.Token.Name, string(s.names.Token.Create))
 	return s.get(ctx, s.names.Token)
 }
 
