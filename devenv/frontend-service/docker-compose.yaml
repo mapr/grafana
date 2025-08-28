@@ -9,6 +9,7 @@ services:
     volumes:
       - ../../public/build:/cdn/public/build
       - ../../public/fonts:/cdn/public/fonts
+      - ../../public/img:/cdn/public/img
     ports:
       - '3000:80' # Gateway
       - '3010:81' # CDN
