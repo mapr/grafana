@@ -182,7 +182,7 @@ export const InlineLogLineDetails = memo(({ logs, log, timeRange, timeZone }: In
 });
 InlineLogLineDetails.displayName = 'InlineLogLineDetails';
 
-export const LOG_LINE_DETAILS_HEIGHT = 35;
+export const LOG_LINE_DETAILS_HEIGHT = 50;
 
 const getStyles = (theme: GrafanaTheme2, mode: LogLineDetailsMode) => ({
   inlineWrapper: css({
