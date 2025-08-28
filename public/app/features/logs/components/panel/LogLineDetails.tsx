@@ -172,7 +172,7 @@ export const InlineLogLineDetails = memo(({ logs, log, timeRange, timeZone }: In
 
   return (
     <div className={`${styles.inlineWrapper} log-line-inline-details`} style={{ maxWidth: detailsWidth }}>
-      <div className={styles.container}>
+      <div className={`${styles.container} ${styles.inlineContainer}`}>
         <div className={styles.scrollContainer} ref={scrollRef} onScroll={saveScroll}>
           <LogLineDetailsComponent log={log} logs={logs} timeRange={timeRange} timeZone={timeZone} />
         </div>
@@ -197,6 +197,9 @@ const getStyles = (theme: GrafanaTheme2, mode: LogLineDetailsMode) => ({
     boxShadow: theme.shadows.z1,
     border: `1px solid ${theme.colors.border.medium}`,
     borderRight: mode === 'sidebar' ? 'none' : undefined,
+  }),
+  inlineContainer: css({
+    border: `1px solid ${theme.colors.border.weak}`,
   }),
   scrollContainer: css({
     overflow: 'auto',
