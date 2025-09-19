@@ -9461,9 +9461,6 @@
       "collapse": "Collapse labels",
       "expand": "Expand labels"
     },
-    "log-labels-list": {
-      "log-line": "log line"
-    },
     "log-line": {
       "has-error": "Has errors",
       "is-sampled": "Is sampled",
