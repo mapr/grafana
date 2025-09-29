@@ -389,6 +389,7 @@ func (s *ServiceImpl) readNavigationSettings() {
 		"grafana-ml-app":                   {SectionID: navtree.NavIDRoot, SortWeight: navtree.WeightAIAndML, Text: "Machine Learning", SubTitle: "Explore AI and machine learning features", Icon: "gf-ml-alt"},
 		"grafana-slo-app":                  {SectionID: navtree.NavIDAlertsAndIncidents, SortWeight: 7},
 		"grafana-cloud-link-app":           {SectionID: navtree.NavIDCfgPlugins, SortWeight: 3},
+		"grafana-cmab-app":                 {SectionID: navtree.NavIDRoot, SortWeight: navtree.WeightDataConnections + 1, Text: "Cost management and billing", Icon: "dollar-alt", IsNew: true},
 		"grafana-costmanagementui-app":     {SectionID: navtree.NavIDCfg, Text: "Cost management"},
 		"grafana-adaptive-metrics-app":     {SectionID: navtree.NavIDAdaptiveTelemetry, SortWeight: 1, Text: "Adaptive Metrics", SubTitle: "Analyzes and reduces unused metrics and cardinality to help you focus on your most valuable performance data."},
 		"grafana-adaptivelogs-app":         {SectionID: navtree.NavIDAdaptiveTelemetry, SortWeight: 2, Text: "Adaptive Logs", SubTitle: "Analyzes log patterns to drop repetitive lines and accelerate troubleshooting."},
