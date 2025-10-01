@@ -232,12 +232,12 @@ export const LogLineDetailsField = ({
     });
   }, [onClickFilterOutLabel, reportInteractionWrapper, log, keys, values]);
 
-  const labelFilterActive = useCallback(async () => {
+  const labelFilterActive = async () => {
     if (isLabelFilterActive) {
       return await isLabelFilterActive(keys[0], values[0], log.dataFrame?.refId);
     }
     return false;
-  }, [isLabelFilterActive, keys, values, log.dataFrame?.refId]);
+  };
 
   const showStats = useCallback(() => {
     setShowFieldStats((showFieldStats: boolean) => !showFieldStats);
