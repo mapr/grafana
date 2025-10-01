@@ -1831,23 +1831,19 @@ func NewDashboardSwitchVariableKind() *DashboardSwitchVariableKind {
 
 // +k8s:openapi-gen=true
 type DashboardSwitchVariableSpec struct {
-	Name        string                    `json:"name"`
-	Query       string                    `json:"query"`
-	Current     DashboardVariableOption   `json:"current"`
-	Options     []DashboardVariableOption `json:"options"`
-	Label       *string                   `json:"label,omitempty"`
-	Hide        DashboardVariableHide     `json:"hide"`
-	SkipUrlSync bool                      `json:"skipUrlSync"`
-	Description *string                   `json:"description,omitempty"`
+	Name        string                `json:"name"`
+	Current     bool                  `json:"current"`
+	Label       *string               `json:"label,omitempty"`
+	Hide        DashboardVariableHide `json:"hide"`
+	SkipUrlSync bool                  `json:"skipUrlSync"`
+	Description *string               `json:"description,omitempty"`
 }
 
 // NewDashboardSwitchVariableSpec creates a new DashboardSwitchVariableSpec object.
 func NewDashboardSwitchVariableSpec() *DashboardSwitchVariableSpec {
 	return &DashboardSwitchVariableSpec{
 		Name:        "",
-		Query:       "",
-		Current:     *NewDashboardVariableOption(),
-		Options:     []DashboardVariableOption{},
+		Current:     false,
 		Hide:        DashboardVariableHideDontHide,
 		SkipUrlSync: false,
 	}

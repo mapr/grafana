@@ -910,9 +910,7 @@ CustomVariableKind: {
 
 SwitchVariableSpec: {
 	name:    	  string | *""
-	query:   	  string | *""
-	current:      VariableOption
-	options: 	  [...VariableOption]
+	current:      bool | *false
 	label?:       string
 	hide:         VariableHide
 	skipUrlSync:  bool | *false

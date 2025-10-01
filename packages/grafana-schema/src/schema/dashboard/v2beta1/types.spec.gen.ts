@@ -1456,9 +1456,7 @@ export const defaultSwitchVariableKind = (): SwitchVariableKind => ({
 
 export interface SwitchVariableSpec {
 	name: string;
-	query: string;
-	current: VariableOption;
-	options: VariableOption[];
+	current: boolean;
 	label?: string;
 	hide: VariableHide;
 	skipUrlSync: boolean;
@@ -1467,9 +1465,7 @@ export interface SwitchVariableSpec {
 
 export const defaultSwitchVariableSpec = (): SwitchVariableSpec => ({
 	name: "",
-	query: "",
-	current: defaultVariableOption(),
-	options: [],
+	current: false,
 	hide: "dontHide",
 	skipUrlSync: false,
 });
