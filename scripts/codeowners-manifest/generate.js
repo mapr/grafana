@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const { stat } = require('node:fs/promises');
 const readline = require('node:readline');
+const Stream = require('node:stream');
 
 const {
   RAW_AUDIT_JSONL_PATH,
@@ -10,6 +11,16 @@ const {
   FILENAMES_BY_CODEOWNER_JSON_PATH,
   CODEOWNERS_JSON_PATH,
 } = require('./constants.js');
+
+/**
+ * @param {Stream} stream
+ * @param {string} name
+ */
+const logStreamError = (stream, name) => {
+  stream.on('error', (err) => {
+    console.error(`Stream error | ${name}`, err);
+  });
+};
 
 /**
  * Generate codeowners manifest files from raw audit data
@@ -36,6 +47,11 @@ async function generateCodeownersManifest(
   const codeownersOutput = fs.createWriteStream(codeownersJsonPath);
   const codeownersByFilenameOutput = fs.createWriteStream(codeownersByFilenamePath);
   const filenamesByCodeownerOutput = fs.createWriteStream(filenamesByCodeownerPath);
+
+  logStreamError(auditFileInput, 'AuditFileRead');
+  logStreamError(codeownersOutput, 'CodeownersWrite');
+  logStreamError(codeownersByFilenameOutput, 'CodeownersByFilenameWrite');
+  logStreamError(filenamesByCodeownerOutput, 'FilenamesByCodeownerWrie');
 
   const lineReader = readline.createInterface({
     input: auditFileInput,
