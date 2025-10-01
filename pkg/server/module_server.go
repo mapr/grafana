@@ -44,7 +44,7 @@ func NewModule(opts Options,
 	promGatherer prometheus.Gatherer,
 	tracer tracing.Tracer, // Ensures tracing is initialized
 	license licensing.Licensing,
-	storageBackend resource.StorageBackend, // Ensures unified storage backend is initialized
+	storageBackend resource.StorageBackend,
 ) (*ModuleServer, error) {
 	s, err := newModuleServer(opts, apiOpts, features, cfg, storageMetrics, indexMetrics, reg, promGatherer, license, storageBackend)
 	if err != nil {
