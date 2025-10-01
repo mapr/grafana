@@ -44,9 +44,9 @@ func NewModule(opts Options,
 	promGatherer prometheus.Gatherer,
 	tracer tracing.Tracer, // Ensures tracing is initialized
 	license licensing.Licensing,
-	// UnifiedStorageResourceBackend
+	storageBackend resource.StorageBackend, // Ensures unified storage backend is initialized
 ) (*ModuleServer, error) {
-	s, err := newModuleServer(opts, apiOpts, features, cfg, storageMetrics, indexMetrics, reg, promGatherer, license)
+	s, err := newModuleServer(opts, apiOpts, features, cfg, storageMetrics, indexMetrics, reg, promGatherer, license, storageBackend)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func newModuleServer(opts Options,
 	reg prometheus.Registerer,
 	promGatherer prometheus.Gatherer,
 	license licensing.Licensing,
-	// Add hre
+	storageBackend resource.StorageBackend,
 ) (*ModuleServer, error) {
 	rootCtx, shutdownFn := context.WithCancel(context.Background())
 
@@ -89,6 +89,7 @@ func newModuleServer(opts Options,
 		promGatherer:     promGatherer,
 		registerer:       reg,
 		license:          license,
+		storageBackend:   storageBackend,
 	}
 
 	return s, nil
@@ -110,6 +111,7 @@ type ModuleServer struct {
 	shutdownFinished chan struct{}
 	isInitialized    bool
 	mtx              sync.Mutex
+	storageBackend   resource.StorageBackend
 	storageMetrics   *resource.StorageMetrics
 	indexMetrics     *resource.BleveIndexMetrics
 	license          licensing.Licensing
@@ -189,7 +191,7 @@ func (s *ModuleServer) Run() error {
 		if err != nil {
 			return nil, err
 		}
-		return sql.ProvideUnifiedStorageGrpcService(s.cfg, s.features, nil, s.log, s.registerer, docBuilders, s.storageMetrics, s.indexMetrics, s.searchServerRing, s.MemberlistKVConfig, s.httpServerRouter)
+		return sql.ProvideUnifiedStorageGrpcService(s.storageBackend, s.cfg, s.features, nil, s.log, s.registerer, docBuilders, s.storageMetrics, s.indexMetrics, s.searchServerRing, s.MemberlistKVConfig, s.httpServerRouter)
 	})
 
 	m.RegisterModule(modules.ZanzanaServer, func() (services.Service, error) {
