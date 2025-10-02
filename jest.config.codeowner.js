@@ -60,7 +60,6 @@ const sourceFiles = teamFiles.filter((file) => {
   const ext = path.extname(file);
   return (
     ['.ts', '.tsx', '.js', '.jsx'].includes(ext) &&
-    file.includes('/src/') &&
     !file.includes('.test.') &&
     !file.includes('.spec.') &&
     !file.includes('.story.') &&
@@ -70,7 +69,7 @@ const sourceFiles = teamFiles.filter((file) => {
   );
 });
 
-const teamDirectories = [...new Set(sourceFiles.map((file) => path.dirname(file)))].filter((dir) => dir !== '.');
+const teamDirectories = [...new Set(teamFiles.map((file) => path.dirname(file)))];
 const teamTestPatterns = [];
 
 teamFiles.forEach((file) => {
@@ -83,8 +82,6 @@ teamFiles.forEach((file) => {
     teamTestPatterns.push(`<rootDir>/${dir}/__tests__/**/${basename}.test.{ts,tsx,js,jsx}`);
   }
 });
-
-console.log('Team directories:', teamDirectories);
 
 teamDirectories.forEach((dir) => {
   teamTestPatterns.push(`<rootDir>/${dir}/**/*.test.{ts,tsx,js,jsx}`);
