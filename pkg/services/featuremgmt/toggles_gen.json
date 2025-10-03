@@ -3872,7 +3872,8 @@
       "metadata": {
         "name": "unifiedStorageUseFullNgram",
         "resourceVersion": "1758820248165",
-        "creationTimestamp": "2025-09-25T17:10:48Z"
+        "creationTimestamp": "2025-09-25T17:10:48Z",
+        "deletionTimestamp": "2025-10-03T13:21:42Z"
       },
       "spec": {
         "description": "Use full n-gram indexing instead of edge n-gram for unified storage search",
