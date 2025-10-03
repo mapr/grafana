@@ -133,7 +133,7 @@ func convertToDomainModel(receiver *model.Receiver) (*ngmodels.Receiver, map[str
 		}
 		var config schema.IntegrationSchemaVersion
 		typeSchema, _ := alertingNotify.GetSchemaForIntegration(t)
-		if integration.Version == "" {
+		if integration.Version != "" {
 			var ok bool
 			config, ok = typeSchema.GetVersion(schema.Version(integration.Version))
 			if !ok {
