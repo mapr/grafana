@@ -741,6 +741,7 @@ func Initialize(ctx context.Context, cfg *setting.Cfg, opts Options, apiOpts api
 	if err != nil {
 		return nil, err
 	}
+	scopedPluginDatasourceProvider := datasource.ProvideDefaultPluginConfigs(service15, cacheServiceImpl, plugincontextProvider)
 	v := builder.ProvideDefaultBuildHandlerChainFuncFromBuilders()
 	aggregatorRunner := aggregatorrunner.ProvideNoopAggregatorConfigurator()
 	playlistAppInstaller, err := playlist.RegisterAppInstaller(playlistService, cfg, featureToggles)
@@ -770,7 +771,7 @@ func Initialize(ctx context.Context, cfg *setting.Cfg, opts Options, apiOpts api
 	}
 	v2 := appregistry.ProvideAppInstallers(featureToggles, playlistAppInstaller, pluginsAppInstaller, shortURLAppInstaller, alertingRulesAppInstaller, correlationsAppInstaller, alertingNotificationsAppInstaller)
 	builderMetrics := builder.ProvideBuilderMetrics(registerer)
-	apiserverService, err := apiserver.ProvideService(cfg, featureToggles, routeRegisterImpl, tracingService, serverLockService, sqlStore, kvStore, dualwriteService, resourceClient, inlineSecureValueSupport, eventualRestConfigProvider, v, eventualRestConfigProvider, registerer, aggregatorRunner, v2, builderMetrics)
+	apiserverService, err := apiserver.ProvideService(cfg, featureToggles, routeRegisterImpl, tracingService, serverLockService, sqlStore, kvStore, middlewareHandler, scopedPluginDatasourceProvider, plugincontextProvider, pluginstoreService, dualwriteService, resourceClient, inlineSecureValueSupport, eventualRestConfigProvider, v, eventualRestConfigProvider, registerer, aggregatorRunner, v2, builderMetrics)
 	if err != nil {
 		return nil, err
 	}
@@ -807,7 +808,6 @@ func Initialize(ctx context.Context, cfg *setting.Cfg, opts Options, apiOpts api
 	apiService := api4.ProvideService(cfg, routeRegisterImpl, accessControl, userService, authinfoimplService, ossGroups, identitySynchronizer, orgService, ldapImpl, userAuthTokenService, bundleregistryService)
 	dashboardsAPIBuilder := dashboard.RegisterAPIService(cfg, featureToggles, apiserverService, dashboardService, dashboardProvisioningService, service15, dashboardServiceImpl, dashboardPermissionsService, accessControl, accessClient, provisioningServiceImpl, dashboardsStore, registerer, sqlStore, tracingService, resourceClient, dualwriteService, sortService, quotaService, libraryPanelService, eventualRestConfigProvider, userService)
 	snapshotsAPIBuilder := dashboardsnapshot.RegisterAPIService(serviceImpl, apiserverService, cfg, featureToggles, sqlStore, registerer)
-	scopedPluginDatasourceProvider := datasource.ProvideDefaultPluginConfigs(service15, cacheServiceImpl, plugincontextProvider)
 	dataSourceAPIBuilder, err := datasource.RegisterAPIService(configProvider, featureToggles, apiserverService, middlewareHandler, scopedPluginDatasourceProvider, plugincontextProvider, accessControl, registerer)
 	if err != nil {
 		return nil, err
@@ -1346,6 +1346,7 @@ func InitializeForTest(ctx context.Context, t sqlutil.ITestDB, testingT interfac
 	if err != nil {
 		return nil, err
 	}
+	scopedPluginDatasourceProvider := datasource.ProvideDefaultPluginConfigs(service15, cacheServiceImpl, plugincontextProvider)
 	v := builder.ProvideDefaultBuildHandlerChainFuncFromBuilders()
 	aggregatorRunner := aggregatorrunner.ProvideNoopAggregatorConfigurator()
 	playlistAppInstaller, err := playlist.RegisterAppInstaller(playlistService, cfg, featureToggles)
@@ -1375,7 +1376,7 @@ func InitializeForTest(ctx context.Context, t sqlutil.ITestDB, testingT interfac
 	}
 	v2 := appregistry.ProvideAppInstallers(featureToggles, playlistAppInstaller, pluginsAppInstaller, shortURLAppInstaller, alertingRulesAppInstaller, correlationsAppInstaller, alertingNotificationsAppInstaller)
 	builderMetrics := builder.ProvideBuilderMetrics(registerer)
-	apiserverService, err := apiserver.ProvideService(cfg, featureToggles, routeRegisterImpl, tracingService, serverLockService, sqlStore, kvStore, dualwriteService, resourceClient, inlineSecureValueSupport, eventualRestConfigProvider, v, eventualRestConfigProvider, registerer, aggregatorRunner, v2, builderMetrics)
+	apiserverService, err := apiserver.ProvideService(cfg, featureToggles, routeRegisterImpl, tracingService, serverLockService, sqlStore, kvStore, middlewareHandler, scopedPluginDatasourceProvider, plugincontextProvider, pluginstoreService, dualwriteService, resourceClient, inlineSecureValueSupport, eventualRestConfigProvider, v, eventualRestConfigProvider, registerer, aggregatorRunner, v2, builderMetrics)
 	if err != nil {
 		return nil, err
 	}
@@ -1412,7 +1413,6 @@ func InitializeForTest(ctx context.Context, t sqlutil.ITestDB, testingT interfac
 	apiService := api4.ProvideService(cfg, routeRegisterImpl, accessControl, userService, authinfoimplService, ossGroups, identitySynchronizer, orgService, ldapImpl, userAuthTokenService, bundleregistryService)
 	dashboardsAPIBuilder := dashboard.RegisterAPIService(cfg, featureToggles, apiserverService, dashboardService, dashboardProvisioningService, service15, dashboardServiceImpl, dashboardPermissionsService, accessControl, accessClient, provisioningServiceImpl, dashboardsStore, registerer, sqlStore, tracingService, resourceClient, dualwriteService, sortService, quotaService, libraryPanelService, eventualRestConfigProvider, userService)
 	snapshotsAPIBuilder := dashboardsnapshot.RegisterAPIService(serviceImpl, apiserverService, cfg, featureToggles, sqlStore, registerer)
-	scopedPluginDatasourceProvider := datasource.ProvideDefaultPluginConfigs(service15, cacheServiceImpl, plugincontextProvider)
 	dataSourceAPIBuilder, err := datasource.RegisterAPIService(configProvider, featureToggles, apiserverService, middlewareHandler, scopedPluginDatasourceProvider, plugincontextProvider, accessControl, registerer)
 	if err != nil {
 		return nil, err
