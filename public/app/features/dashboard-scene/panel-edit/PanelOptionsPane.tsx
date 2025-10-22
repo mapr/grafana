@@ -85,7 +85,7 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
       newFieldConfig = restoreCustomOverrideRules(newFieldConfig, cachedFieldConfig);
     }
 
-    panel.changePluginType(pluginId, cachedOptions, newFieldConfig);
+    panel.changePluginType(pluginId, options.options, newFieldConfig);
 
     if (options.options) {
       panel.onOptionsChange(options.options, true);
@@ -99,7 +99,7 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
       panel.onFieldConfigChange(fieldConfigWithOverrides, true);
     }
 
-    this.onToggleVizPicker();
+    // this.onToggleVizPicker();
   };
 
   onSetSearchQuery = (searchQuery: string) => {

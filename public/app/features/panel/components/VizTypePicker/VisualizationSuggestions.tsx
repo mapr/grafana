@@ -16,13 +16,14 @@ export interface Props {
   searchQuery: string;
   onChange: (options: VizTypeChangeDetails) => void;
   data?: PanelData;
-  panel?: PanelModel;
+  panel: PanelModel;
+  presets: boolean;
   trackSearch?: (q: string, count: number) => void;
 }
 
-export function VisualizationSuggestions({ searchQuery, onChange, data, panel, trackSearch }: Props) {
+export function VisualizationSuggestions({ searchQuery, onChange, data, panel, presets, trackSearch }: Props) {
   const styles = useStyles2(getStyles);
-  const { value: suggestions } = useAsync(() => getAllSuggestions(data, panel), [data, panel]);
+  const { value: suggestions } = useAsync(() => getAllSuggestions(data, panel, presets), [data, panel, presets]);
   const filteredSuggestions = useMemo(() => {
     const result = filterSuggestionsBySearch(searchQuery, suggestions);
     if (trackSearch) {
@@ -48,9 +49,8 @@ export function VisualizationSuggestions({ searchQuery, onChange, data, panel, t
           return (
             <div>
               <div className={styles.filterRow}>
-                <div className={styles.infoText}>
-                  <Trans i18nKey="panel.visualization-suggestions.based-on-current-data">Based on current data</Trans>
-                </div>
+                {!presets && <div className={styles.infoText}>Suggestions based on current data</div>}
+                {presets && <div className={styles.infoText}>Select a style preset</div>}
               </div>
               <div className={styles.grid} style={{ gridTemplateColumns: `repeat(auto-fill, ${previewWidth}px)` }}>
                 {filteredSuggestions.map((suggestion, index) => (

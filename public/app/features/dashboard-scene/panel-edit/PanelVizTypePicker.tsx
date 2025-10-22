@@ -54,7 +54,12 @@ export function PanelVizTypePicker({ panel, data, onChange, onClose }: Props) {
   const panelModel = useMemo(() => new PanelModelCompatibilityWrapper(panel), [panel]);
 
   const supportedListModes = useMemo(
-    () => new Set([VisualizationSelectPaneTab.Visualizations, VisualizationSelectPaneTab.Suggestions]),
+    () =>
+      new Set([
+        VisualizationSelectPaneTab.Visualizations,
+        VisualizationSelectPaneTab.Suggestions,
+        VisualizationSelectPaneTab.Presets,
+      ]),
     []
   );
   const [listMode, setListMode] = useLocalStorage(tabKey, defaultTab);
@@ -76,14 +81,28 @@ export function PanelVizTypePicker({ panel, data, onChange, onClose }: Props) {
 
   const radioOptions: Array<SelectableValue<VisualizationSelectPaneTab>> = [
     {
-      label: t('dashboard-scene.panel-viz-type-picker.radio-options.label.visualizations', 'Visualizations'),
+      label: 'All',
       value: VisualizationSelectPaneTab.Visualizations,
     },
     {
-      label: t('dashboard-scene.panel-viz-type-picker.radio-options.label.suggestions', 'Suggestions'),
+      label: 'Types',
       value: VisualizationSelectPaneTab.Suggestions,
     },
+    {
+      label: 'Presets',
+      value: VisualizationSelectPaneTab.Presets,
+    },
   ];
+
+  const onSuggestionSelected = (options: VizTypeChangeDetails) => {
+    onChange(options);
+    setListMode(VisualizationSelectPaneTab.Presets);
+  };
+
+  const onPresetSelected = (options: VizTypeChangeDetails) => {
+    onChange(options);
+    onClose();
+  };
 
   return (
     <div className={styles.wrapper}>
@@ -118,10 +137,21 @@ export function PanelVizTypePicker({ panel, data, onChange, onClose }: Props) {
         )}
         {listMode === VisualizationSelectPaneTab.Suggestions && (
           <VisualizationSuggestions
-            onChange={onChange}
+            onChange={onSuggestionSelected}
             trackSearch={trackSearch}
             searchQuery={searchQuery}
             panel={panelModel}
+            presets={false}
+            data={data}
+          />
+        )}
+        {listMode === VisualizationSelectPaneTab.Presets && (
+          <VisualizationSuggestions
+            onChange={onPresetSelected}
+            trackSearch={trackSearch}
+            searchQuery={searchQuery}
+            panel={panelModel}
+            presets={true}
             data={data}
           />
         )}

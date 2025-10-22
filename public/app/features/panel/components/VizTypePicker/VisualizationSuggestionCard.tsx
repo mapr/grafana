@@ -58,7 +58,7 @@ export function VisualizationSuggestionCard({ data, suggestion, onChange, width 
       <Tooltip content={suggestion.name}>
         <div style={innerStyles} className={styles.renderContainer}>
           <PanelRenderer
-            title=""
+            title="a"
             data={data}
             pluginId={suggestion.pluginId}
             width={renderWidth}

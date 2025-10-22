@@ -83,6 +83,8 @@ export class BarGaugeSuggestionsSupplier {
         },
         fieldConfig: {
           defaults: {
+            min: 0,
+            max: 100,
             color: {
               mode: 'continuous-GrYlRd',
             },
@@ -93,8 +95,32 @@ export class BarGaugeSuggestionsSupplier {
 
       list.append({
         name: SuggestionName.BarGaugeLCD,
+        isPreset: true,
         options: {
           displayMode: BarGaugeDisplayMode.Lcd,
+          orientation: VizOrientation.Horizontal,
+          reduceOptions: {
+            values: false,
+            calcs: ['lastNotNull'],
+          },
+        },
+        fieldConfig: {
+          defaults: {
+            min: 0,
+            max: 100,
+            color: {
+              mode: 'continuous-GrYlRd',
+            },
+          },
+          overrides: [],
+        },
+      });
+
+      list.append({
+        name: 'Color scale',
+        isPreset: true,
+        options: {
+          displayMode: BarGaugeDisplayMode.Gradient,
           orientation: VizOrientation.Horizontal,
           reduceOptions: {
             values: false,

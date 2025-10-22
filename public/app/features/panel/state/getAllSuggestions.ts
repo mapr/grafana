@@ -25,10 +25,19 @@ export const panelsToCheckFirst = [
   'nodeGraph',
 ];
 
-export async function getAllSuggestions(data?: PanelData, panel?: PanelModel): Promise<VisualizationSuggestion[]> {
+export async function getAllSuggestions(
+  data: PanelData | undefined,
+  panel: PanelModel,
+  presets: boolean
+): Promise<VisualizationSuggestion[]> {
   const builder = new VisualizationSuggestionsBuilder(data, panel);
+  let panelIds = panelsToCheckFirst;
 
-  for (const pluginId of panelsToCheckFirst) {
+  if (presets) {
+    panelIds = [panel.type];
+  }
+
+  for (const pluginId of panelIds) {
     const plugin = await importPanelPlugin(pluginId);
     const supplier = plugin.getSuggestionsSupplier();
 
@@ -37,7 +46,16 @@ export async function getAllSuggestions(data?: PanelData, panel?: PanelModel): P
     }
   }
 
-  const list = builder.getList();
+  const list = builder.getList().filter((s) => {
+    if (!presets && s.isPreset) {
+      return false;
+    }
+    return true;
+  });
+
+  if (presets) {
+    return list;
+  }
 
   if (builder.dataSummary.fieldCount === 0) {
     for (const plugin of Object.values(config.panels)) {

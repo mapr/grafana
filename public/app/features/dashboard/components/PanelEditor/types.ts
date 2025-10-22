@@ -73,4 +73,5 @@ export enum VisualizationSelectPaneTab {
   Visualizations,
   LibraryPanels,
   Suggestions,
+  Presets,
 }
