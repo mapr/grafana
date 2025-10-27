@@ -121,7 +121,7 @@ require (
 	gopkg.in/mail.v2 v2.3.1 // @grafana/backend-platform
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // @grafana/alerting-squad-backend
-	xorm.io/builder v0.3.6 // @grafana/backend-platform
+	xorm.io/builder v0.3.6 // indirect; @grafana/backend-platform
 	xorm.io/core v0.7.3 // @grafana/backend-platform
 	xorm.io/xorm v0.8.2 // @grafana/alerting-squad-backend
 )
@@ -173,7 +173,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.1-0.20191002090509-6af20e3a5340 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // @grafana/alerting-squad
+	github.com/hashicorp/go-multierror v1.1.1 // indirect; @grafana/alerting-squad
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/golang-lru v0.6.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
@@ -258,7 +258,7 @@ require (
 	github.com/dave/dst v0.27.2 // @grafana/grafana-as-code
 	github.com/go-jose/go-jose/v3 v3.0.1 // @grafana/grafana-authnz-team
 	github.com/grafana/dataplane/examples v0.0.1 // @grafana/observability-metrics
-	github.com/grafana/dataplane/sdata v0.0.6 // @grafana/observability-metrics
+	github.com/grafana/dataplane/sdata v0.0.9 // @grafana/observability-metrics
 	github.com/grafana/kindsys v0.0.0-20230508162304-452481b63482 //  @grafana/grafana-as-code
 	github.com/grafana/tempo v1.5.1-0.20230524121406-1dc1bfe7085b // @grafana/observability-traces-and-profiling
 	github.com/grafana/thema v0.0.0-20230712153715-375c1b45f3ed // @grafana/grafana-as-code
