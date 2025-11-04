@@ -50,7 +50,7 @@ export function DashboardEditPaneRenderer({ editPane, dashboard }: Props) {
   return (
     <div className={cx(styles.wrapper, isDocked && styles.wrapperDocked)}>
       {editableElement && (
-        <div className={cx(styles.sidebarView)} style={{ width: '260px' }}>
+        <div className={cx(styles.sidebarView)}>
           <ElementEditPane
             key={selectedObject?.state.key}
             editPane={editPane}
@@ -102,13 +102,17 @@ export function DashboardEditPaneRenderer({ editPane, dashboard }: Props) {
           ></ToolbarButton>
         )}
         <FlexItem grow={1} />
-        <div className={styles.separator} />
-        <ToolbarButton
-          icon="web-section-alt"
-          onClick={editPane.onToggleDock}
-          tooltip="Dock pane"
-          variant={isDocked ? 'active' : 'default'}
-        ></ToolbarButton>
+        {(selectedObject || openView) && (
+          <>
+            <div className={styles.separator} />
+            <ToolbarButton
+              icon="web-section-alt"
+              onClick={editPane.onToggleDock}
+              tooltip="Dock pane"
+              variant={isDocked ? 'active' : 'default'}
+            ></ToolbarButton>
+          </>
+        )}
       </div>
     </div>
   );
@@ -138,7 +142,7 @@ function getStyles(theme: GrafanaTheme2) {
       boxShadow: 'none',
     }),
     sidebarView: css({
-      width: '240px',
+      width: '260px',
       flexGrow: 1,
       borderRight: `1px solid ${theme.colors.border.weak}`,
       paddingBottom: theme.spacing(2),
