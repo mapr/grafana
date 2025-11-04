@@ -24,6 +24,7 @@ interface Props {
 export function DashboardEditPaneSplitter({ dashboard, isEditing, body, controls }: Props) {
   const headerHeight = useChromeHeaderHeight();
   const { editPane } = dashboard.state;
+  const { isDocked } = editPane.useState();
   const styles = useStyles2(getStyles, headerHeight ?? 0);
 
   if (!config.featureToggles.dashboardNewLayouts) {
@@ -73,7 +74,7 @@ export function DashboardEditPaneSplitter({ dashboard, isEditing, body, controls
         </div>
         <div className={styles.bodyWrapper}>
           <div
-            className={cx(styles.bodyWithToolbar)}
+            className={cx(styles.bodyWithToolbar, isDocked && styles.bodyDocked)}
             data-testid={selectors.components.DashboardEditPaneSplitter.primaryBody}
             ref={onBodyRef}
             onPointerDown={onClearSelection}
@@ -155,6 +156,9 @@ function getStyles(theme: GrafanaTheme2, headerHeight: number) {
       marginRight: '48px',
       // without top padding the fixed controls headers is rendered over the selection outline.
       padding: theme.spacing(0.125, 1, 2, 2),
+    }),
+    bodyDocked: css({
+      marginRight: '309px',
     }),
     toolbar: css({
       display: 'flex',

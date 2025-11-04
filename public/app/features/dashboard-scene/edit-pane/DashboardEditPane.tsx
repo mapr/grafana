@@ -24,6 +24,7 @@ export interface DashboardEditPaneState extends SceneObjectState {
   selection?: ElementSelection;
   selectionContext: ElementSelectionContextState;
   openView?: string;
+  isDocked?: boolean;
 
   undoStack: DashboardEditActionEventPayload[];
   redoStack: DashboardEditActionEventPayload[];
@@ -97,6 +98,10 @@ export class DashboardEditPane extends SceneObjectBase<DashboardEditPaneState> {
     }
 
     this.setState({ openView: 'outline' });
+  };
+
+  public onToggleDock = () => {
+    this.setState({ isDocked: !this.state.isDocked });
   };
 
   private performPanelEditAction(action: DashboardEditActionEvent) {

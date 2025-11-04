@@ -5,7 +5,7 @@ import { GrafanaTheme2 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { Trans, t } from '@grafana/i18n';
 import { SceneObject } from '@grafana/scenes';
-import { Box, Icon, Stack, Text, useElementSelection, useStyles2 } from '@grafana/ui';
+import { Box, Icon, IconButton, Stack, Text, useElementSelection, useStyles2 } from '@grafana/ui';
 
 import { isRepeatCloneOrChildOf } from '../utils/clone';
 import { DashboardInteractions } from '../utils/interactions';
@@ -21,6 +21,7 @@ export interface Props {
 
 export function DashboardOutline({ editPane }: Props) {
   const dashboard = getDashboardSceneFor(editPane);
+  const styles = useStyles2(getStyles);
 
   return (
     <Box
@@ -33,6 +34,17 @@ export function DashboardOutline({ editPane }: Props) {
       role="tree"
       position="relative"
     >
+      <div className={styles.header}>
+        <Text>Content outline</Text>
+        <IconButton
+          name="times"
+          size="md"
+          onClick={editPane.onToggleOutline}
+          tooltip={'Close outline'}
+          aria-label={t('grafana.dashboard.edit-pane.go-back', 'Go back')}
+          data-testid={selectors.components.EditPaneHeader.backButton}
+        />
+      </div>
       <DashboardOutlineNode sceneObject={dashboard} editPane={editPane} depth={0} index={0} />
     </Box>
   );
@@ -156,6 +168,14 @@ function DashboardOutlineNode({ sceneObject, editPane, depth, index }: Dashboard
 
 function getStyles(theme: GrafanaTheme2) {
   return {
+    header: css({
+      padding: theme.spacing(1),
+      borderBottom: `1px solid ${theme.colors.border.weak}`,
+      marginBottom: theme.spacing(1),
+      justifyContent: 'space-between',
+      display: 'flex',
+      alignItems: 'center',
+    }),
     container: css({
       display: 'flex',
       gap: theme.spacing(0.5),
