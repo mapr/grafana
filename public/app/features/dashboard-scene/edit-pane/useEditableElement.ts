@@ -12,10 +12,11 @@ export function useEditableElement(
 ): EditableDashboardElement | undefined {
   return useMemo(() => {
     if (!selection) {
-      const dashboard = getDashboardSceneFor(editPane);
-      return new ElementSelection([[dashboard.state.uid!, dashboard.getRef()]]).createSelectionElement();
+      return undefined;
+      // const dashboard = getDashboardSceneFor(editPane);
+      // return new ElementSelection([[dashboard.state.uid!, dashboard.getRef()]]).createSelectionElement();
     }
 
     return selection.createSelectionElement();
-  }, [selection, editPane]);
+  }, [selection]);
 }

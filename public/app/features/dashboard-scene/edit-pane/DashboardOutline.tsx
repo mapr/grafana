@@ -23,7 +23,16 @@ export function DashboardOutline({ editPane }: Props) {
   const dashboard = getDashboardSceneFor(editPane);
 
   return (
-    <Box padding={1} gap={0} display="flex" direction="column" element="ul" role="tree" position="relative">
+    <Box
+      padding={1}
+      paddingTop={0}
+      gap={0}
+      display="flex"
+      direction="column"
+      element="ul"
+      role="tree"
+      position="relative"
+    >
       <DashboardOutlineNode sceneObject={dashboard} editPane={editPane} depth={0} index={0} />
     </Box>
   );

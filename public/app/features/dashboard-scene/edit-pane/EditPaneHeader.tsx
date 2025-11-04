@@ -39,7 +39,7 @@ export function EditPaneHeader({ element, editPane }: EditPaneHeaderProps) {
   return (
     <div className={styles.wrapper}>
       <Stack direction="row" gap={0.5}>
-        {canGoBack && (
+        {/* {canGoBack && (
           <IconButton
             name="arrow-left"
             size="lg"
@@ -48,7 +48,7 @@ export function EditPaneHeader({ element, editPane }: EditPaneHeaderProps) {
             aria-label={t('grafana.dashboard.edit-pane.go-back', 'Go back')}
             data-testid={selectors.components.EditPaneHeader.backButton}
           />
-        )}
+        )} */}
         <Text>{elementInfo.typeName}</Text>
       </Stack>
       <Stack direction="row" gap={1}>
@@ -105,7 +105,7 @@ function getStyles(theme: GrafanaTheme2) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: theme.spacing(1, 2),
+      padding: theme.spacing(0, 2, 1, 2),
       borderBottom: `1px solid ${theme.colors.border.weak}`,
     }),
   };

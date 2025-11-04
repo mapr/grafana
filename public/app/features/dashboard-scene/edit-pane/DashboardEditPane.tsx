@@ -23,6 +23,7 @@ import {
 export interface DashboardEditPaneState extends SceneObjectState {
   selection?: ElementSelection;
   selectionContext: ElementSelectionContextState;
+  openView?: string;
 
   undoStack: DashboardEditActionEventPayload[];
   redoStack: DashboardEditActionEventPayload[];
@@ -88,6 +89,15 @@ export class DashboardEditPane extends SceneObjectBase<DashboardEditPaneState> {
       this.panelEditAction = undefined;
     }
   }
+
+  public onToggleOutline = () => {
+    if (this.state.openView === 'outline') {
+      this.setState({ openView: undefined });
+      return;
+    }
+
+    this.setState({ openView: 'outline' });
+  };
 
   private performPanelEditAction(action: DashboardEditActionEvent) {
     // Some layout items are not yet active when leaving panel edit, let's wait for them to activate

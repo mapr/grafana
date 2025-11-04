@@ -1,5 +1,5 @@
 import { css, cx } from '@emotion/css';
-import React, { CSSProperties, useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
@@ -8,13 +8,11 @@ import { useSceneObjectState } from '@grafana/scenes';
 import { ElementSelectionContext, useStyles2 } from '@grafana/ui';
 import NativeScrollbar, { DivScrollElement } from 'app/core/components/NativeScrollbar';
 
-import { useSnappingSplitter } from '../panel-edit/splitter/useSnappingSplitter';
 import { DashboardScene } from '../scene/DashboardScene';
 import { NavToolbarActions } from '../scene/NavToolbarActions';
 
 import { DashboardEditPaneRenderer } from './DashboardEditPaneRenderer';
 import { DashboardSidebar } from './DashboardSidebar';
-import { useEditPaneCollapsed } from './shared';
 
 interface Props {
   dashboard: DashboardScene;
@@ -27,7 +25,6 @@ export function DashboardEditPaneSplitter({ dashboard, isEditing, body, controls
   const headerHeight = useChromeHeaderHeight();
   const { editPane } = dashboard.state;
   const styles = useStyles2(getStyles, headerHeight ?? 0);
-  const [isCollapsed, setIsCollapsed] = useEditPaneCollapsed();
 
   if (!config.featureToggles.dashboardNewLayouts) {
     return (
@@ -60,29 +57,31 @@ export function DashboardEditPaneSplitter({ dashboard, isEditing, body, controls
     }
   };
 
-  return (
-    <div
-      className={styles.container}
-      onPointerDown={(evt) => {
-        if (evt.shiftKey) {
-          return;
-        }
+  const onClearSelection: React.PointerEventHandler<HTMLDivElement> = (evt) => {
+    if (evt.shiftKey) {
+      return;
+    }
 
-        editPane.clearSelection();
-      }}
-    >
+    editPane.clearSelection();
+  };
+
+  return (
+    <div className={styles.container}>
       <ElementSelectionContext.Provider value={selectionContext}>
-        <div className={cx(styles.controlsWrapperSticky)}>{controls}</div>
+        <div className={cx(styles.controlsWrapperSticky)} onPointerDown={onClearSelection}>
+          {controls}
+        </div>
         <div className={styles.bodyWrapper}>
           <div
             className={cx(styles.bodyWithToolbar)}
             data-testid={selectors.components.DashboardEditPaneSplitter.primaryBody}
             ref={onBodyRef}
+            onPointerDown={onClearSelection}
           >
             {body}
           </div>
           <div className={cx(styles.toolbar)}>
-            <DashboardSidebar dashboard={dashboard} />
+            <DashboardEditPaneRenderer editPane={editPane} dashboard={dashboard} />
           </div>
         </div>
       </ElementSelectionContext.Provider>
@@ -144,6 +143,8 @@ function getStyles(theme: GrafanaTheme2, headerHeight: number) {
     }),
     bodyWithToolbar: css({
       position: 'absolute',
+      display: 'flex',
+      flexDirection: 'column',
       left: 0,
       top: 0,
       right: 0,
