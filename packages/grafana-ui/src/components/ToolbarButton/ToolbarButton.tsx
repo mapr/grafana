@@ -104,7 +104,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     );
 
     return tooltip ? (
-      <Tooltip ref={ref} content={tooltip} placement="bottom">
+      <Tooltip ref={ref} content={tooltip} placement="left">
         {body}
       </Tooltip>
     ) : (

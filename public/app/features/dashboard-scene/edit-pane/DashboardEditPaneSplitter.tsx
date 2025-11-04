@@ -13,6 +13,7 @@ import { DashboardScene } from '../scene/DashboardScene';
 import { NavToolbarActions } from '../scene/NavToolbarActions';
 
 import { DashboardEditPaneRenderer } from './DashboardEditPaneRenderer';
+import { DashboardSidebar } from './DashboardSidebar';
 import { useEditPaneCollapsed } from './shared';
 
 interface Props {
@@ -40,21 +41,6 @@ export function DashboardEditPaneSplitter({ dashboard, isEditing, body, controls
     );
   }
 
-  const { containerProps, primaryProps, secondaryProps, splitterProps, splitterState, onToggleCollapse } =
-    useSnappingSplitter({
-      direction: 'row',
-      dragPosition: 'end',
-      initialSize: 330,
-      handleSize: 'sm',
-      usePixels: true,
-      collapseBelowPixels: 250,
-      collapsed: isCollapsed,
-    });
-
-  useEffect(() => {
-    setIsCollapsed(splitterState.collapsed);
-  }, [splitterState.collapsed, setIsCollapsed]);
-
   /**
    * Enable / disable selection based on dashboard isEditing state
    */
@@ -67,14 +53,6 @@ export function DashboardEditPaneSplitter({ dashboard, isEditing, body, controls
   }, [isEditing, editPane]);
 
   const { selectionContext } = useSceneObjectState(editPane, { shouldActivateOrKeepAlive: true });
-  const containerStyle: CSSProperties = {};
-
-  if (!isEditing) {
-    primaryProps.style.flexGrow = 1;
-    primaryProps.style.width = '100%';
-    primaryProps.style.minWidth = 'unset';
-    containerStyle.overflow = 'unset';
-  }
 
   const onBodyRef = (ref: HTMLDivElement | null) => {
     if (ref) {
@@ -83,48 +61,30 @@ export function DashboardEditPaneSplitter({ dashboard, isEditing, body, controls
   };
 
   return (
-    <div {...containerProps} style={containerStyle}>
-      <ElementSelectionContext.Provider value={selectionContext}>
-        <div
-          {...primaryProps}
-          className={cx(primaryProps.className, styles.canvasWithSplitter)}
-          onPointerDown={(evt) => {
-            if (evt.shiftKey) {
-              return;
-            }
+    <div
+      className={styles.container}
+      onPointerDown={(evt) => {
+        if (evt.shiftKey) {
+          return;
+        }
 
-            editPane.clearSelection();
-          }}
-        >
-          <NavToolbarActions dashboard={dashboard} />
-          <div className={cx(!isEditing && styles.controlsWrapperSticky)}>{controls}</div>
-          <div className={styles.bodyWrapper}>
-            <div
-              className={cx(styles.body, isEditing && styles.bodyEditing)}
-              data-testid={selectors.components.DashboardEditPaneSplitter.primaryBody}
-              ref={onBodyRef}
-            >
-              {body}
-            </div>
+        editPane.clearSelection();
+      }}
+    >
+      <ElementSelectionContext.Provider value={selectionContext}>
+        <div className={cx(styles.controlsWrapperSticky)}>{controls}</div>
+        <div className={styles.bodyWrapper}>
+          <div
+            className={cx(styles.bodyWithToolbar)}
+            data-testid={selectors.components.DashboardEditPaneSplitter.primaryBody}
+            ref={onBodyRef}
+          >
+            {body}
+          </div>
+          <div className={cx(styles.toolbar)}>
+            <DashboardSidebar dashboard={dashboard} />
           </div>
         </div>
-        {isEditing && (
-          <>
-            <div
-              {...splitterProps}
-              className={cx(splitterProps.className, styles.splitter)}
-              data-edit-pane-splitter={true}
-            />
-            <div {...secondaryProps} className={cx(secondaryProps.className, styles.editPane)}>
-              <DashboardEditPaneRenderer
-                editPane={editPane}
-                isEditPaneCollapsed={isCollapsed}
-                onToggleCollapse={onToggleCollapse}
-                openOverlay={selectionContext.selected.length > 0}
-              />
-            </div>
-          </>
-        )}
       </ElementSelectionContext.Provider>
     </div>
   );
@@ -144,13 +104,31 @@ function getStyles(theme: GrafanaTheme2, headerHeight: number) {
       flexDirection: 'column',
       flexGrow: 1,
     }),
+    container: css({
+      label: 'container',
+      display: 'flex',
+      flexDirection: 'column',
+      flexGrow: 1,
+      position: 'relative',
+    }),
+    primary: css({
+      display: 'flex',
+      flexDirection: 'column',
+      flexGrow: 1,
+    }),
+    secondary: css({
+      width: '48px',
+      display: 'flex',
+      height: '100%',
+      flexShrink: 0,
+    }),
     canvasWithSplitterEditing: css({
       overflow: 'unset',
     }),
     bodyWrapper: css({
       label: 'body-wrapper',
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: 'row',
       flexGrow: 1,
       position: 'relative',
     }),
@@ -164,7 +142,7 @@ function getStyles(theme: GrafanaTheme2, headerHeight: number) {
       // without top padding the fixed controls headers is rendered over the selection outline.
       padding: theme.spacing(0.125, 2, 2, 2),
     }),
-    bodyEditing: css({
+    bodyWithToolbar: css({
       position: 'absolute',
       left: 0,
       top: 0,
@@ -173,10 +151,18 @@ function getStyles(theme: GrafanaTheme2, headerHeight: number) {
       overflow: 'auto',
       scrollbarWidth: 'thin',
       scrollbarGutter: 'stable',
-      // Because the edit pane splitter handle area adds padding we can reduce it here
-      paddingRight: theme.spacing(1),
+      marginRight: '48px',
+      // without top padding the fixed controls headers is rendered over the selection outline.
+      padding: theme.spacing(0.125, 1, 2, 2),
     }),
-    editPane: css({
+    toolbar: css({
+      display: 'flex',
+      width: '48px',
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
+      top: 0,
+      height: '100%',
       flexDirection: 'column',
       // borderLeft: `1px solid ${theme.colors.border.weak}`,
       // background: theme.colors.background.primary,
