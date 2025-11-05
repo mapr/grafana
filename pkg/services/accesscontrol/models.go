@@ -496,6 +496,12 @@ const (
 
 	// Usage stats actions
 	ActionUsageStatsRead = "server.usagestats.report:read"
+
+	// IAM Resource Permissions
+	ActionResourcePermissionsRead   = "resourcepermissions:read"
+	ActionResourcePermissionsWrite  = "resourcepermissions:write"
+	ActionResourcePermissionsCreate = "resourcepermissions:create"
+	ActionResourcePermissionsDelete = "resourcepermissions:delete"
 )
 
 var (

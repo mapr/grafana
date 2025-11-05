@@ -29,10 +29,7 @@ func (a *api) getResourcePermissionsFromK8s(ctx context.Context, namespace strin
 		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
-	resourcePermName := fmt.Sprintf("%s.%s.%s",
-		a.service.options.Resource,
-		a.service.options.Resource,
-		resourceID)
+	resourcePermName := a.buildResourcePermissionName(resourceID)
 
 	resourcePermResource := dynamicClient.Resource(iamv0.ResourcePermissionInfo.GroupVersionResource()).Namespace(namespace)
 	resourcePerm, err := resourcePermResource.Get(ctx, resourcePermName, metav1.GetOptions{})
@@ -125,5 +122,5 @@ func (a *api) buildResourcePermissionName(resourceID string) string {
 		apiGroup = fmt.Sprintf("%s.grafana.app", a.service.options.Resource)
 	}
 
-	return fmt.Sprintf("%s.%s.%s", apiGroup, a.service.options.Resource, resourceID)
+	return fmt.Sprintf("%s-%s-%s", apiGroup, a.service.options.Resource, resourceID)
 }
