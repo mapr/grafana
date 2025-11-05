@@ -1,40 +1,44 @@
-import { css } from '@emotion/css';
-import { ReactNode } from 'react';
+import { css, cx } from '@emotion/css';
+import React, { ReactNode } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
 
 import { useStyles2 } from '../../themes/ThemeContext';
 
 import { SidebarButton } from './SidebarButton';
+import { SidebarOpenPane } from './SidebarOpenPane';
 
 export interface Props {
   children?: ReactNode;
+  isDocked?: boolean;
 }
 
-export function SidebarComp({ children }: Props) {
+export function SidebarComp({ children, isDocked }: Props) {
   const styles = useStyles2(getStyles);
 
-  return <div className={styles.container}>{children}</div>;
+  return <div className={cx(styles.container, isDocked && styles.containerDocked)}>{children}</div>;
 }
 
 export interface SiderbarToolbarProps {
   children?: ReactNode;
+  isDocked?: boolean;
+  onDockChange?: () => void;
 }
 
-export function SiderbarToolbar({ children }: SiderbarToolbarProps) {
+export function SiderbarToolbar({ children, isDocked, onDockChange }: SiderbarToolbarProps) {
   const styles = useStyles2(getStyles);
 
-  return <div className={styles.toolbar}>{children}</div>;
-}
-
-export interface SidebarOpenPaneProps {
-  children?: ReactNode;
-}
-
-export function SidebarOpenPane({ children }: SidebarOpenPaneProps) {
-  const styles = useStyles2(getStyles);
-
-  return <div className={styles.openPane}>{children}</div>;
+  return (
+    <div className={styles.toolbar}>
+      {children}
+      <div className={styles.flexGrow} />
+      <SidebarButton
+        icon={isDocked ? 'arrow-right' : 'arrow-left'}
+        onClick={onDockChange}
+        tooltip={isDocked ? 'Undock sidebar' : 'Dock sidebar'}
+      />
+    </div>
+  );
 }
 
 export function SidebarDivider() {
@@ -50,7 +54,7 @@ export const Sidebar = Object.assign(SidebarComp, {
   Divider: SidebarDivider,
 });
 
-const getStyles = (theme: GrafanaTheme2) => {
+export const getStyles = (theme: GrafanaTheme2) => {
   return {
     container: css({
       display: 'flex',
@@ -68,11 +72,8 @@ const getStyles = (theme: GrafanaTheme2) => {
       top: 0,
       right: 0,
     }),
-    openPane: css({
-      width: '260px',
-      flexGrow: 1,
-      borderRight: `1px solid ${theme.colors.border.weak}`,
-      paddingBottom: theme.spacing(2),
+    containerDocked: css({
+      boxShadow: 'none',
     }),
     toolbar: css({
       width: '48px',
@@ -88,5 +89,22 @@ const getStyles = (theme: GrafanaTheme2) => {
       background: theme.colors.border.weak,
       width: '100%',
     }),
+    flexGrow: css({
+      flexGrow: 1,
+    }),
   };
 };
+
+export function useSiderbar() {
+  const [isDocked, setIsDocked] = React.useState(false);
+
+  const onDockChange = () => setIsDocked(!isDocked);
+
+  const containerProps = {
+    style: {
+      paddingRight: isDocked ? '300px' : '55px',
+    },
+  };
+
+  return { isDocked, onDockChange, containerProps };
+}

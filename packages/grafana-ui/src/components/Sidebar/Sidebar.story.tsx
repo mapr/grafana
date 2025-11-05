@@ -3,9 +3,8 @@ import { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
 
 import { Box } from '../Layout/Box/Box';
-import { Grid } from '../Layout/Grid/Grid';
 
-import { Sidebar } from './Sidebar';
+import { Sidebar, useSiderbar } from './Sidebar';
 import mdx from './Sidebar.mdx';
 
 const meta: Meta<typeof Sidebar> = {
@@ -42,7 +41,6 @@ export const Example: StoryFn<typeof Sidebar> = (args) => {
     padding: '0 8px',
     flexGrow: 1,
     overflow: 'auto',
-    marginRight: '55px',
   });
 
   const renderBox = (label: string) => {
@@ -68,9 +66,11 @@ export const Example: StoryFn<typeof Sidebar> = (args) => {
     }
   };
 
+  const { isDocked, onDockChange, containerProps } = useSiderbar();
+
   return (
     <Box paddingY={2} backgroundColor={'canvas'} maxWidth={100} borderStyle={'solid'} borderColor={'weak'}>
-      <div className={containerStyle}>
+      <div className={containerStyle} {...containerProps}>
         <div className={gridStyle}>
           {renderBox('A')}
           {renderBox('B')}
@@ -80,10 +80,10 @@ export const Example: StoryFn<typeof Sidebar> = (args) => {
           {renderBox('F')}
           {renderBox('G')}
         </div>
-        <Sidebar>
+        <Sidebar isDocked={isDocked}>
           {openPane === 'settings' && <Sidebar.OpenPane>Settings</Sidebar.OpenPane>}
           {openPane === 'outline' && <Sidebar.OpenPane>Outline</Sidebar.OpenPane>}
-          <Sidebar.Toolbar>
+          <Sidebar.Toolbar isDocked={isDocked} onDockChange={onDockChange}>
             <Sidebar.Button icon="share-alt" tooltip="Share" />
             <Sidebar.Button icon="info-circle" tooltip="Insights" />
             <Sidebar.Divider />
