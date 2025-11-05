@@ -2793,7 +2793,8 @@
       "metadata": {
         "name": "newPDFRendering",
         "resourceVersion": "1753448760331",
-        "creationTimestamp": "2024-02-08T12:09:34Z"
+        "creationTimestamp": "2024-02-08T12:09:34Z",
+        "deletionTimestamp": "2025-11-05T09:15:26Z"
       },
       "spec": {
         "description": "New implementation for the dashboard-to-PDF rendering",

@@ -876,13 +876,6 @@ var (
 			Expression:   "true", // enabled by default,
 		},
 		{
-			Name:        "newPDFRendering",
-			Description: "New implementation for the dashboard-to-PDF rendering",
-			Stage:       FeatureStageGeneralAvailability,
-			Owner:       grafanaOperatorExperienceSquad,
-			Expression:  "true", // enabled by default,
-		},
-		{
 			Name:           "tlsMemcached",
 			Description:    "Use TLS-enabled memcached in the enterprise caching feature",
 			Stage:          FeatureStageGeneralAvailability,

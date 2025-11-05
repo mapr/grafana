@@ -518,11 +518,6 @@ export interface FeatureToggles {
   */
   groupToNestedTableTransformation?: boolean;
   /**
-  * New implementation for the dashboard-to-PDF rendering
-  * @default true
-  */
-  newPDFRendering?: boolean;
-  /**
   * Use TLS-enabled memcached in the enterprise caching feature
   * @default true
   */

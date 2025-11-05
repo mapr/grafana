@@ -471,10 +471,6 @@ const (
 	// Enables the group to nested table transformation
 	FlagGroupToNestedTableTransformation = "groupToNestedTableTransformation"
 
-	// FlagNewPDFRendering
-	// New implementation for the dashboard-to-PDF rendering
-	FlagNewPDFRendering = "newPDFRendering"
-
 	// FlagTlsMemcached
 	// Use TLS-enabled memcached in the enterprise caching feature
 	FlagTlsMemcached = "tlsMemcached"
