@@ -17,20 +17,28 @@ import { scrollReflowMediaCondition, useScrollReflowLimit } from './useScrollRef
 
 export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>) {
   const dashboard = getDashboardSceneFor(model);
+  const { controls } = dashboard.useState();
   const { optionsPane } = model.useState();
   const styles = useStyles2(getStyles);
 
   return (
     <>
       {/* <NavToolbarActions dashboard={dashboard} /> */}
-      <div className={styles.content} data-testid={selectors.components.PanelEditor.General.content}>
-        <div className={styles.body}>
-          <VizAndDataPane model={model} />
-        </div>
+      <div className={cx(styles.pageContainer, controls && styles.pageContainerWithControls)}>
+        {controls && (
+          <div className={styles.controlsWrapper}>
+            <controls.Component model={controls} />
+          </div>
+        )}
+        <div className={styles.content}>
+          <div className={styles.body}>
+            <VizAndDataPane model={model} />
+          </div>
 
-        <div className={styles.optionsPane}>
-          {optionsPane && <optionsPane.Component model={optionsPane} />}
-          {!optionsPane && <Spinner />}
+          <div className={styles.optionsPane}>
+            {optionsPane && <optionsPane.Component model={optionsPane} />}
+            {!optionsPane && <Spinner />}
+          </div>
         </div>
       </div>
     </>
@@ -64,11 +72,6 @@ function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
 
   return (
     <div className={cx(styles.pageContainer, controls && styles.pageContainerWithControls)}>
-      {controls && (
-        <div className={styles.controlsWrapper}>
-          <controls.Component model={controls} />
-        </div>
-      )}
       <div {...containerProps}>
         <div {...primaryProps} className={cx(primaryProps.className, isScrollingLayout && styles.fixedSizeViz)}>
           <VizWrapper panel={panel} tableView={tableView} />
@@ -138,6 +141,7 @@ function getStyles(theme: GrafanaTheme2) {
   return {
     pageContainer: css({
       display: 'grid',
+      position: 'relative',
       gridTemplateAreas: `
         "panels"`,
       gridTemplateColumns: `1fr`,
@@ -167,10 +171,9 @@ function getStyles(theme: GrafanaTheme2) {
       width: '100%',
     }),
     content: css({
-      position: 'absolute',
       display: 'flex',
       width: '100%',
-      height: '100%',
+      flexGrow: 1,
       overflow: 'unset',
       gap: theme.spacing(2),
       [scrollReflowMediaQuery]: {
@@ -194,7 +197,6 @@ function getStyles(theme: GrafanaTheme2) {
       display: 'flex',
       flexDirection: 'column',
       background: theme.colors.background.primary,
-      marginTop: theme.spacing(2),
     }),
     expandOptionsWrapper: css({
       display: 'flex',
@@ -219,6 +221,7 @@ function getStyles(theme: GrafanaTheme2) {
       flexDirection: 'column',
       flexGrow: 0,
       gridArea: 'controls',
+      paddingRight: theme.spacing(2),
     }),
     openDataPaneButton: css({
       width: theme.spacing(8),
