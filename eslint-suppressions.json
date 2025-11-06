@@ -2065,16 +2065,6 @@
       "count": 2
     }
   },
-  "public/app/features/dashboard-scene/settings/annotations/AnnotationSettingsEdit.tsx": {
-    "no-restricted-syntax": {
-      "count": 7
-    }
-  },
-  "public/app/features/dashboard-scene/settings/links/DashboardLinkForm.tsx": {
-    "no-restricted-syntax": {
-      "count": 10
-    }
-  },
   "public/app/features/dashboard-scene/settings/variables/VariableEditableElement.tsx": {
     "no-restricted-syntax": {
       "count": 1
@@ -2094,11 +2084,6 @@
     }
   },
   "public/app/features/dashboard-scene/settings/variables/components/QueryVariableForm.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "public/app/features/dashboard-scene/settings/variables/components/VariableHideSelect.tsx": {
     "no-restricted-syntax": {
       "count": 1
     }
