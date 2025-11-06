@@ -20,7 +20,7 @@ export const getStyles = (theme: GrafanaTheme2) => {
     openPane: css({
       width: '260px',
       flexGrow: 1,
-      borderRight: `1px solid ${theme.colors.border.weak}`,
+
       paddingBottom: theme.spacing(2),
     }),
   };

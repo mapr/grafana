@@ -1,13 +1,11 @@
 import { css, cx } from '@emotion/css';
-import { useEffect } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { t } from '@grafana/i18n';
 import { SceneComponentProps, VizPanel } from '@grafana/scenes';
-import { Button, Spinner, ToolbarButton, useStyles2 } from '@grafana/ui';
+import { Button, Spinner, useStyles2 } from '@grafana/ui';
 
-import { useEditPaneCollapsed } from '../edit-pane/shared';
 import { NavToolbarActions } from '../scene/NavToolbarActions';
 import { UnlinkModal } from '../scene/UnlinkModal';
 import { getDashboardSceneFor, getLibraryPanelBehavior } from '../utils/utils';
@@ -21,55 +19,18 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
   const dashboard = getDashboardSceneFor(model);
   const { optionsPane } = model.useState();
   const styles = useStyles2(getStyles);
-  const [isInitiallyCollapsed, setIsCollapsed] = useEditPaneCollapsed();
-
-  const isScrollingLayout = useScrollReflowLimit();
-
-  const { containerProps, primaryProps, secondaryProps, splitterProps, splitterState, onToggleCollapse } =
-    useSnappingSplitter({
-      direction: 'row',
-      dragPosition: 'end',
-      initialSize: 330,
-      usePixels: true,
-      collapsed: isInitiallyCollapsed,
-      collapseBelowPixels: 250,
-      disabled: isScrollingLayout,
-    });
-
-  useEffect(() => {
-    setIsCollapsed(splitterState.collapsed);
-  }, [splitterState.collapsed, setIsCollapsed]);
 
   return (
     <>
-      <NavToolbarActions dashboard={dashboard} />
-      <div
-        {...containerProps}
-        className={cx(containerProps.className, styles.content)}
-        data-testid={selectors.components.PanelEditor.General.content}
-      >
-        <div {...primaryProps} className={cx(primaryProps.className, styles.body)}>
+      {/* <NavToolbarActions dashboard={dashboard} /> */}
+      <div className={styles.content} data-testid={selectors.components.PanelEditor.General.content}>
+        <div className={styles.body}>
           <VizAndDataPane model={model} />
         </div>
-        <div {...splitterProps} />
-        <div {...secondaryProps} className={cx(secondaryProps.className, styles.optionsPane)}>
-          {splitterState.collapsed && (
-            <div className={styles.expandOptionsWrapper}>
-              <ToolbarButton
-                tooltip={t('dashboard-scene.panel-editor-renderer.tooltip-open-options-pane', 'Open options pane')}
-                icon={'arrow-to-right'}
-                onClick={onToggleCollapse}
-                variant="canvas"
-                className={styles.rotate180}
-                aria-label={t(
-                  'dashboard-scene.panel-editor-renderer.aria-label-open-options-pane',
-                  'Open options pane'
-                )}
-              />
-            </div>
-          )}
-          {!splitterState.collapsed && optionsPane && <optionsPane.Component model={optionsPane} />}
-          {!splitterState.collapsed && !optionsPane && <Spinner />}
+
+        <div className={styles.optionsPane}>
+          {optionsPane && <optionsPane.Component model={optionsPane} />}
+          {!optionsPane && <Spinner />}
         </div>
       </div>
     </>
@@ -207,9 +168,11 @@ function getStyles(theme: GrafanaTheme2) {
     }),
     content: css({
       position: 'absolute',
+      display: 'flex',
       width: '100%',
       height: '100%',
       overflow: 'unset',
+      gap: theme.spacing(2),
       [scrollReflowMediaQuery]: {
         height: 'auto',
         display: 'grid',
@@ -228,12 +191,10 @@ function getStyles(theme: GrafanaTheme2) {
       minHeight: 0,
     }),
     optionsPane: css({
+      display: 'flex',
       flexDirection: 'column',
-      borderLeft: `1px solid ${theme.colors.border.weak}`,
       background: theme.colors.background.primary,
       marginTop: theme.spacing(2),
-      borderTop: `1px solid ${theme.colors.border.weak}`,
-      borderTopLeftRadius: theme.shape.radius.default,
     }),
     expandOptionsWrapper: css({
       display: 'flex',

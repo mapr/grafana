@@ -23,7 +23,17 @@ import {
   VizPanel,
   sceneGraph,
 } from '@grafana/scenes';
-import { Button, FilterInput, ScrollContainer, Stack, ToolbarButton, useStyles2, Field } from '@grafana/ui';
+import {
+  Button,
+  FilterInput,
+  ScrollContainer,
+  Stack,
+  ToolbarButton,
+  useStyles2,
+  Field,
+  useSiderbar,
+  Sidebar,
+} from '@grafana/ui';
 import { OptionFilter } from 'app/features/dashboard/components/PanelEditor/OptionsPaneOptions';
 import { getPanelPluginNotFound } from 'app/features/panel/components/PanelPluginError';
 import { VizTypeChangeDetails } from 'app/features/panel/components/VizTypePicker/types';
@@ -139,11 +149,16 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
   const onlyOverrides = listMode === OptionFilter.Overrides;
   const isScrollingLayout = useScrollReflowLimit();
 
+  const { toolbarProps, sidebarProps, openPaneProps } = useSiderbar({
+    position: 'right',
+    tabsMode: true,
+  });
+
   return (
-    <>
+    <div {...sidebarProps}>
       {!isVizPickerOpen && (
-        <>
-          <div className={styles.top}>
+        <div {...openPaneProps}>
+          {/* <div className={styles.top}>
             <Field label={t('dashboard.panel-edit.visualization-button-label', 'Visualization')} noMargin>
               <Stack gap={1}>
                 <VisualizationButton pluginId={pluginId} onOpen={model.onToggleVizPicker} />
@@ -180,11 +195,11 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
                 }}
               />
             )}
-          </div>
+          </div> */}
           <ScrollContainer minHeight={isScrollingLayout ? 'max-content' : 0}>
             <PanelOptions panel={panel} searchQuery={searchQuery} listMode={listMode} data={data} />
           </ScrollContainer>
-        </>
+        </div>
       )}
       {isVizPickerOpen && (
         <PanelVizTypePicker
@@ -194,7 +209,16 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
           data={data}
         />
       )}
-    </>
+      <div {...toolbarProps}>
+        <ToolbarButton icon="save" tooltip="Save" variant="primary" />
+        <ToolbarButton icon="arrow-left" tooltip="Back to dashboard" />
+        <Sidebar.Divider />
+        <Sidebar.Button icon="sliders-v-alt" active={true} tooltip="All options" />
+        <Sidebar.Button icon="graph-bar" />
+        <Sidebar.Button icon="search" />
+        <Sidebar.Button icon="bell" />
+      </div>
+    </div>
   );
 }
 

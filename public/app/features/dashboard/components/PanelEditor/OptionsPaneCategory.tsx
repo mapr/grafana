@@ -170,6 +170,9 @@ OptionsPaneCategory.displayName = 'OptionsPaneCategory';
 const getStyles = (theme: GrafanaTheme2) => ({
   box: css({
     borderTop: `1px solid ${theme.colors.border.weak}`,
+    '&:first-child': {
+      borderTop: 'none',
+    },
   }),
   boxNestedExpanded: css({
     marginBottom: theme.spacing(2),

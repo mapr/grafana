@@ -508,3 +508,5 @@ export {
   type VizTooltipOptions,
   type OptionsWithTooltip,
 } from '@grafana/schema';
+
+export { Sidebar, useSiderbar } from './components/Sidebar/Sidebar';

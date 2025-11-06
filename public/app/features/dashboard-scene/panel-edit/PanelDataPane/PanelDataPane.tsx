@@ -11,7 +11,7 @@ import {
   SceneObjectUrlValues,
   VizPanel,
 } from '@grafana/scenes';
-import { Container, ScrollContainer, TabContent, TabsBar, useStyles2 } from '@grafana/ui';
+import { Container, ScrollContainer, Sidebar, TabContent, TabsBar, useStyles2, useSiderbar } from '@grafana/ui';
 import { getConfig } from 'app/core/config';
 import { contextSrv } from 'app/core/core';
 import { getRulesPermissions } from 'app/features/alerting/unified/utils/access-control';
@@ -78,17 +78,22 @@ function PanelDataPaneRendered({ model }: SceneComponentProps<PanelDataPane>) {
 
   const currentTab = tabs.find((t) => t.tabId === tab);
 
+  const { toolbarProps, sidebarProps, openPaneProps } = useSiderbar({
+    position: 'left',
+    tabsMode: true,
+  });
+
   return (
     <div className={styles.dataPane} data-testid={selectors.components.PanelEditor.DataPane.content}>
-      <TabsBar hideBorder className={styles.tabsBar}>
-        {tabs.map((t) => t.renderTab({ active: t.tabId === tab, onChangeTab: () => model.onChangeTab(t) }))}
-      </TabsBar>
-      <div className={styles.tabBorder}>
-        <ScrollContainer>
-          <TabContent className={styles.tabContent}>
-            <Container>{currentTab && <currentTab.Component model={currentTab} />}</Container>
-          </TabContent>
-        </ScrollContainer>
+      <div {...sidebarProps}>
+        <div {...openPaneProps}>
+          <Container padding={'sm'}>{currentTab && <currentTab.Component model={currentTab} />}</Container>
+        </div>
+        <div {...toolbarProps}>
+          <Sidebar.Button icon="database" active={true} />
+          <Sidebar.Button icon="process" />
+          <Sidebar.Button icon="bell" />
+        </div>
       </div>
     </div>
   );
@@ -112,7 +117,7 @@ function getStyles(theme: GrafanaTheme2) {
   return {
     dataPane: css({
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: 'row',
       flexGrow: 1,
       minHeight: 0,
       height: '100%',
