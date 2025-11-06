@@ -66,7 +66,7 @@ export const Example: StoryFn<typeof Sidebar> = (args) => {
     }
   };
 
-  const { isDocked, onDockChange, containerProps } = useSiderbar();
+  const { isDocked, onDockChange, containerProps } = useSiderbar({ isPaneOpen: !!openPane });
 
   return (
     <Box paddingY={2} backgroundColor={'canvas'} maxWidth={100} borderStyle={'solid'} borderColor={'weak'}>
@@ -83,7 +83,7 @@ export const Example: StoryFn<typeof Sidebar> = (args) => {
         <Sidebar isDocked={isDocked}>
           {openPane === 'settings' && <Sidebar.OpenPane>Settings</Sidebar.OpenPane>}
           {openPane === 'outline' && <Sidebar.OpenPane>Outline</Sidebar.OpenPane>}
-          <Sidebar.Toolbar isDocked={isDocked} onDockChange={onDockChange}>
+          <Sidebar.Toolbar isDocked={isDocked} onDockChange={onDockChange} isPaneOpen={!!openPane}>
             <Sidebar.Button icon="share-alt" tooltip="Share" />
             <Sidebar.Button icon="info-circle" tooltip="Insights" />
             <Sidebar.Divider />

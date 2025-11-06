@@ -22,21 +22,24 @@ export function SidebarComp({ children, isDocked }: Props) {
 export interface SiderbarToolbarProps {
   children?: ReactNode;
   isDocked?: boolean;
+  isPaneOpen?: boolean;
   onDockChange?: () => void;
 }
 
-export function SiderbarToolbar({ children, isDocked, onDockChange }: SiderbarToolbarProps) {
+export function SiderbarToolbar({ children, isDocked, onDockChange, isPaneOpen }: SiderbarToolbarProps) {
   const styles = useStyles2(getStyles);
 
   return (
     <div className={styles.toolbar}>
       {children}
       <div className={styles.flexGrow} />
-      <SidebarButton
-        icon={isDocked ? 'arrow-right' : 'arrow-left'}
-        onClick={onDockChange}
-        tooltip={isDocked ? 'Undock sidebar' : 'Dock sidebar'}
-      />
+      {isPaneOpen && (
+        <SidebarButton
+          icon={'web-section-alt'}
+          onClick={onDockChange}
+          tooltip={isDocked ? 'Undock sidebar' : 'Dock sidebar'}
+        />
+      )}
     </div>
   );
 }
@@ -95,14 +98,18 @@ export const getStyles = (theme: GrafanaTheme2) => {
   };
 };
 
-export function useSiderbar() {
+export interface UseSideBarOptions {
+  isPaneOpen: boolean;
+}
+
+export function useSiderbar({ isPaneOpen }: UseSideBarOptions) {
   const [isDocked, setIsDocked] = React.useState(false);
 
   const onDockChange = () => setIsDocked(!isDocked);
 
   const containerProps = {
     style: {
-      paddingRight: isDocked ? '300px' : '55px',
+      paddingRight: isDocked && isPaneOpen ? '308px' : '55px',
     },
   };
 
