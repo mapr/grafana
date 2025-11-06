@@ -628,11 +628,29 @@ func TestIntegrationDashboardDataAccess(t *testing.T) {
 	t.Run("Can delete dashboards in folder", func(t *testing.T) {
 		setup()
 		folder := insertTestDashboard(t, dashboardStore, "dash folder", 1, 0, "", true, "prod", "webapp")
-		_ = insertTestDashboard(t, dashboardStore, "delete me 1", 1, folder.ID, folder.UID, false, "delete this 1")
-		_ = insertTestDashboard(t, dashboardStore, "delete me 2", 1, folder.ID, folder.UID, false, "delete this 2")
+		dash1 := insertTestDashboard(t, dashboardStore, "delete me 1", 1, folder.ID, folder.UID, false, "delete this 1")
+		dash2 := insertTestDashboard(t, dashboardStore, "delete me 2", 1, folder.ID, folder.UID, false, "delete this 2")
 
-		err := dashboardStore.DeleteDashboardsInFolders(context.Background(), &dashboards.DeleteDashboardsInFolderRequest{OrgID: folder.OrgID, FolderUIDs: []string{folder.UID}})
+		err := dashboardStore.DeleteDashboardsInFolders(context.Background(), &dashboards.DeleteDashboardsInFolderRequest{
+			OrgID:             folder.OrgID,
+			FolderUIDs:        []string{folder.UID},
+			RemovePermissions: true,
+		})
 		require.NoError(t, err)
+
+		// Verify child dashboards are deleted
+		_, err = dashboardStore.GetDashboard(context.Background(), &dashboards.GetDashboardQuery{UID: dash1.UID, OrgID: folder.OrgID})
+		require.Error(t, err)
+		require.ErrorIs(t, err, dashboards.ErrDashboardNotFound)
+
+		_, err = dashboardStore.GetDashboard(context.Background(), &dashboards.GetDashboardQuery{UID: dash2.UID, OrgID: folder.OrgID})
+		require.Error(t, err)
+		require.ErrorIs(t, err, dashboards.ErrDashboardNotFound)
+
+		// Verify folder itself is also deleted
+		_, err = dashboardStore.GetDashboard(context.Background(), &dashboards.GetDashboardQuery{UID: folder.UID, OrgID: folder.OrgID})
+		require.Error(t, err)
+		require.ErrorIs(t, err, dashboards.ErrDashboardNotFound)
 	})
 }
 

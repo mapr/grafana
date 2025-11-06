@@ -1000,7 +1000,6 @@ func (d *dashboardStore) DeleteDashboardsInFolders(
 	defer span.End()
 
 	return d.store.WithTransactionalDbSession(ctx, func(sess *db.Session) error {
-		// TODO delete all dashboards in the folder in a bulk query
 		for _, folderUID := range req.FolderUIDs {
 			dashboard := dashboards.Dashboard{OrgID: req.OrgID}
 			has, err := sess.Where("org_id = ? AND uid = ?", req.OrgID, folderUID).Get(&dashboard)
@@ -1015,9 +1014,52 @@ func (d *dashboardStore) DeleteDashboardsInFolders(
 				return err
 			}
 
+			// Delete child dashboards (non-folders within the folder)
 			_, err = sess.Where("folder_id = ? AND org_id = ? AND is_folder = ?", dashboard.ID, dashboard.OrgID, false).Delete(&dashboards.Dashboard{})
 			if err != nil {
 				return err
+			}
+
+			// Delete the folder itself using similar logic to deleteDashboard
+			type statement struct {
+				SQL  string
+				args []any
+			}
+
+			sqlStatements := []statement{
+				{SQL: "DELETE FROM dashboard_tag WHERE dashboard_uid = ? AND org_id = ?", args: []any{dashboard.UID, dashboard.OrgID}},
+				{SQL: "DELETE FROM star WHERE dashboard_id = ? ", args: []any{dashboard.ID}},
+				{SQL: "DELETE FROM dashboard WHERE id = ?", args: []any{dashboard.ID}},
+				{SQL: "DELETE FROM playlist_item WHERE type = 'dashboard_by_id' AND value = ?", args: []any{strconv.FormatInt(dashboard.ID, 10)}},
+				{SQL: "DELETE FROM dashboard_version WHERE dashboard_id = ?", args: []any{dashboard.ID}},
+				{SQL: "DELETE FROM dashboard_provisioning WHERE dashboard_id = ?", args: []any{dashboard.ID}},
+				{SQL: "DELETE FROM dashboard_acl WHERE dashboard_id = ?", args: []any{dashboard.ID}},
+			}
+
+			// Remove permissions if requested
+			if req.RemovePermissions {
+				if err := d.deleteResourcePermissions(sess, dashboard.OrgID, dashboards.ScopeFoldersProvider.GetResourceScopeUID(dashboard.UID)); err != nil {
+					return err
+				}
+			}
+
+			_, err = sess.Exec("DELETE FROM annotation WHERE dashboard_id = ? AND org_id = ?", dashboard.ID, dashboard.OrgID)
+			if err != nil {
+				return err
+			}
+
+			for _, stmnt := range sqlStatements {
+				_, err := sess.Exec(append([]any{stmnt.SQL}, stmnt.args...)...)
+				if err != nil {
+					return err
+				}
+			}
+
+			if d.emitEntityEvent() {
+				_, err := sess.Insert(createEntityEvent(&dashboard, store.EntityEventTypeDelete))
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil

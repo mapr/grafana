@@ -1016,14 +1016,15 @@ func (s *Service) legacyDelete(ctx context.Context, cmd *folder.DeleteFolderComm
 		return folder.ErrInternal.Errorf("failed to delete public dashboards: %w", err)
 	}
 
-	// TODO use bulk delete
-	// Delete all dashboards in the folders
-	for _, folderUID := range folderUIDs {
-		// nolint:staticcheck
-		deleteCmd := dashboards.DeleteDashboardCommand{OrgID: cmd.OrgID, UID: folderUID, ForceDeleteFolderRules: cmd.ForceDeleteRules, RemovePermissions: cmd.RemovePermissions}
-		if err := s.dashboardStore.DeleteDashboard(ctx, &deleteCmd); err != nil {
-			return toFolderError(err)
-		}
+	// Delete all folders using bulk delete
+	err = s.dashboardStore.DeleteDashboardsInFolders(ctx, &dashboards.DeleteDashboardsInFolderRequest{
+		FolderUIDs:             folderUIDs,
+		OrgID:                  cmd.OrgID,
+		ForceDeleteFolderRules: cmd.ForceDeleteRules,
+		RemovePermissions:      cmd.RemovePermissions,
+	})
+	if err != nil {
+		return toFolderError(err)
 	}
 
 	return nil

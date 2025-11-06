@@ -376,8 +376,10 @@ func FromDashboard(dash *Dashboard) *folder.Folder {
 }
 
 type DeleteDashboardsInFolderRequest struct {
-	FolderUIDs []string
-	OrgID      int64
+	FolderUIDs             []string
+	OrgID                  int64
+	ForceDeleteFolderRules bool
+	RemovePermissions      bool
 }
 
 type GetAllDashboardsInFolderRequest struct {
