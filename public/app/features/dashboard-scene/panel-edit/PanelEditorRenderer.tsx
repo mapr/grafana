@@ -10,6 +10,7 @@ import { NavToolbarActions } from '../scene/NavToolbarActions';
 import { UnlinkModal } from '../scene/UnlinkModal';
 import { getDashboardSceneFor, getLibraryPanelBehavior } from '../utils/utils';
 
+import { PanelDataPaneRenderer } from './PanelDataPane/PanelDataPane';
 import { PanelEditor } from './PanelEditor';
 import { SaveLibraryVizPanelModal } from './SaveLibraryVizPanelModal';
 import { useSnappingSplitter } from './splitter/useSnappingSplitter';
@@ -30,9 +31,15 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
             <controls.Component model={controls} />
           </div>
         )}
+        <div className={styles.content}>
+          <div className={styles.body}>
+            <VizAndDataPane model={model} />
+          </div>
 
-        <div className={styles.body}>
-          <VizAndDataPane model={model} />
+          <div className={styles.optionsPane}>
+            {optionsPane && <optionsPane.Component model={optionsPane} />}
+            {!optionsPane && <Spinner />}
+          </div>
         </div>
       </div>
     </>
@@ -41,7 +48,7 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
 
 function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
   const dashboard = getDashboardSceneFor(model);
-  const { dataPane, showLibraryPanelSaveModal, showLibraryPanelUnlinkModal, tableView, optionsPane } = model.useState();
+  const { dataPane, showLibraryPanelSaveModal, showLibraryPanelUnlinkModal, tableView } = model.useState();
   const panel = model.getPanel();
   const libraryPanel = getLibraryPanelBehavior(panel);
   const { controls } = dashboard.useState();
@@ -68,13 +75,7 @@ function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
     <div className={styles.dataPane}>
       <div {...containerProps}>
         <div {...primaryProps} className={cx(primaryProps.className, isScrollingLayout && styles.fixedSizeViz)}>
-          <div className={styles.content}>
-            <VizWrapper panel={panel} tableView={tableView} />
-            <div className={styles.optionsPane}>
-              {optionsPane && <optionsPane.Component model={optionsPane} />}
-              {!optionsPane && <Spinner />}
-            </div>
-          </div>
+          <VizWrapper panel={panel} tableView={tableView} />
         </div>
         {showLibraryPanelSaveModal && libraryPanel && (
           <SaveLibraryVizPanelModal
@@ -111,7 +112,13 @@ function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
                   />
                 </div>
               )}
-              {!splitterState.collapsed && <dataPane.Component model={dataPane} />}
+              {!splitterState.collapsed && (
+                <PanelDataPaneRenderer
+                  model={dataPane}
+                  onToggleCollapse={onToggleCollapse}
+                  collapsed={splitterState.collapsed}
+                />
+              )}
             </div>
           </>
         )}

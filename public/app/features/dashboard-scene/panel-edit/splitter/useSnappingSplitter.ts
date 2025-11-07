@@ -82,8 +82,12 @@ export function useSnappingSplitter({
   );
 
   const onToggleCollapse = useCallback(() => {
-    setState({ collapsed: !state.collapsed });
-  }, [state.collapsed]);
+    if (!state.collapsed) {
+      setState({ collapsed: !state.collapsed, snapSize: 0 });
+    } else {
+      setState({ snapSize: 1 - (initialSize ?? 0.5), collapsed: !state.collapsed });
+    }
+  }, [state.collapsed, initialSize]);
 
   const { containerProps, primaryProps, secondaryProps, splitterProps } = useSplitter({
     direction: direction,

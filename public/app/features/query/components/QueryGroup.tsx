@@ -445,7 +445,7 @@ export function QueryGroupTopSection({
                   data={data}
                   onChange={(opts) => {
                     onOptionsChange?.(opts);
-                  }}
+                  }}g st
                 />
               </div>
               {onOpenQueryInspector && (
@@ -463,11 +463,9 @@ export function QueryGroupTopSection({
               <Stack flex={1} gap={1} direction="row" alignItems="center">
                 <Stack alignItems="center">
                   <span>Max data points: {options.maxDataPoints ?? 'auto'}</span>
-                  <IconButton size="sm" name="pen" />
                 </Stack>
                 <Stack alignItems="center">
                   <span>Min interval: {options.minInterval ?? 'auto'}</span>
-                  <IconButton size="sm" name="pen" />
                 </Stack>
               </Stack>
             </>
