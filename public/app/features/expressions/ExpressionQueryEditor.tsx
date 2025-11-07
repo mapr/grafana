@@ -11,7 +11,7 @@ import { ExpressionTypeDropdown } from './components/ExpressionTypeDropdown';
 import { Math } from './components/Math';
 import { Reduce } from './components/Reduce';
 import { Resample } from './components/Resample';
-import { SqlExpr } from './components/SqlExpr';
+// import { SqlExpr } from './components/SqlExpr';
 import { Threshold } from './components/Threshold';
 import { ExpressionQuery, ExpressionQueryType, expressionTypes } from './types';
 import { getDefaults } from './utils/expressionTypes';
@@ -147,16 +147,7 @@ export function ExpressionQueryEditor(props: ExpressionQueryEditorProps) {
         return <Threshold onChange={onChange} query={query} labelWidth={labelWidth} refIds={refIds} />;
 
       case ExpressionQueryType.sql:
-        return (
-          <SqlExpr
-            onChange={onChange}
-            query={query}
-            refIds={refIds}
-            queries={queries}
-            metadata={props}
-            onRunQuery={onRunQuery}
-          />
-        );
+        return <div></div>;
     }
   };
 

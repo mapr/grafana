@@ -8,7 +8,7 @@ module.exports = {
   target: 'web',
   entry: {
     app: './public/app/index.ts',
-    swagger: './public/swagger/index.tsx',
+    // swagger: './public/swagger/index.tsx',
   },
   experiments: {
     // Required to load WASM modules.
@@ -122,10 +122,10 @@ module.exports = {
           priority: 20,
           enforce: true,
         },
-        angular: {
-          test: /[\\/]node_modules[\\/]angular[\\/].*[jt]sx?$/,
+        awesomeQueryBuilder: {
+          test: /[\\/]node_modules[\\/]@react-awesome-query-builder[\\/].*[jt]sx?$/,
           chunks: 'initial',
-          priority: 50,
+          priority: 20,
           enforce: true,
         },
         defaultVendors: {
