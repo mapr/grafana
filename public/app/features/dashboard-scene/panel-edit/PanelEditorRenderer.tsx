@@ -1,10 +1,13 @@
 import { css, cx } from '@emotion/css';
+import { useEffect, useState } from 'react';
+import { options } from 'yargs';
 
 import { GrafanaTheme2 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { t } from '@grafana/i18n';
 import { SceneComponentProps, VizPanel } from '@grafana/scenes';
 import { Button, Spinner, useStyles2 } from '@grafana/ui';
+import { showOptions } from 'app/features/variables/pickers/OptionsPicker/reducer';
 
 import { NavToolbarActions } from '../scene/NavToolbarActions';
 import { UnlinkModal } from '../scene/UnlinkModal';
@@ -21,6 +24,16 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
   const { controls } = dashboard.useState();
   const { optionsPane } = model.useState();
   const styles = useStyles2(getStyles);
+  const [openView, setOpenView] = useState(false);
+
+  useEffect(() => {
+    if (optionsPane) {
+      const sub = optionsPane.subscribeToState((state) => {
+        setOpenView(state.openView !== 'closed');
+      });
+      return () => sub.unsubscribe();
+    }
+  }, [openView, optionsPane]);
 
   return (
     <>
@@ -31,24 +44,31 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
             <controls.Component model={controls} />
           </div>
         )}
-        <div className={styles.content}>
+        {!openView && (
           <div className={styles.body}>
-            <VizAndDataPane model={model} />
+            <VizAndDataPane model={model} showOptionsPane={true} />
           </div>
+        )}
+        {openView && (
+          <div className={styles.content}>
+            <div className={styles.body}>
+              <VizAndDataPane model={model} showOptionsPane={false} />
+            </div>
 
-          <div className={styles.optionsPane}>
-            {optionsPane && <optionsPane.Component model={optionsPane} />}
-            {!optionsPane && <Spinner />}
+            <div className={styles.optionsPane}>
+              {optionsPane && <optionsPane.Component model={optionsPane} />}
+              {!optionsPane && <Spinner />}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </>
   );
 }
 
-function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
+function VizAndDataPane({ model, showOptionsPane }: { model: PanelEditor; showOptionsPane?: boolean }) {
   const dashboard = getDashboardSceneFor(model);
-  const { dataPane, showLibraryPanelSaveModal, showLibraryPanelUnlinkModal, tableView } = model.useState();
+  const { dataPane, showLibraryPanelSaveModal, showLibraryPanelUnlinkModal, tableView, optionsPane } = model.useState();
   const panel = model.getPanel();
   const libraryPanel = getLibraryPanelBehavior(panel);
   const { controls } = dashboard.useState();
@@ -75,7 +95,16 @@ function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
     <div className={styles.dataPane}>
       <div {...containerProps}>
         <div {...primaryProps} className={cx(primaryProps.className, isScrollingLayout && styles.fixedSizeViz)}>
-          <VizWrapper panel={panel} tableView={tableView} />
+          {showOptionsPane && (
+            <div className={styles.content}>
+              <VizWrapper panel={panel} tableView={tableView} />
+              <div className={styles.optionsPane}>
+                {optionsPane && <optionsPane.Component model={optionsPane} />}
+                {!optionsPane && <Spinner />}
+              </div>
+            </div>
+          )}
+          {!showOptionsPane && <VizWrapper panel={panel} tableView={tableView} />}
         </div>
         {showLibraryPanelSaveModal && libraryPanel && (
           <SaveLibraryVizPanelModal
