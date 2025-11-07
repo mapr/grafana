@@ -210,9 +210,9 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
         />
       )}
       <div {...toolbarProps}>
-        <ToolbarButton icon="save" tooltip="Save" variant="primary" />
+        {/* <ToolbarButton icon="save" tooltip="Save" variant="primary" />
         <ToolbarButton icon="arrow-left" tooltip="Back to dashboard" />
-        <Sidebar.Divider />
+        <Sidebar.Divider /> */}
         <Sidebar.Button icon="sliders-v-alt" active={true} tooltip="All options" />
         <Sidebar.Button icon="graph-bar" />
         <Sidebar.Button icon="search" />

@@ -15,7 +15,7 @@ import {
   SceneObjectUrlValues,
   CancelActivationHandler,
 } from '@grafana/scenes';
-import { Box, Stack, useStyles2 } from '@grafana/ui';
+import { Box, Button, Stack, useStyles2 } from '@grafana/ui';
 
 import { PanelEditControls } from '../panel-edit/PanelEditControls';
 import { getDashboardSceneFor } from '../utils/utils';
@@ -184,6 +184,14 @@ function DashboardControlsRenderer({ model }: SceneComponentProps<DashboardContr
         <Stack>
           <DashboardControlsButton dashboard={dashboard} />
         </Stack>
+      )}
+      {editPanel && (
+        <>
+          <Button variant="destructive" fill="outline">
+            Discard
+          </Button>
+          <Button variant="primary">Save</Button>
+        </>
       )}
       {showDebugger && <SceneDebugger scene={model} key={'scene-debugger'} />}
     </div>

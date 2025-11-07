@@ -136,6 +136,7 @@ export const getStyles = (theme: GrafanaTheme2) => {
       bottom: 0,
       top: 0,
       right: 0,
+      overflow: 'hidden',
     }),
     containerTabsMode: css({
       position: 'relative',

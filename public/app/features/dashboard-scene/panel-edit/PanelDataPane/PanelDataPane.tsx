@@ -87,7 +87,9 @@ function PanelDataPaneRendered({ model }: SceneComponentProps<PanelDataPane>) {
     <div className={styles.dataPane} data-testid={selectors.components.PanelEditor.DataPane.content}>
       <div {...sidebarProps}>
         <div {...openPaneProps}>
-          <Container padding={'sm'}>{currentTab && <currentTab.Component model={currentTab} />}</Container>
+          <ScrollContainer minHeight={'100%'}>
+            <Container padding={'sm'}>{currentTab && <currentTab.Component model={currentTab} />}</Container>
+          </ScrollContainer>
         </div>
         <div {...toolbarProps}>
           <Sidebar.Button icon="database" active={true} />

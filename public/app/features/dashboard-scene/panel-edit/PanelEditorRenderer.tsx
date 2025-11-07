@@ -24,7 +24,7 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
   return (
     <>
       {/* <NavToolbarActions dashboard={dashboard} /> */}
-      <div className={cx(styles.pageContainer, controls && styles.pageContainerWithControls)}>
+      <div className={cx(styles.pageContainer)}>
         {controls && (
           <div className={styles.controlsWrapper}>
             <controls.Component model={controls} />
@@ -71,7 +71,7 @@ function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
   }
 
   return (
-    <div className={cx(styles.pageContainer, controls && styles.pageContainerWithControls)}>
+    <div className={styles.dataPane}>
       <div {...containerProps}>
         <div {...primaryProps} className={cx(primaryProps.className, isScrollingLayout && styles.fixedSizeViz)}>
           <VizWrapper panel={panel} tableView={tableView} />
@@ -140,22 +140,18 @@ function getStyles(theme: GrafanaTheme2) {
   const scrollReflowMediaQuery = '@media ' + scrollReflowMediaCondition;
   return {
     pageContainer: css({
-      display: 'grid',
-      position: 'relative',
-      gridTemplateAreas: `
-        "panels"`,
-      gridTemplateColumns: `1fr`,
-      gridTemplateRows: '1fr',
+      display: 'flex',
+      flexDirection: 'column',
+      flex: '1 1 0',
+      position: 'absolute',
+      width: '100%',
       height: '100%',
-      [scrollReflowMediaQuery]: {
-        gridTemplateColumns: `100%`,
-      },
+      overflow: 'hidden',
     }),
-    pageContainerWithControls: css({
-      gridTemplateAreas: `
-        "controls"
-        "panels"`,
-      gridTemplateRows: 'auto 1fr',
+    dataPane: css({
+      display: 'flex',
+      flexDirection: 'row',
+      flexGrow: 1,
     }),
     container: css({
       gridArea: 'panels',
@@ -174,7 +170,8 @@ function getStyles(theme: GrafanaTheme2) {
       display: 'flex',
       width: '100%',
       flexGrow: 1,
-      overflow: 'unset',
+      overflow: 'hidden',
+      minHeight: 0,
       gap: theme.spacing(2),
       [scrollReflowMediaQuery]: {
         height: 'auto',
