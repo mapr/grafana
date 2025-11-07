@@ -13,11 +13,12 @@ export interface Props {
   children?: ReactNode;
   isDocked?: boolean;
   position?: 'left' | 'right';
+  compact?: boolean;
 }
 
 export type SidebarPosition = 'left' | 'right';
 
-export function SidebarComp({ children, isDocked, position = 'right' }: Props) {
+export function SidebarComp({ children, isDocked, position = 'right', compact }: Props) {
   const styles = useStyles2(getStyles);
 
   return (
@@ -47,7 +48,7 @@ export function SiderbarToolbar({ children, isDocked, onDockChange, isPaneOpen }
         <SidebarButton
           icon={'web-section-alt'}
           onClick={onDockChange}
-          tooltip={isDocked ? 'Undock sidebar' : 'Dock sidebar'}
+          title={isDocked ? 'Undock sidebar' : 'Dock sidebar'}
         />
       )}
     </div>
@@ -72,9 +73,10 @@ export interface UseSideBarOptions {
   isPaneOpen?: boolean;
   position?: SidebarPosition;
   tabsMode?: boolean;
+  compact?: boolean;
 }
 
-export function useSiderbar({ isPaneOpen, position = 'right', tabsMode }: UseSideBarOptions) {
+export function useSiderbar({ isPaneOpen, position = 'right', tabsMode, compact = true }: UseSideBarOptions) {
   const [isDocked, setIsDocked] = React.useState(false);
 
   const styles = useStyles2(getStyles);
@@ -85,7 +87,7 @@ export function useSiderbar({ isPaneOpen, position = 'right', tabsMode }: UseSid
 
   const containerProps = {
     style: {
-      [prop]: isDocked && isPaneOpen ? '308px' : '55px',
+      [prop]: isDocked && isPaneOpen ? '344px' : compact ? '55px' : '68px',
     },
   };
 
@@ -113,7 +115,8 @@ export function useSiderbar({ isPaneOpen, position = 'right', tabsMode }: UseSid
         <SidebarButton
           icon={'web-section-alt'}
           onClick={onDockChange}
-          tooltip={isDocked ? 'Undock sidebar' : 'Dock sidebar'}
+          compact={compact}
+          title={isDocked ? 'Undock' : 'Dock'}
         />
       )}
     </>
@@ -156,11 +159,10 @@ export const getStyles = (theme: GrafanaTheme2) => {
       boxShadow: 'none',
     }),
     toolbar: css({
-      width: '48px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: theme.spacing(1, 0),
+      padding: theme.spacing(1, 1),
       flexGrow: 0,
       gap: theme.spacing(1),
     }),

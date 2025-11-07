@@ -113,6 +113,14 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
     // this.setState({ openView: 'settings' });
   };
 
+  onOpenView = (openView: string) => {
+    // if (openView === this.state.openView) {
+    //   openView = '';
+    // }
+
+    this.setState({ openView });
+  };
+
   onSetSearchQuery = (searchQuery: string) => {
     this.setState({ searchQuery });
   };
@@ -232,19 +240,19 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
         <Sidebar.Button
           icon="sliders-v-alt"
           active={openView === 'settings'}
-          onClick={() => model.setState({ openView: 'settings' })}
+          onClick={() => model.onOpenView('settings')}
           tooltip="All options"
         />
         <Sidebar.Button
           icon="palette"
           active={openView === 'presets'}
-          onClick={() => model.setState({ openView: 'presets' })}
+          onClick={() => model.onOpenView('presets')}
           tooltip="Visualization presets"
         />
         <Sidebar.Button
           icon="graph-bar"
           active={openView === 'viz-picker'}
-          onClick={() => model.setState({ openView: 'viz-picker' })}
+          onClick={() => model.onOpenView('viz-picker')}
           tooltip="Change visualization"
         />
         <Sidebar.Button icon="search" tooltip="Search for an option" />

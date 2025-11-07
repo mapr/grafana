@@ -18,6 +18,7 @@ const meta: Meta<typeof Sidebar> = {
   },
   args: {
     position: 'right',
+    compact: true,
   },
   argTypes: {},
 };
@@ -56,6 +57,7 @@ export const Example: StoryFn<typeof Sidebar> = (args) => {
   const { toolbarProps, containerProps, sidebarProps, dockButton, openPaneProps } = useSiderbar({
     isPaneOpen: !!openPane,
     position: args.position,
+    compact: args.compact,
   });
 
   return (
@@ -82,11 +84,30 @@ export const Example: StoryFn<typeof Sidebar> = (args) => {
             </div>
           )}
           <div {...toolbarProps}>
-            <Sidebar.Button icon="share-alt" tooltip="Share" />
-            <Sidebar.Button icon="info-circle" tooltip="Insights" />
+            <Sidebar.Button icon="share-alt" title="Share" toolbarPosition={args.position} compact={args.compact} />
+            <Sidebar.Button
+              icon="info-circle"
+              title="Insights"
+              toolbarPosition={args.position}
+              compact={args.compact}
+            />
             <Sidebar.Divider />
-            <Sidebar.Button icon="cog" active={openPane === 'settings'} onClick={() => togglePane('settings')} />
-            <Sidebar.Button icon="list-ui-alt" active={openPane === 'outline'} onClick={() => togglePane('outline')} />
+            <Sidebar.Button
+              icon="cog"
+              title="Settings"
+              active={openPane === 'settings'}
+              onClick={() => togglePane('settings')}
+              toolbarPosition={args.position}
+              compact={args.compact}
+            />
+            <Sidebar.Button
+              icon="list-ui-alt"
+              title="Outline"
+              active={openPane === 'outline'}
+              onClick={() => togglePane('outline')}
+              toolbarPosition={args.position}
+              compact={args.compact}
+            />
             {dockButton}
           </div>
         </div>
@@ -141,13 +162,13 @@ export const VerticalTabs: StoryFn = (args) => {
           <div {...toolbarProps}>
             <Sidebar.Button
               icon="database"
-              tooltip="Queries"
+              title="Queries"
               active={openPane === 'queries'}
               onClick={() => togglePane('queries')}
             />
             <Sidebar.Button
               icon="process"
-              tooltip="Transformations"
+              title="Transformations"
               active={openPane === 'transformations'}
               onClick={() => togglePane('transformations')}
             />
