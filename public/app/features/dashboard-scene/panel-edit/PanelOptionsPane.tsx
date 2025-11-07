@@ -50,6 +50,7 @@ export interface PanelOptionsPaneState extends SceneObjectState {
   searchQuery: string;
   listMode: OptionFilter;
   panelRef: SceneObjectRef<VizPanel>;
+  compact?: boolean;
 }
 
 interface PluginOptionsCache {
@@ -147,7 +148,7 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
 }
 
 function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPane>) {
-  const { openView = 'settings', searchQuery, listMode, panelRef } = model.useState();
+  const { openView = 'settings', searchQuery, listMode, panelRef, compact } = model.useState();
   const panel = panelRef.resolve();
   const { pluginId } = panel.useState();
   const { data } = sceneGraph.getData(panel).useState();
@@ -233,7 +234,7 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
           />
         </div>
       )}
-      <div {...toolbarProps}>
+      <div {...toolbarProps} onDoubleClick={() => model.setState({ compact: !compact })}>
         {/* <ToolbarButton icon="save" tooltip="Save" variant="primary" />
         <ToolbarButton icon="arrow-left" tooltip="Back to dashboard" />
         <Sidebar.Divider /> */}
@@ -241,21 +242,26 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
           icon="sliders-v-alt"
           active={openView === 'settings'}
           onClick={() => model.onOpenView('settings')}
-          tooltip="All options"
+          title="All options"
+          compact={compact}
         />
         <Sidebar.Button
           icon="palette"
           active={openView === 'presets'}
           onClick={() => model.onOpenView('presets')}
+          title="Presets"
           tooltip="Visualization presets"
+          compact={compact}
         />
         <Sidebar.Button
           icon="graph-bar"
           active={openView === 'viz-picker'}
           onClick={() => model.onOpenView('viz-picker')}
+          compact={compact}
+          title="Change"
           tooltip="Change visualization"
         />
-        <Sidebar.Button icon="search" tooltip="Search for an option" />
+        <Sidebar.Button icon="search" title="Search" compact={compact} tooltip="Search all options" />
       </div>
     </div>
   );

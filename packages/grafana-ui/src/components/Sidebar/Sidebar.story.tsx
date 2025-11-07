@@ -57,7 +57,7 @@ export const Example: StoryFn<typeof Sidebar> = (args) => {
   const { toolbarProps, containerProps, sidebarProps, dockButton, openPaneProps } = useSiderbar({
     isPaneOpen: !!openPane,
     position: args.position,
-    compact: args.compact,
+    compact: 
   });
 
   return (
@@ -168,11 +168,12 @@ export const VerticalTabs: StoryFn = (args) => {
             />
             <Sidebar.Button
               icon="process"
-              title="Transformations"
+              title="Data"
+              tooltip='Data transformations'
               active={openPane === 'transformations'}
               onClick={() => togglePane('transformations')}
             />
-            <Sidebar.Button icon="bell" />
+            <Sidebar.Button icon="bell" title='Alerts' />
             {dockButton}
           </div>
         </div>

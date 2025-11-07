@@ -16,11 +16,20 @@ export interface Props {
   active?: boolean;
   onClick?: () => void;
   title: string;
+  tooltip?: string;
   toolbarPosition?: SidebarPosition;
   compact?: boolean;
 }
 
-export function SidebarButton({ icon, active, onClick, title, toolbarPosition = 'right', compact }: Props) {
+export function SidebarButton({
+  icon,
+  active,
+  onClick,
+  title,
+  tooltip,
+  toolbarPosition = 'right',
+  compact = true,
+}: Props) {
   const styles = useStyles2(getStyles);
 
   const content = (
@@ -40,7 +49,7 @@ export function SidebarButton({ icon, active, onClick, title, toolbarPosition = 
 
   if (compact) {
     return (
-      <Tooltip content={title} placement={toolbarPosition === 'left' ? 'right' : 'left'}>
+      <Tooltip content={tooltip ?? title} placement={toolbarPosition === 'left' ? 'right' : 'left'}>
         {content}
       </Tooltip>
     );

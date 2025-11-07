@@ -26,6 +26,7 @@ export interface PanelDataPaneState extends SceneObjectState {
   tabs: PanelDataPaneTab[];
   tab: TabId;
   panelRef: SceneObjectRef<VizPanel>;
+  compact?: boolean;
 }
 
 export class PanelDataPane extends SceneObjectBase<PanelDataPaneState> {
@@ -69,7 +70,7 @@ export class PanelDataPane extends SceneObjectBase<PanelDataPaneState> {
 }
 
 function PanelDataPaneRendered({ model }: SceneComponentProps<PanelDataPane>) {
-  const { tab, tabs } = model.useState();
+  const { tab, tabs, compact = true } = model.useState();
   const styles = useStyles2(getStyles);
 
   if (!tabs || !tabs.length) {
@@ -81,6 +82,7 @@ function PanelDataPaneRendered({ model }: SceneComponentProps<PanelDataPane>) {
   const { toolbarProps, sidebarProps, openPaneProps } = useSiderbar({
     position: 'left',
     tabsMode: true,
+    compact: !!compact,
   });
 
   return (
@@ -91,10 +93,22 @@ function PanelDataPaneRendered({ model }: SceneComponentProps<PanelDataPane>) {
             <Container padding={'sm'}>{currentTab && <currentTab.Component model={currentTab} />}</Container>
           </ScrollContainer>
         </div>
-        <div {...toolbarProps}>
-          <Sidebar.Button icon="database" active={true} />
-          <Sidebar.Button icon="process" />
-          <Sidebar.Button icon="bell" />
+        <div {...toolbarProps} onDoubleClick={() => model.setState({ compact: !compact })}>
+          <Sidebar.Button icon="database" active={true} toolbarPosition="left" compact={compact} title="Queries" />
+          <Sidebar.Button
+            icon="process"
+            toolbarPosition="left"
+            compact={compact}
+            title="Data"
+            tooltip="Data transformations"
+          />
+          <Sidebar.Button
+            icon="bell"
+            toolbarPosition="left"
+            compact={compact}
+            title="Alerts"
+            tooltip="Link alert rule to panel"
+          />
         </div>
       </div>
     </div>
