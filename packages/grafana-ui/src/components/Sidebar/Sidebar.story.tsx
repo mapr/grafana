@@ -71,8 +71,16 @@ export const Example: StoryFn<typeof Sidebar> = (args) => {
           {renderBox('G')}
         </div>
         <div {...sidebarProps}>
-          {openPane === 'settings' && <div {...openPaneProps}>Settings</div>}
-          {openPane === 'outline' && <div {...openPaneProps}>Outline</div>}
+          {openPane === 'settings' && (
+            <div {...openPaneProps}>
+              <Sidebar.PaneHeader title="Settings" onClose={() => togglePane('')} />
+            </div>
+          )}
+          {openPane === 'outline' && (
+            <div {...openPaneProps}>
+              <Sidebar.PaneHeader title="Outline" onClose={() => togglePane('')} />
+            </div>
+          )}
           <div {...toolbarProps}>
             <Sidebar.Button icon="share-alt" tooltip="Share" />
             <Sidebar.Button icon="info-circle" tooltip="Insights" />
@@ -120,8 +128,16 @@ export const VerticalTabs: StoryFn = (args) => {
       <div className={containerStyle}>
         <div className={vizWrapper}>{renderBox('Visualization')}</div>
         <div {...sidebarProps}>
-          {openPane === 'queries' && <div {...openPaneProps}>Queries</div>}
-          {openPane === 'transformations' && <div {...openPaneProps}>Transformations</div>}
+          {openPane === 'queries' && (
+            <div {...openPaneProps}>
+              <Sidebar.PaneHeader title="Queries" />
+            </div>
+          )}
+          {openPane === 'transformations' && (
+            <div {...openPaneProps}>
+              <Sidebar.PaneHeader title="Transformations" />
+            </div>
+          )}
           <div {...toolbarProps}>
             <Sidebar.Button
               icon="database"

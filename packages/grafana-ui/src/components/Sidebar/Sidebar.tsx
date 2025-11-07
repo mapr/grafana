@@ -7,6 +7,7 @@ import { useStyles2 } from '../../themes/ThemeContext';
 
 import { SidebarButton } from './SidebarButton';
 import { SidebarOpenPane } from './SidebarOpenPane';
+import { SidebarPaneHeader } from './SidebarPaneHeader';
 
 export interface Props {
   children?: ReactNode;
@@ -64,6 +65,7 @@ export const Sidebar = Object.assign(SidebarComp, {
   Button: SidebarButton,
   OpenPane: SidebarOpenPane,
   Divider: SidebarDivider,
+  PaneHeader: SidebarPaneHeader,
 });
 
 export interface UseSideBarOptions {
@@ -171,7 +173,7 @@ export const getStyles = (theme: GrafanaTheme2) => {
       flexGrow: 1,
     }),
     openPane: css({
-      width: '260px',
+      width: '280px',
       flexGrow: 1,
       paddingBottom: theme.spacing(2),
     }),

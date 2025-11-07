@@ -33,7 +33,7 @@ export function VisualizationSuggestions({ searchQuery, onChange, data, panel, t
 
   return (
     // This div is needed in some places to make AutoSizer work
-    <div>
+    <div className={styles.wrapper}>
       <AutoSizer disableHeight style={{ width: '100%', height: '100%' }}>
         {({ width }) => {
           if (!width) {
@@ -93,6 +93,9 @@ function filterSuggestionsBySearch(
 
 const getStyles = (theme: GrafanaTheme2) => {
   return {
+    wrapper: css({
+      padding: theme.spacing(1),
+    }),
     heading: css({
       ...theme.typography.h5,
       margin: theme.spacing(0, 0.5, 1),

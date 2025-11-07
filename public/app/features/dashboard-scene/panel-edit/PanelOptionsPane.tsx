@@ -35,6 +35,7 @@ import {
   Sidebar,
 } from '@grafana/ui';
 import { OptionFilter } from 'app/features/dashboard/components/PanelEditor/OptionsPaneOptions';
+import { VisualizationSelectPaneTab } from 'app/features/dashboard/components/PanelEditor/types';
 import { getPanelPluginNotFound } from 'app/features/panel/components/PanelPluginError';
 import { VizTypeChangeDetails } from 'app/features/panel/components/VizTypePicker/types';
 import { getAllPanelPluginMeta } from 'app/features/panel/state/util';
@@ -45,7 +46,7 @@ import { INTERACTION_EVENT_NAME, INTERACTION_ITEM } from './interaction';
 import { useScrollReflowLimit } from './useScrollReflowLimit';
 
 export interface PanelOptionsPaneState extends SceneObjectState {
-  isVizPickerOpen?: boolean;
+  openView?: string;
   searchQuery: string;
   listMode: OptionFilter;
   panelRef: SceneObjectRef<VizPanel>;
@@ -59,13 +60,13 @@ interface PluginOptionsCache {
 export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
   private _cachedPluginOptions: Record<string, PluginOptionsCache | undefined> = {};
 
-  onToggleVizPicker = () => {
-    reportInteraction(INTERACTION_EVENT_NAME, {
-      item: INTERACTION_ITEM.TOGGLE_DROPDOWN,
-      open: !this.state.isVizPickerOpen,
-    });
-    this.setState({ isVizPickerOpen: !this.state.isVizPickerOpen });
-  };
+  // onToggleVizPicker = () => {
+  //   reportInteraction(INTERACTION_EVENT_NAME, {
+  //     item: INTERACTION_ITEM.TOGGLE_DROPDOWN,
+  //     open: !this.state.isVizPickerOpen,
+  //   });
+  //   this.setState({ isVizPickerOpen: !this.state.isVizPickerOpen });
+  // };
 
   onChangePanelPlugin = (options: VizTypeChangeDetails) => {
     const panel = this.state.panelRef.resolve();
@@ -109,7 +110,7 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
       panel.onFieldConfigChange(fieldConfigWithOverrides, true);
     }
 
-    this.onToggleVizPicker();
+    // this.setState({ openView: 'settings' });
   };
 
   onSetSearchQuery = (searchQuery: string) => {
@@ -138,7 +139,7 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
 }
 
 function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPane>) {
-  const { isVizPickerOpen, searchQuery, listMode, panelRef } = model.useState();
+  const { openView = 'settings', searchQuery, listMode, panelRef } = model.useState();
   const panel = panelRef.resolve();
   const { pluginId } = panel.useState();
   const { data } = sceneGraph.getData(panel).useState();
@@ -156,8 +157,9 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
 
   return (
     <div {...sidebarProps}>
-      {!isVizPickerOpen && (
+      {openView === 'settings' && (
         <div {...openPaneProps}>
+          <Sidebar.PaneHeader title="All options" onClose={() => model.setState({ openView: 'closed' })} />
           {/* <div className={styles.top}>
             <Field label={t('dashboard.panel-edit.visualization-button-label', 'Visualization')} noMargin>
               <Stack gap={1}>
@@ -201,22 +203,51 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
           </ScrollContainer>
         </div>
       )}
-      {isVizPickerOpen && (
-        <PanelVizTypePicker
-          panel={panel}
-          onChange={model.onChangePanelPlugin}
-          onClose={model.onToggleVizPicker}
-          data={data}
-        />
+      {openView === 'presets' && (
+        <div {...openPaneProps}>
+          <PanelVizTypePicker
+            panel={panel}
+            onChange={model.onChangePanelPlugin}
+            onClose={() => {}}
+            listMode={VisualizationSelectPaneTab.Presets}
+            data={data}
+          />
+        </div>
+      )}
+      {openView === 'viz-picker' && (
+        <div {...openPaneProps}>
+          <PanelVizTypePicker
+            panel={panel}
+            onChange={model.onChangePanelPlugin}
+            onClose={() => {}}
+            listMode={VisualizationSelectPaneTab.Suggestions}
+            data={data}
+          />
+        </div>
       )}
       <div {...toolbarProps}>
         {/* <ToolbarButton icon="save" tooltip="Save" variant="primary" />
         <ToolbarButton icon="arrow-left" tooltip="Back to dashboard" />
         <Sidebar.Divider /> */}
-        <Sidebar.Button icon="sliders-v-alt" active={true} tooltip="All options" />
-        <Sidebar.Button icon="graph-bar" />
-        <Sidebar.Button icon="search" />
-        <Sidebar.Button icon="bell" />
+        <Sidebar.Button
+          icon="sliders-v-alt"
+          active={openView === 'settings'}
+          onClick={() => model.setState({ openView: 'settings' })}
+          tooltip="All options"
+        />
+        <Sidebar.Button
+          icon="palette"
+          active={openView === 'presets'}
+          onClick={() => model.setState({ openView: 'presets' })}
+          tooltip="Visualization presets"
+        />
+        <Sidebar.Button
+          icon="graph-bar"
+          active={openView === 'viz-picker'}
+          onClick={() => model.setState({ openView: 'viz-picker' })}
+          tooltip="Change visualization"
+        />
+        <Sidebar.Button icon="search" tooltip="Search for an option" />
       </div>
     </div>
   );
