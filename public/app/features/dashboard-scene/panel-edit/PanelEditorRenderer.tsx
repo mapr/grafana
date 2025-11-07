@@ -31,27 +31,24 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
             <controls.Component model={controls} />
           </div>
         )}
-        <div className={styles.content}>
-          <div className={styles.body}>
-            <VizAndDataPane model={model} />
-          </div>
+        <div className={styles.body}>
+          <VizAndDataPane model={model} />
+        </div>
 
-          <div className={styles.optionsPane}>
+        {/* <div className={styles.optionsPane}>
             {optionsPane && <optionsPane.Component model={optionsPane} />}
             {!optionsPane && <Spinner />}
-          </div>
-        </div>
+          </div> */}
       </div>
     </>
   );
 }
 
 function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
-  const dashboard = getDashboardSceneFor(model);
-  const { dataPane, showLibraryPanelSaveModal, showLibraryPanelUnlinkModal, tableView } = model.useState();
+  const { dataPane, showLibraryPanelSaveModal, showLibraryPanelUnlinkModal, tableView, optionsPane } = model.useState();
   const panel = model.getPanel();
   const libraryPanel = getLibraryPanelBehavior(panel);
-  const { controls } = dashboard.useState();
+
   const styles = useStyles2(getStyles);
 
   const isScrollingLayout = useScrollReflowLimit();
@@ -75,7 +72,13 @@ function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
     <div className={styles.dataPane}>
       <div {...containerProps}>
         <div {...primaryProps} className={cx(primaryProps.className, isScrollingLayout && styles.fixedSizeViz)}>
-          <VizWrapper panel={panel} tableView={tableView} />
+          <div className={styles.content}>
+            <VizWrapper panel={panel} tableView={tableView} />
+            <div className={styles.optionsPane}>
+              {optionsPane && <optionsPane.Component model={optionsPane} />}
+              {!optionsPane && <Spinner />}
+            </div>
+          </div>
         </div>
         {showLibraryPanelSaveModal && libraryPanel && (
           <SaveLibraryVizPanelModal
@@ -106,6 +109,8 @@ function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
                     icon={'arrow-to-right'}
                     onClick={onToggleCollapse}
                     variant="secondary"
+                    fill="text"
+                    fullWidth={true}
                     size="sm"
                     className={styles.openDataPaneButton}
                     aria-label={t('dashboard-scene.viz-and-data-pane.aria-label-open-query-pane', 'Open query pane')}

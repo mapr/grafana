@@ -108,7 +108,7 @@ export function PanelDataPaneRenderer({
   };
 
   const currentTab = tabs.find((t) => t.tabId === tab);
-  const position = 'left';
+  const position = 'right';
 
   const { toolbarProps, sidebarProps, openPaneProps } = useSiderbar({
     position: position,
@@ -181,6 +181,7 @@ function getStyles(theme: GrafanaTheme2) {
       flexGrow: 1,
       minHeight: 0,
       height: '100%',
+      paddingLeft: theme.spacing(2),
     }),
     tabBorder: css({
       background: theme.colors.background.primary,
