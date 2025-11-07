@@ -51,8 +51,13 @@ export class PanelDataPane extends SceneObjectBase<PanelDataPaneState> {
     });
   }
 
-  public onChangeTab = (tab: PanelDataPaneTab) => {
-    this.setState({ tab: tab.tabId });
+  public onChangeTab = (tab: TabId) => {
+    if (this.state.tab === tab) {
+      this.setState({ tab: TabId.Closed });
+      return;
+    }
+
+    this.setState({ tab });
   };
 
   public getUrlState() {
@@ -80,7 +85,7 @@ function PanelDataPaneRendered({ model }: SceneComponentProps<PanelDataPane>) {
   const currentTab = tabs.find((t) => t.tabId === tab);
 
   const { toolbarProps, sidebarProps, openPaneProps } = useSiderbar({
-    position: 'left',
+    position: 'right',
     tabsMode: true,
     compact: !!compact,
   });
@@ -88,26 +93,39 @@ function PanelDataPaneRendered({ model }: SceneComponentProps<PanelDataPane>) {
   return (
     <div className={styles.dataPane} data-testid={selectors.components.PanelEditor.DataPane.content}>
       <div {...sidebarProps}>
-        <div {...openPaneProps}>
-          <ScrollContainer minHeight={'100%'}>
-            <Container padding={'sm'}>{currentTab && <currentTab.Component model={currentTab} />}</Container>
-          </ScrollContainer>
-        </div>
+        {currentTab && (
+          <div {...openPaneProps}>
+            <ScrollContainer minHeight={'100%'}>
+              <Container padding={'sm'}>{currentTab && <currentTab.Component model={currentTab} />}</Container>
+            </ScrollContainer>
+          </div>
+        )}
         <div {...toolbarProps} onDoubleClick={() => model.setState({ compact: !compact })}>
-          <Sidebar.Button icon="database" active={true} toolbarPosition="left" compact={compact} title="Queries" />
+          <Sidebar.Button
+            icon="database"
+            active={tab === TabId.Queries}
+            toolbarPosition="right"
+            compact={compact}
+            title="Queries"
+            onClick={() => model.onChangeTab(TabId.Queries)}
+          />
           <Sidebar.Button
             icon="process"
-            toolbarPosition="left"
+            toolbarPosition="right"
             compact={compact}
+            active={tab === TabId.Transformations}
             title="Data"
             tooltip="Data transformations"
+            onClick={() => model.onChangeTab(TabId.Transformations)}
           />
           <Sidebar.Button
             icon="bell"
-            toolbarPosition="left"
+            toolbarPosition="right"
             compact={compact}
+            active={tab === TabId.Alert}
             title="Alerts"
             tooltip="Link alert rule to panel"
+            onClick={() => model.onChangeTab(TabId.Alert)}
           />
         </div>
       </div>
@@ -137,7 +155,7 @@ function getStyles(theme: GrafanaTheme2) {
       flexGrow: 1,
       minHeight: 0,
       height: '100%',
-      width: '100%',
+      paddingLeft: theme.spacing(2),
     }),
     tabBorder: css({
       background: theme.colors.background.primary,

@@ -32,30 +32,22 @@ export function SidebarButton({
 }: Props) {
   const styles = useStyles2(getStyles);
 
-  const content = (
+  return (
     <div className={styles.buttonWrapper}>
-      <button
-        className={cx(styles.button, active && styles.active, toolbarPosition === 'left' && styles.leftButton)}
-        aria-label={title}
-        aria-expanded={active}
-        type="button"
-        onClick={onClick}
-      >
-        {renderIcon(icon)}
-      </button>
+      <Tooltip content={tooltip ?? title} placement={toolbarPosition === 'left' ? 'right' : 'left'}>
+        <button
+          className={cx(styles.button, active && styles.active, toolbarPosition === 'left' && styles.leftButton)}
+          aria-label={title}
+          aria-expanded={active}
+          type="button"
+          onClick={onClick}
+        >
+          {renderIcon(icon)}
+        </button>
+      </Tooltip>
       {!compact && <span className={cx(styles.title, active && styles.titleActive)}>{title}</span>}
     </div>
   );
-
-  if (compact) {
-    return (
-      <Tooltip content={tooltip ?? title} placement={toolbarPosition === 'left' ? 'right' : 'left'}>
-        {content}
-      </Tooltip>
-    );
-  }
-
-  return content;
 }
 
 function renderIcon(icon: IconName | React.ReactNode) {
@@ -86,6 +78,8 @@ const getStyles = (theme: GrafanaTheme2) => {
       color: theme.colors.text.secondary,
       background: 'transparent',
       border: `none`,
+      width: '100%',
+      justifyContent: 'center',
 
       [theme.transitions.handleMotion('no-preference', 'reduce')]: {
         transition: theme.transitions.create(['background-color', 'border-color', 'color'], {
@@ -145,7 +139,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: theme.spacing(0.5),
+      gap: theme.spacing(0),
     }),
     title: css({
       fontSize: theme.typography.bodySmall.fontSize,

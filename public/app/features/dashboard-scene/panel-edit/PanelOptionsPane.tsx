@@ -115,9 +115,9 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
   };
 
   onOpenView = (openView: string) => {
-    // if (openView === this.state.openView) {
-    //   openView = '';
-    // }
+    if (openView === this.state.openView) {
+      openView = '';
+    }
 
     this.setState({ openView });
   };
@@ -217,7 +217,7 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
           <PanelVizTypePicker
             panel={panel}
             onChange={model.onChangePanelPlugin}
-            onClose={() => {}}
+            onClose={() => model.setState({ openView: 'closed' })}
             listMode={VisualizationSelectPaneTab.Presets}
             data={data}
           />
@@ -242,7 +242,7 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
           icon="sliders-v-alt"
           active={openView === 'settings'}
           onClick={() => model.onOpenView('settings')}
-          title="All options"
+          title="Options"
           compact={compact}
         />
         <Sidebar.Button

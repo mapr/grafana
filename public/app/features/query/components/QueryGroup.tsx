@@ -16,7 +16,7 @@ import { selectors } from '@grafana/e2e-selectors';
 import { Trans, t } from '@grafana/i18n';
 import { getDataSourceSrv, locationService } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
-import { Button, InlineFormLabel, Modal, ScrollContainer, Stack, stylesFactory } from '@grafana/ui';
+import { Button, Field, IconButton, InlineFormLabel, Modal, ScrollContainer, Stack, stylesFactory } from '@grafana/ui';
 import { PluginHelp } from 'app/core/components/PluginHelp/PluginHelp';
 import config from 'app/core/config';
 import { backendSrv } from 'app/core/services/backend_srv';
@@ -366,7 +366,8 @@ const getStyles = stylesFactory(() => {
     }),
     dataSourceRow: css({
       display: 'flex',
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+      gap: theme.spacing.md,
     }),
     dataSourceRowItem: css({
       marginRight: theme.spacing.inlineFormMargin,
@@ -413,10 +414,8 @@ export function QueryGroupTopSection({
     <>
       <div data-testid={selectors.components.QueryTab.queryGroupTopSection}>
         <div className={styles.dataSourceRow}>
-          <InlineFormLabel htmlFor="data-source-picker" width={'auto'}>
-            <Trans i18nKey="query.query-group-top-section.data-source">Data source</Trans>
-          </InlineFormLabel>
-          <div className={styles.dataSourceRowItem}>
+          <Stack alignItems={'center'}>
+            <span>Queries to data source</span>
             <DataSourcePickerWithPrompt
               options={options}
               onChange={async (ds, defaultQueries) => {
@@ -424,10 +423,10 @@ export function QueryGroupTopSection({
               }}
               isDataSourceModalOpen={Boolean(locationService.getSearchObject().firstPanel)}
             />
-          </div>
+          </Stack>
           {dataSource && (
             <>
-              <div className={styles.dataSourceRowItem}>
+              {/* <div className={styles.dataSourceRowItem}>
                 <Button
                   variant="secondary"
                   icon="question-circle"
@@ -438,8 +437,8 @@ export function QueryGroupTopSection({
                   onClick={() => setIsHelpOpen(true)}
                   data-testid="query-tab-help-button"
                 />
-              </div>
-              <div className={styles.dataSourceRowItemOptions}>
+              </div> */}
+              {/* <div className={styles.dataSourceRowItemOptions}>
                 <QueryGroupOptionsEditor
                   options={options}
                   dataSource={dataSource}
@@ -459,7 +458,18 @@ export function QueryGroupTopSection({
                     <Trans i18nKey="query.query-group-top-section.query-inspector">Query inspector</Trans>
                   </Button>
                 </div>
-              )}
+              )} */}
+
+              <Stack flex={1} gap={1} direction="row" alignItems="center">
+                <Stack alignItems="center">
+                  <span>Max data points: {options.maxDataPoints ?? 'auto'}</span>
+                  <IconButton size="sm" name="pen" />
+                </Stack>
+                <Stack alignItems="center">
+                  <span>Min interval: {options.minInterval ?? 'auto'}</span>
+                  <IconButton size="sm" name="pen" />
+                </Stack>
+              </Stack>
             </>
           )}
         </div>

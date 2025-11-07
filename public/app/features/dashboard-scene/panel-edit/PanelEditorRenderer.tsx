@@ -30,15 +30,9 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
             <controls.Component model={controls} />
           </div>
         )}
-        <div className={styles.content}>
-          <div className={styles.body}>
-            <VizAndDataPane model={model} />
-          </div>
 
-          <div className={styles.optionsPane}>
-            {optionsPane && <optionsPane.Component model={optionsPane} />}
-            {!optionsPane && <Spinner />}
-          </div>
+        <div className={styles.body}>
+          <VizAndDataPane model={model} />
         </div>
       </div>
     </>
@@ -47,7 +41,7 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
 
 function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
   const dashboard = getDashboardSceneFor(model);
-  const { dataPane, showLibraryPanelSaveModal, showLibraryPanelUnlinkModal, tableView } = model.useState();
+  const { dataPane, showLibraryPanelSaveModal, showLibraryPanelUnlinkModal, tableView, optionsPane } = model.useState();
   const panel = model.getPanel();
   const libraryPanel = getLibraryPanelBehavior(panel);
   const { controls } = dashboard.useState();
@@ -74,7 +68,13 @@ function VizAndDataPane({ model }: SceneComponentProps<PanelEditor>) {
     <div className={styles.dataPane}>
       <div {...containerProps}>
         <div {...primaryProps} className={cx(primaryProps.className, isScrollingLayout && styles.fixedSizeViz)}>
-          <VizWrapper panel={panel} tableView={tableView} />
+          <div className={styles.content}>
+            <VizWrapper panel={panel} tableView={tableView} />
+            <div className={styles.optionsPane}>
+              {optionsPane && <optionsPane.Component model={optionsPane} />}
+              {!optionsPane && <Spinner />}
+            </div>
+          </div>
         </div>
         {showLibraryPanelSaveModal && libraryPanel && (
           <SaveLibraryVizPanelModal

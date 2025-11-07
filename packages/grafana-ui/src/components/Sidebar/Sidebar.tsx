@@ -164,7 +164,7 @@ export const getStyles = (theme: GrafanaTheme2) => {
       alignItems: 'center',
       padding: theme.spacing(1, 1),
       flexGrow: 0,
-      gap: theme.spacing(1),
+      gap: theme.spacing(1.5),
     }),
     divider: css({
       height: '1px',
