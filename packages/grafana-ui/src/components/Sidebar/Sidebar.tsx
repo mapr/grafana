@@ -87,7 +87,7 @@ export function useSiderbar({ isPaneOpen, position = 'right', tabsMode, compact 
 
   const containerProps = {
     style: {
-      [prop]: isDocked && isPaneOpen ? '344px' : compact ? '55px' : '68px',
+      [prop]: isDocked && isPaneOpen ? '350px' : compact ? '55px' : '68px',
     },
   };
 
