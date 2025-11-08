@@ -23,7 +23,7 @@ import {
   VizPanel,
   sceneGraph,
 } from '@grafana/scenes';
-import { ScrollContainer, ToolbarButton, useStyles2, useSiderbar, Sidebar } from '@grafana/ui';
+import { ScrollContainer, ToolbarButton, useStyles2, useSiderbar, Sidebar, Box } from '@grafana/ui';
 import { OptionFilter } from 'app/features/dashboard/components/PanelEditor/OptionsPaneOptions';
 import { VisualizationSelectPaneTab } from 'app/features/dashboard/components/PanelEditor/types';
 import { getPanelPluginNotFound } from 'app/features/panel/components/PanelPluginError';
@@ -160,7 +160,17 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
         <div {...openPaneProps}>
           <Sidebar.PaneHeader title="All options" onClose={() => model.setState({ openView: 'closed' })} />
           <ScrollContainer minHeight={isScrollingLayout ? 'max-content' : 0}>
-            <PanelOptions panel={panel} searchQuery={searchQuery} listMode={listMode} data={data} />
+            <PanelOptions panel={panel} searchQuery={searchQuery} listMode={listMode} data={data} quickMode={false} />
+          </ScrollContainer>
+        </div>
+      )}
+      {openView === 'quick' && (
+        <div {...openPaneProps}>
+          <Sidebar.PaneHeader title="Quick options" onClose={() => model.setState({ openView: 'closed' })} />
+          <ScrollContainer minHeight={isScrollingLayout ? 'max-content' : 0}>
+            <Box padding={2}>
+              <PanelOptions panel={panel} searchQuery={searchQuery} listMode={listMode} data={data} quickMode={true} />
+            </Box>
           </ScrollContainer>
         </div>
       )}

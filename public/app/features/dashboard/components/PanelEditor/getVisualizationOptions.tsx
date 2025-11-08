@@ -202,10 +202,11 @@ export interface OptionPaneRenderProps2 {
   plugin: PanelPlugin;
   data?: PanelData;
   instanceState: unknown;
+  quickMode?: boolean;
 }
 
 export function getVisualizationOptions2(props: OptionPaneRenderProps2): OptionsPaneCategoryDescriptor[] {
-  const { plugin, panel, data, eventBus, instanceState } = props;
+  const { plugin, panel, data, eventBus, instanceState, quickMode } = props;
 
   const categoryIndex: Record<string, OptionsPaneCategoryDescriptor> = {};
   const getOptionsPaneCategory = (categoryNames?: string[]): OptionsPaneCategoryDescriptor => {
@@ -282,6 +283,7 @@ export function getVisualizationOptions2(props: OptionPaneRenderProps2): Options
       new OptionsPaneItemDescriptor({
         title: fieldOption.name,
         id: htmlId,
+        quickMode: fieldOption.quickMode,
         description: fieldOption.description,
         overrides: getOptionOverrides(fieldOption, currentFieldConfig, data?.series),
         render: function renderEditor() {

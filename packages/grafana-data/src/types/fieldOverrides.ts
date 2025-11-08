@@ -100,6 +100,9 @@ export interface FieldConfigPropertyItem<TOptions = any, TValue = any, TSettings
   /** Hides option from the Field config tab */
   hideFromDefaults?: boolean;
 
+  /** Show in quick mode */
+  quickMode?: boolean;
+
   /** Indicates that option should not be available for the overrides */
   hideFromOverrides?: boolean;
 

@@ -21,7 +21,7 @@ import { vizPanelToPanel, transformSceneToSaveModel } from '../serialization/tra
 import { dashboardSceneGraph } from '../utils/dashboardSceneGraph';
 import { getDashboardSceneFor } from '../utils/utils';
 
-export function getPanelFrameOptions(panel: VizPanel): OptionsPaneCategoryDescriptor {
+export function getPanelFrameOptions(panel: VizPanel, quickMode?: boolean): OptionsPaneCategoryDescriptor {
   const descriptor = new OptionsPaneCategoryDescriptor({
     title: t('dashboard-scene.get-panel-frame-options.descriptor.title.panel-options', 'Panel options'),
     id: 'Panel options',
@@ -33,67 +33,70 @@ export function getPanelFrameOptions(panel: VizPanel): OptionsPaneCategoryDescri
   const dashboard = getDashboardSceneFor(panel);
   const layoutElement = panel.parent!;
 
-  descriptor
-    .addItem(
-      new OptionsPaneItemDescriptor({
-        title: t('dashboard-scene.get-panel-frame-options.title.title', 'Title'),
-        id: 'panel-frame-options-title',
-        value: panel.state.title,
-        popularRank: 1,
-        render: function renderTitle(descriptor) {
-          return <PanelFrameTitleInput id={descriptor.props.id} panel={panel} />;
-        },
-        addon: config.featureToggles.dashgpt && (
-          <GenAIPanelTitleButton
-            onGenerate={(title) => editPanelTitleAction(panel, title)}
-            panel={vizPanelToPanel(panel)}
-            dashboard={transformSceneToSaveModel(dashboard)}
-          />
-        ),
-      })
-    )
-    .addItem(
-      new OptionsPaneItemDescriptor({
-        title: t('dashboard-scene.get-panel-frame-options.title.description', 'Description'),
-        id: 'panel-frame-options-description',
-        value: panel.state.description,
-        render: function renderDescription(descriptor) {
-          return <PanelDescriptionTextArea id={descriptor.props.id} panel={panel} />;
-        },
-        addon: config.featureToggles.dashgpt && (
-          <GenAIPanelDescriptionButton
-            onGenerate={(description) => panel.setState({ description })}
-            panel={vizPanelToPanel(panel)}
-          />
-        ),
-      })
-    )
-    .addItem(
-      new OptionsPaneItemDescriptor({
-        title: t('dashboard-scene.get-panel-frame-options.title.transparent-background', 'Transparent background'),
-        id: 'panel-frame-options-transparent-bg',
-        render: function renderTransparent(descriptor) {
-          return <PanelBackgroundSwitch id={descriptor.props.id} panel={panel} />;
-        },
-      })
-    )
-    .addCategory(
-      new OptionsPaneCategoryDescriptor({
-        title: t('dashboard-scene.get-panel-frame-options.title.panel-links', 'Panel links'),
-        id: 'Panel links',
-        isOpenDefault: false,
-        itemsCount: links?.length,
-      }).addItem(
+  descriptor.addItem(
+    new OptionsPaneItemDescriptor({
+      title: t('dashboard-scene.get-panel-frame-options.title.title', 'Title'),
+      id: 'panel-frame-options-title',
+      value: panel.state.title,
+      popularRank: 1,
+      render: function renderTitle(descriptor) {
+        return <PanelFrameTitleInput id={descriptor.props.id} panel={panel} />;
+      },
+      addon: config.featureToggles.dashgpt && (
+        <GenAIPanelTitleButton
+          onGenerate={(title) => editPanelTitleAction(panel, title)}
+          panel={vizPanelToPanel(panel)}
+          dashboard={transformSceneToSaveModel(dashboard)}
+        />
+      ),
+    })
+  );
+
+  if (!quickMode) {
+    descriptor
+      .addItem(
         new OptionsPaneItemDescriptor({
-          title: t('dashboard-scene.get-panel-frame-options.title.panel-links', 'Panel links'),
-          id: 'panel-frame-options-panel-links',
-          render: () => <ScenePanelLinksEditor panelLinks={panelLinksObject ?? undefined} />,
+          title: t('dashboard-scene.get-panel-frame-options.title.description', 'Description'),
+          id: 'panel-frame-options-description',
+          value: panel.state.description,
+          render: function renderDescription(descriptor) {
+            return <PanelDescriptionTextArea id={descriptor.props.id} panel={panel} />;
+          },
+          addon: config.featureToggles.dashgpt && (
+            <GenAIPanelDescriptionButton
+              onGenerate={(description) => panel.setState({ description })}
+              panel={vizPanelToPanel(panel)}
+            />
+          ),
         })
       )
-    );
+      .addItem(
+        new OptionsPaneItemDescriptor({
+          title: t('dashboard-scene.get-panel-frame-options.title.transparent-background', 'Transparent background'),
+          id: 'panel-frame-options-transparent-bg',
+          render: function renderTransparent(descriptor) {
+            return <PanelBackgroundSwitch id={descriptor.props.id} panel={panel} />;
+          },
+        })
+      )
+      .addCategory(
+        new OptionsPaneCategoryDescriptor({
+          title: t('dashboard-scene.get-panel-frame-options.title.panel-links', 'Panel links'),
+          id: 'Panel links',
+          isOpenDefault: false,
+          itemsCount: links?.length,
+        }).addItem(
+          new OptionsPaneItemDescriptor({
+            title: t('dashboard-scene.get-panel-frame-options.title.panel-links', 'Panel links'),
+            id: 'panel-frame-options-panel-links',
+            render: () => <ScenePanelLinksEditor panelLinks={panelLinksObject ?? undefined} />,
+          })
+        )
+      );
 
-  if (isDashboardLayoutItem(layoutElement)) {
-    layoutElement.getOptions?.().forEach((category) => descriptor.addCategory(category));
+    if (isDashboardLayoutItem(layoutElement)) {
+      layoutElement.getOptions?.().forEach((category) => descriptor.addCategory(category));
+    }
   }
 
   return descriptor;

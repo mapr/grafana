@@ -20,12 +20,13 @@ interface Props {
   searchQuery: string;
   listMode: OptionFilter;
   data?: PanelData;
+  quickMode?: boolean;
 }
 
-export const PanelOptions = React.memo<Props>(({ panel, searchQuery, listMode, data }) => {
+export const PanelOptions = React.memo<Props>(({ panel, searchQuery, listMode, data, quickMode }) => {
   const { options, fieldConfig, _pluginInstanceState } = panel.useState();
 
-  const panelFrameOptions = useMemo(() => getPanelFrameOptions(panel), [panel]);
+  const panelFrameOptions = useMemo(() => getPanelFrameOptions(panel, quickMode), [panel, quickMode]);
 
   const visualizationOptions = useMemo(() => {
     const plugin = panel.getPlugin();
@@ -39,9 +40,10 @@ export const PanelOptions = React.memo<Props>(({ panel, searchQuery, listMode, d
       plugin: plugin,
       eventBus: panel.getPanelContext().eventBus,
       instanceState: _pluginInstanceState,
+      quickMode,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, panel, options, fieldConfig, _pluginInstanceState]);
+  }, [data, panel, options, fieldConfig, _pluginInstanceState, quickMode]);
 
   const libraryPanelOptions = useMemo(() => {
     if (panel instanceof VizPanel && isLibraryPanel(panel)) {
@@ -89,14 +91,28 @@ export const PanelOptions = React.memo<Props>(({ panel, searchQuery, listMode, d
           // Library Panel options first
           mainBoxElements.push(libraryPanelOptions.render());
         }
-        mainBoxElements.push(panelFrameOptions.render());
 
-        for (const item of visualizationOptions ?? []) {
-          mainBoxElements.push(item.render());
-        }
+        if (quickMode) {
+          for (const item of panelFrameOptions.items) {
+            mainBoxElements.push(item.render());
+          }
+          for (const cat of visualizationOptions ?? []) {
+            for (const item of cat.items) {
+              if (item.props.quickMode) {
+                mainBoxElements.push(item.render());
+              }
+            }
+          }
+        } else {
+          mainBoxElements.push(panelFrameOptions.render());
 
-        for (const item of justOverrides) {
-          mainBoxElements.push(item.render());
+          for (const item of visualizationOptions ?? []) {
+            mainBoxElements.push(item.render());
+          }
+
+          for (const item of justOverrides) {
+            mainBoxElements.push(item.render());
+          }
         }
         break;
       case OptionFilter.Overrides:

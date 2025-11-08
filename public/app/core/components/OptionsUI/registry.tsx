@@ -248,6 +248,7 @@ export const getAllStandardFieldConfigs = () => {
     path: 'unit',
     name: t('options-ui.registry.standard-field-configs.name-unit', 'Unit'),
     description: '',
+    quickMode: true,
 
     editor: standardEditorsRegistry.get('unit').editor,
     override: standardEditorsRegistry.get('unit').editor,

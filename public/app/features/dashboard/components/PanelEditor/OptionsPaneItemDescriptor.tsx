@@ -25,6 +25,7 @@ export interface OptionsPaneItemInfo {
   addon?: ReactNode;
   /** Must be unique on the page! */
   id: string;
+  quickMode?: boolean;
 }
 
 /**
