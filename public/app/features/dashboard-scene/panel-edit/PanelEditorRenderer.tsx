@@ -1,15 +1,11 @@
 import { css, cx } from '@emotion/css';
 import { useEffect, useState } from 'react';
-import { options } from 'yargs';
 
 import { GrafanaTheme2 } from '@grafana/data';
-import { selectors } from '@grafana/e2e-selectors';
 import { t } from '@grafana/i18n';
 import { SceneComponentProps, VizPanel } from '@grafana/scenes';
 import { Button, Spinner, useStyles2 } from '@grafana/ui';
-import { showOptions } from 'app/features/variables/pickers/OptionsPicker/reducer';
 
-import { NavToolbarActions } from '../scene/NavToolbarActions';
 import { UnlinkModal } from '../scene/UnlinkModal';
 import { getDashboardSceneFor, getLibraryPanelBehavior } from '../utils/utils';
 
@@ -24,7 +20,7 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
   const { controls } = dashboard.useState();
   const { optionsPane } = model.useState();
   const styles = useStyles2(getStyles);
-  const [openView, setOpenView] = useState(false);
+  const [openView, setOpenView] = useState(true);
 
   useEffect(() => {
     if (optionsPane) {
@@ -44,29 +40,24 @@ export function PanelEditorRenderer({ model }: SceneComponentProps<PanelEditor>)
             <controls.Component model={controls} />
           </div>
         )}
-        {!openView && (
-          <div className={styles.body}>
-            <VizAndDataPane model={model} showOptionsPane={true} />
-          </div>
-        )}
-        {openView && (
-          <div className={styles.content}>
-            <div className={styles.body}>
-              <VizAndDataPane model={model} showOptionsPane={false} />
-            </div>
 
+        <div className={styles.content}>
+          <div className={styles.body}>
+            <VizAndDataPane model={model} optionsPaneOpen={openView} />
+          </div>
+          {openView && (
             <div className={styles.optionsPane}>
               {optionsPane && <optionsPane.Component model={optionsPane} />}
               {!optionsPane && <Spinner />}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );
 }
 
-function VizAndDataPane({ model, showOptionsPane }: { model: PanelEditor; showOptionsPane?: boolean }) {
+function VizAndDataPane({ model, optionsPaneOpen }: { model: PanelEditor; optionsPaneOpen?: boolean }) {
   const dashboard = getDashboardSceneFor(model);
   const { dataPane, showLibraryPanelSaveModal, showLibraryPanelUnlinkModal, tableView, optionsPane } = model.useState();
   const panel = model.getPanel();
@@ -95,7 +86,7 @@ function VizAndDataPane({ model, showOptionsPane }: { model: PanelEditor; showOp
     <div className={styles.dataPane}>
       <div {...containerProps}>
         <div {...primaryProps} className={cx(primaryProps.className, isScrollingLayout && styles.fixedSizeViz)}>
-          {showOptionsPane && (
+          {!optionsPaneOpen && (
             <div className={styles.content}>
               <VizWrapper panel={panel} tableView={tableView} />
               <div className={styles.optionsPane}>
@@ -104,7 +95,7 @@ function VizAndDataPane({ model, showOptionsPane }: { model: PanelEditor; showOp
               </div>
             </div>
           )}
-          {!showOptionsPane && <VizWrapper panel={panel} tableView={tableView} />}
+          {optionsPaneOpen && <VizWrapper panel={panel} tableView={tableView} />}
         </div>
         {showLibraryPanelSaveModal && libraryPanel && (
           <SaveLibraryVizPanelModal
@@ -135,6 +126,7 @@ function VizAndDataPane({ model, showOptionsPane }: { model: PanelEditor; showOp
                     icon={'arrow-to-right'}
                     onClick={onToggleCollapse}
                     variant="secondary"
+                    fullWidth={true}
                     size="sm"
                     className={styles.openDataPaneButton}
                     aria-label={t('dashboard-scene.viz-and-data-pane.aria-label-open-query-pane', 'Open query pane')}
@@ -145,7 +137,7 @@ function VizAndDataPane({ model, showOptionsPane }: { model: PanelEditor; showOp
                 <PanelDataPaneRenderer
                   model={dataPane}
                   onToggleCollapse={onToggleCollapse}
-                  collapsed={splitterState.collapsed}
+                  optionsPaneOpen={optionsPaneOpen}
                 />
               )}
             </div>

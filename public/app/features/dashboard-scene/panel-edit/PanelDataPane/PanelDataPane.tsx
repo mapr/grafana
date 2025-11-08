@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { useEffect } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
@@ -77,21 +77,21 @@ export class PanelDataPane extends SceneObjectBase<PanelDataPaneState> {
 
 export function PanelDataPaneRenderer({
   model,
-  collapsed,
   onToggleCollapse,
+  optionsPaneOpen,
 }: {
   model: PanelDataPane;
-  collapsed?: boolean;
   onToggleCollapse?: () => void;
+  optionsPaneOpen?: boolean;
 }) {
-  const { tab, tabs, compact = true } = useSceneObjectState(model, { shouldActivateOrKeepAlive: true });
+  const { tab, tabs, compact = false } = useSceneObjectState(model, { shouldActivateOrKeepAlive: true });
   const styles = useStyles2(getStyles);
 
   useEffect(() => {
     if (tab === TabId.Closed) {
       model.setState({ tab: TabId.Queries });
     }
-  }, [tab]);
+  }, [tab, model]);
 
   if (!tabs || !tabs.length) {
     return;
@@ -117,7 +117,10 @@ export function PanelDataPaneRenderer({
   });
 
   return (
-    <div className={styles.dataPane} data-testid={selectors.components.PanelEditor.DataPane.content}>
+    <div
+      className={cx(styles.dataPane, optionsPaneOpen && styles.dataPaneWithOptionsPane)}
+      data-testid={selectors.components.PanelEditor.DataPane.content}
+    >
       <div {...sidebarProps}>
         {currentTab && (
           <div {...openPaneProps}>
@@ -182,6 +185,9 @@ function getStyles(theme: GrafanaTheme2) {
       minHeight: 0,
       height: '100%',
       paddingLeft: theme.spacing(2),
+    }),
+    dataPaneWithOptionsPane: css({
+      borderRight: `1px solid ${theme.colors.border.weak}`,
     }),
     tabBorder: css({
       background: theme.colors.background.primary,

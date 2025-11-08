@@ -96,7 +96,7 @@ export function DashboardEditPaneSplitter({ dashboard, isEditing, body, controls
             editPane.clearSelection();
           }}
         >
-          <NavToolbarActions dashboard={dashboard} />
+          {/* <NavToolbarActions dashboard={dashboard} /> */}
           <div className={cx(!isEditing && styles.controlsWrapperSticky)}>{controls}</div>
           <div className={styles.bodyWrapper}>
             <div

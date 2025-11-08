@@ -415,7 +415,7 @@ export function QueryGroupTopSection({
       <div data-testid={selectors.components.QueryTab.queryGroupTopSection}>
         <div className={styles.dataSourceRow}>
           <Stack alignItems={'center'}>
-            <span>Queries to data source</span>
+            <span>Data source</span>
             <DataSourcePickerWithPrompt
               options={options}
               onChange={async (ds, defaultQueries) => {

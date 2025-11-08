@@ -116,7 +116,7 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
 
   onOpenView = (openView: string) => {
     if (openView === this.state.openView) {
-      openView = '';
+      openView = 'closed';
     }
 
     this.setState({ openView });
@@ -148,7 +148,7 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
 }
 
 function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPane>) {
-  const { openView = 'settings', searchQuery, listMode, panelRef, compact } = model.useState();
+  const { openView = 'settings', searchQuery, listMode, panelRef, compact = false } = model.useState();
   const panel = panelRef.resolve();
   const { pluginId } = panel.useState();
   const { data } = sceneGraph.getData(panel).useState();
@@ -169,44 +169,6 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
       {openView === 'settings' && (
         <div {...openPaneProps}>
           <Sidebar.PaneHeader title="All options" onClose={() => model.setState({ openView: 'closed' })} />
-          {/* <div className={styles.top}>
-            <Field label={t('dashboard.panel-edit.visualization-button-label', 'Visualization')} noMargin>
-              <Stack gap={1}>
-                <VisualizationButton pluginId={pluginId} onOpen={model.onToggleVizPicker} />
-                <Button
-                  icon="search"
-                  variant="secondary"
-                  onClick={setIsSearchingOptions}
-                  tooltip={t('dashboard.panel-edit.visualization-button-tooltip', 'Search options')}
-                />
-                {hasFieldConfig && (
-                  <ToolbarButton
-                    icon="filter"
-                    tooltip={t('dashboard.panel-edit.only-overrides-button-tooltip', 'Show only overrides')}
-                    variant={onlyOverrides ? 'active' : 'canvas'}
-                    onClick={() => {
-                      model.onSetListMode(onlyOverrides ? OptionFilter.All : OptionFilter.Overrides);
-                    }}
-                  />
-                )}
-              </Stack>
-            </Field>
-
-            {isSearchingOptions && (
-              <FilterInput
-                className={styles.searchOptions}
-                value={searchQuery}
-                placeholder={t('dashboard.panel-edit.placeholder-search-options', 'Search options')}
-                onChange={model.onSetSearchQuery}
-                autoFocus={true}
-                onBlur={() => {
-                  if (searchQuery.length === 0) {
-                    setIsSearchingOptions(false);
-                  }
-                }}
-              />
-            )}
-          </div> */}
           <ScrollContainer minHeight={isScrollingLayout ? 'max-content' : 0}>
             <PanelOptions panel={panel} searchQuery={searchQuery} listMode={listMode} data={data} />
           </ScrollContainer>
@@ -239,6 +201,14 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
         <ToolbarButton icon="arrow-left" tooltip="Back to dashboard" />
         <Sidebar.Divider /> */}
         <Sidebar.Button
+          icon="rocket"
+          active={openView === 'quick'}
+          onClick={() => model.onOpenView('quick')}
+          title="Quick"
+          tooltip="Quick options"
+          compact={compact}
+        />
+        <Sidebar.Button
           icon="sliders-v-alt"
           active={openView === 'settings'}
           onClick={() => model.onOpenView('settings')}
@@ -261,7 +231,7 @@ function PanelOptionsPaneComponent({ model }: SceneComponentProps<PanelOptionsPa
           title="Change"
           tooltip="Change visualization"
         />
-        <Sidebar.Button icon="search" title="Search" compact={compact} tooltip="Search all options" />
+        {/* <Sidebar.Button icon="search" title="Search" compact={compact} tooltip="Search all options" /> */}
       </div>
     </div>
   );

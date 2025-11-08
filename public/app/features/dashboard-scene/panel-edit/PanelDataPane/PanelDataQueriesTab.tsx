@@ -369,16 +369,6 @@ export function PanelDataQueriesTabRendered({ model }: SceneComponentProps<Panel
 
   return (
     <div data-testid={selectors.components.QueryTab.content}>
-      <QueryGroupTopSection
-        data={data}
-        dsSettings={dsSettings}
-        dataSource={datasource}
-        options={model.buildQueryOptions()}
-        onDataSourceChange={model.onChangeDataSource}
-        onOptionsChange={model.onQueryOptionsChange}
-        onOpenQueryInspector={model.onOpenInspector}
-      />
-
       <QueryEditorRows
         data={data}
         queries={queries}
@@ -389,7 +379,15 @@ export function PanelDataQueriesTabRendered({ model }: SceneComponentProps<Panel
         onUpdateDatasources={queryLibraryEnabled ? model.updateDatasourceIfNeeded : undefined}
         app={CoreApp.PanelEditor}
       />
-
+      <QueryGroupTopSection
+        data={data}
+        dsSettings={dsSettings}
+        dataSource={datasource}
+        options={model.buildQueryOptions()}
+        onDataSourceChange={model.onChangeDataSource}
+        onOptionsChange={model.onQueryOptionsChange}
+        onOpenQueryInspector={model.onOpenInspector}
+      />
       <Stack gap={2}>
         {showAddButton && (
           <>
