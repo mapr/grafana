@@ -12,8 +12,7 @@ export function useEditableElement(
 ): EditableDashboardElement | undefined {
   return useMemo(() => {
     if (!selection) {
-      const dashboard = getDashboardSceneFor(editPane);
-      return new ElementSelection([[dashboard.state.uid!, dashboard.getRef()]]).createSelectionElement();
+      return undefined;
     }
 
     return selection.createSelectionElement();

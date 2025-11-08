@@ -23,17 +23,7 @@ import {
   VizPanel,
   sceneGraph,
 } from '@grafana/scenes';
-import {
-  Button,
-  FilterInput,
-  ScrollContainer,
-  Stack,
-  ToolbarButton,
-  useStyles2,
-  Field,
-  useSiderbar,
-  Sidebar,
-} from '@grafana/ui';
+import { ScrollContainer, ToolbarButton, useStyles2, useSiderbar, Sidebar } from '@grafana/ui';
 import { OptionFilter } from 'app/features/dashboard/components/PanelEditor/OptionsPaneOptions';
 import { VisualizationSelectPaneTab } from 'app/features/dashboard/components/PanelEditor/types';
 import { getPanelPluginNotFound } from 'app/features/panel/components/PanelPluginError';
@@ -97,7 +87,7 @@ export class PanelOptionsPane extends SceneObjectBase<PanelOptionsPaneState> {
       newFieldConfig = restoreCustomOverrideRules(newFieldConfig, cachedFieldConfig);
     }
 
-    panel.changePluginType(pluginId, cachedOptions, newFieldConfig);
+    panel.changePluginType(pluginId, options.options, newFieldConfig);
 
     if (options.options) {
       panel.onOptionsChange(options.options, true);

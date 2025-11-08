@@ -45,6 +45,11 @@ export function PanelVizTypePicker({ panel, data, onChange, onClose, listMode }:
 
   const panelModel = useMemo(() => new PanelModelCompatibilityWrapper(panel), [panel]);
 
+  const onPresetSelected = (options: VizTypeChangeDetails) => {
+    onChange(options);
+    // onClose();
+  };
+
   return (
     <div className={styles.wrapper}>
       {listMode === VisualizationSelectPaneTab.Presets && (
@@ -91,19 +96,21 @@ export function PanelVizTypePicker({ panel, data, onChange, onClose, listMode }:
         )}
         {listMode === VisualizationSelectPaneTab.Suggestions && (
           <VisualizationSuggestions
-            onChange={onChange}
+            onChange={onPresetSelected}
             trackSearch={trackSearch}
             searchQuery={searchQuery}
             panel={panelModel}
+            presets={false}
             data={data}
           />
         )}
         {listMode === VisualizationSelectPaneTab.Presets && (
           <VisualizationSuggestions
-            onChange={onChange}
+            onChange={onPresetSelected}
             trackSearch={trackSearch}
             searchQuery={searchQuery}
             panel={panelModel}
+            presets={true}
             data={data}
           />
         )}

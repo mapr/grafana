@@ -244,6 +244,8 @@ export interface VisualizationSuggestion<TOptions = any, TFieldConfig = any> {
   };
   /** A value between 0-100 how suitable suggestion is */
   score?: VisualizationSuggestionScore;
+  /** If this suggestion is a preset */
+  isPreset?: boolean;
 }
 
 /**

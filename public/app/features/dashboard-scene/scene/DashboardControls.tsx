@@ -193,6 +193,11 @@ function DashboardControlsRenderer({ model }: SceneComponentProps<DashboardContr
           <Button variant="primary">Save</Button>
         </>
       )}
+      {!editPanel && (
+        <Button variant="primary" icon="share-alt">
+          Share
+        </Button>
+      )}
       {showDebugger && <SceneDebugger scene={model} key={'scene-debugger'} />}
     </div>
   );

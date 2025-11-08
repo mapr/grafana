@@ -18,7 +18,7 @@ import { SuggestionName } from 'app/types/suggestions';
 import { Options } from './panelcfg.gen';
 
 export class TimeSeriesSuggestionsSupplier {
-  getSuggestionsForData(builder: VisualizationSuggestionsBuilder) {
+  getSuggestionsForData(builder: VisualizationSuggestionsBuilder, presets: boolean) {
     const { dataSummary } = builder;
 
     if (!dataSummary.hasTimeField || !dataSummary.hasNumberField || dataSummary.rowCountTotal < 2) {
@@ -53,12 +53,11 @@ export class TimeSeriesSuggestionsSupplier {
 
     const maxBarsCount = 100;
 
-    list.append({
-      name: SuggestionName.LineChart,
-    });
+    list.append({ name: SuggestionName.LineChart });
 
     if (dataSummary.rowCountMax < 200) {
       list.append({
+        isPreset: true,
         name: SuggestionName.LineChartSmooth,
         fieldConfig: {
           defaults: {
@@ -74,6 +73,7 @@ export class TimeSeriesSuggestionsSupplier {
     // Single series suggestions
     if (dataSummary.numberFieldCount === 1) {
       list.append({
+        isPreset: true,
         name: SuggestionName.AreaChart,
         fieldConfig: {
           defaults: {
@@ -86,6 +86,7 @@ export class TimeSeriesSuggestionsSupplier {
       });
 
       list.append({
+        isPreset: true,
         name: SuggestionName.LineChartGradientColorScheme,
         fieldConfig: {
           defaults: {
@@ -120,6 +121,7 @@ export class TimeSeriesSuggestionsSupplier {
         });
 
         list.append({
+          isPreset: true,
           name: SuggestionName.BarChartGradientColorScheme,
           fieldConfig: {
             defaults: {
@@ -160,6 +162,7 @@ export class TimeSeriesSuggestionsSupplier {
     });
 
     list.append({
+      isPreset: true,
       name: SuggestionName.AreaChartStackedPercent,
       fieldConfig: {
         defaults: {
@@ -196,6 +199,7 @@ export class TimeSeriesSuggestionsSupplier {
       });
 
       list.append({
+        isPreset: true,
         name: SuggestionName.BarChartStackedPercent,
         fieldConfig: {
           defaults: {

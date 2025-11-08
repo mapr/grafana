@@ -16,13 +16,14 @@ export interface Props {
   searchQuery: string;
   onChange: (options: VizTypeChangeDetails) => void;
   data?: PanelData;
-  panel?: PanelModel;
+  panel: PanelModel;
+  presets: boolean;
   trackSearch?: (q: string, count: number) => void;
 }
 
-export function VisualizationSuggestions({ searchQuery, onChange, data, panel, trackSearch }: Props) {
+export function VisualizationSuggestions({ searchQuery, onChange, data, panel, presets, trackSearch }: Props) {
   const styles = useStyles2(getStyles);
-  const { value: suggestions } = useAsync(() => getAllSuggestions(data, panel), [data, panel]);
+  const { value: suggestions } = useAsync(() => getAllSuggestions(data, panel, presets), [data, panel, presets]);
   const filteredSuggestions = useMemo(() => {
     const result = filterSuggestionsBySearch(searchQuery, suggestions);
     if (trackSearch) {

@@ -5,9 +5,20 @@ import { useLocalStorage } from 'react-use';
 import { GrafanaTheme2 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { Trans, t } from '@grafana/i18n';
+import { FlexItem } from '@grafana/plugin-ui';
 import { useSceneObjectState } from '@grafana/scenes';
-import { useStyles2, useSplitter, ToolbarButton, ScrollContainer, Text, Icon, clearButtonStyles } from '@grafana/ui';
+import {
+  useStyles2,
+  useSplitter,
+  ToolbarButton,
+  ScrollContainer,
+  Text,
+  Icon,
+  clearButtonStyles,
+  Sidebar,
+} from '@grafana/ui';
 
+import { DashboardScene } from '../scene/DashboardScene';
 import { DashboardInteractions } from '../utils/interactions';
 
 import { DashboardEditPane } from './DashboardEditPane';
@@ -17,124 +28,105 @@ import { useEditableElement } from './useEditableElement';
 
 export interface Props {
   editPane: DashboardEditPane;
-  isEditPaneCollapsed: boolean;
-  openOverlay?: boolean;
-  onToggleCollapse: () => void;
+  dashboard: DashboardScene;
+  toolbarProps: any;
+  openPaneProps: any;
+  isDocked: boolean;
+  onDockChange: (docked: boolean) => void;
 }
 
 /**
  * Making the EditPane rendering completely standalone (not using editPane.Component) in order to pass custom react props
  */
-export function DashboardEditPaneRenderer({ editPane, isEditPaneCollapsed, onToggleCollapse, openOverlay }: Props) {
-  const { selection } = useSceneObjectState(editPane, { shouldActivateOrKeepAlive: true });
+export function DashboardEditPaneRenderer({
+  editPane,
+  dashboard,
+  toolbarProps,
+  openPaneProps,
+  isDocked,
+  onDockChange,
+}: Props) {
+  const { selection, openView } = useSceneObjectState(editPane, { shouldActivateOrKeepAlive: true });
+  const { isEditing } = dashboard.useState();
   const styles = useStyles2(getStyles);
-  const clearButton = useStyles2(clearButtonStyles);
   const editableElement = useEditableElement(selection, editPane);
   const selectedObject = selection?.getFirstObject();
-
   const isNewElement = selection?.isNewElement() ?? false;
-  const [outlineCollapsed, setOutlineCollapsed] = useLocalStorage(
-    'grafana.dashboard.edit-pane.outline.collapsed',
-    true
-  );
-  const [outlinePaneSize = 0.4, setOutlinePaneSize] = useLocalStorage('grafana.dashboard.edit-pane.outline.size', 0.4);
-
-  // splitter for template and payload editor
-  const splitter = useSplitter({
-    direction: 'column',
-    handleSize: 'sm',
-    // if Grafana Alertmanager, split 50/50, otherwise 100/0 because there is no payload editor
-    initialSize: 1 - outlinePaneSize,
-    dragPosition: 'middle',
-    onSizeChanged: (size) => {
-      setOutlinePaneSize(1 - size);
-    },
-  });
-
-  if (!editableElement) {
-    return null;
-  }
-
-  if (isEditPaneCollapsed) {
-    return (
-      <>
-        <div className={styles.expandOptionsWrapper}>
-          <ToolbarButton
-            tooltip={t('dashboard.edit-pane.open', 'Open options pane')}
-            icon="arrow-to-right"
-            onClick={onToggleCollapse}
-            variant="canvas"
-            narrow={true}
-            className={styles.rotate180}
-            aria-label={t('dashboard.edit-pane.open', 'Open options pane')}
-          />
-        </div>
-
-        {openOverlay && (
-          <Resizable className={styles.overlayWrapper} defaultSize={{ height: '100%', width: '300px' }}>
-            <ElementEditPane
-              element={editableElement}
-              key={selectedObject?.state.key}
-              editPane={editPane}
-              isNewElement={isNewElement}
-            />
-          </Resizable>
-        )}
-      </>
-    );
-  }
-
-  if (outlineCollapsed) {
-    splitter.primaryProps.style.flexGrow = 1;
-    splitter.primaryProps.style.minHeight = 'unset';
-    splitter.secondaryProps.style.flexGrow = 0;
-    splitter.secondaryProps.style.minHeight = 'min-content';
-  } else {
-    splitter.primaryProps.style.minHeight = 'unset';
-    splitter.secondaryProps.style.minHeight = 'unset';
-  }
+  const compact = false;
 
   return (
-    <div className={styles.wrapper}>
-      <div {...splitter.containerProps}>
-        <div {...splitter.primaryProps} className={cx(splitter.primaryProps.className, styles.paneContent)}>
+    <>
+      {editableElement && (
+        <div {...openPaneProps}>
           <ElementEditPane
-            element={editableElement}
             key={selectedObject?.state.key}
             editPane={editPane}
+            element={editableElement}
             isNewElement={isNewElement}
           />
         </div>
-        <div
-          {...splitter.splitterProps}
-          className={cx(splitter.splitterProps.className, styles.splitter)}
-          data-edit-pane-splitter={true}
-        />
-        <div {...splitter.secondaryProps} className={cx(splitter.secondaryProps.className, styles.paneContent)}>
-          <button
-            type="button"
-            onClick={() => {
-              DashboardInteractions.dashboardOutlineClicked();
-              setOutlineCollapsed(!outlineCollapsed);
-            }}
-            className={cx(clearButton, styles.outlineCollapseButton)}
-            data-testid={selectors.components.PanelEditor.Outline.section}
-          >
-            <Text weight="medium">
-              <Trans i18nKey="dashboard-scene.dashboard-edit-pane-renderer.outline">Outline</Trans>
-            </Text>
-            <Icon name={outlineCollapsed ? 'angle-up' : 'angle-down'} />
-          </button>
-          {!outlineCollapsed && (
-            <div className={styles.outlineContainer}>
-              <ScrollContainer showScrollIndicators={true}>
-                <DashboardOutline editPane={editPane} />
-              </ScrollContainer>
-            </div>
-          )}
+      )}
+      {openView === 'outline' && (
+        <div {...openPaneProps}>
+          <DashboardOutline editPane={editPane} />
         </div>
+      )}
+      <div {...toolbarProps}>
+        {/* <ToolbarButton
+            icon="eye"
+            tooltip="View mode"
+            onClick={() => dashboard.exitEditMode({ skipConfirm: false })}
+          ></ToolbarButton> */}
+        <Sidebar.Button
+          active={isEditing}
+          icon="pen"
+          title="Edit"
+          compact={compact}
+          onClick={() => (isEditing ? dashboard.exitEditMode({ skipConfirm: false }) : dashboard.onEnterEditMode())}
+        ></Sidebar.Button>
+        <Sidebar.Button icon="download-alt" title="Export" compact={compact}></Sidebar.Button>
+
+        {isEditing && (
+          <>
+            <Sidebar.Divider />
+            {/* <Sidebar.Button icon="corner-up-left" variant="primary" title="Save" /> */}
+            <Sidebar.Button icon="corner-up-left" title={'Undo'} compact={compact} />
+            <Sidebar.Button icon="corner-up-right" title={'Redo'} compact={compact} />
+          </>
+        )}
+        <Sidebar.Divider />
+        <Sidebar.Button
+          icon="list-ui-alt"
+          onClick={() => editPane.onOpenView('outline')}
+          title="Outline"
+          tooltip="Content outline"
+          active={openView === 'outline'}
+          compact={compact}
+        ></Sidebar.Button>
+        {isEditing && (
+          <Sidebar.Button
+            icon="cog"
+            onClick={() => editPane.selectObject(dashboard, dashboard.state.key!)}
+            title="Options"
+            compact={compact}
+            active={selectedObject === dashboard ? true : false}
+          ></Sidebar.Button>
+        )}
+        <FlexItem grow={1} />
+        {(selectedObject || openView) && (
+          <>
+            <Sidebar.Divider />
+            <Sidebar.Button
+              icon="web-section-alt"
+              onClick={onDockChange}
+              title="Dock"
+              compact={compact}
+              active={isDocked ? true : false}
+            ></Sidebar.Button>
+          </>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 

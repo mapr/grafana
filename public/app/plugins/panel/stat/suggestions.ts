@@ -84,6 +84,7 @@ export class StatSuggestionsSupplier {
 
       list.append({
         name: SuggestionName.StatColoredBackground,
+        isPreset: true,
         options: {
           reduceOptions: {
             values: false,
