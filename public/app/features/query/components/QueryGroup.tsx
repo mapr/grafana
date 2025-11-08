@@ -366,7 +366,6 @@ const getStyles = stylesFactory(() => {
     }),
     dataSourceRow: css({
       display: 'flex',
-      marginBottom: theme.spacing.lg,
       gap: theme.spacing.md,
     }),
     dataSourceRowItem: css({
@@ -460,14 +459,14 @@ export function QueryGroupTopSection({
                 </div>
               )} */}
 
-              <Stack flex={1} gap={1} direction="row" alignItems="center">
+              {/* <Stack flex={1} gap={1} direction="row" alignItems="center">
                 <Stack alignItems="center">
                   <span>Max data points: {options.maxDataPoints ?? 'auto'}</span>
                 </Stack>
                 <Stack alignItems="center">
                   <span>Min interval: {options.minInterval ?? 'auto'}</span>
                 </Stack>
-              </Stack>
+              </Stack> */}
             </>
           )}
         </div>

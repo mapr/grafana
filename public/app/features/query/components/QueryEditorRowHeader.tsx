@@ -138,7 +138,12 @@ const renderDataSource = <TQuery extends DataQuery>(
   const { alerting, dataSource, onChangeDataSource } = props;
 
   if (!onChangeDataSource) {
-    return <em className={styles.contextInfo}>({dataSource.name})</em>;
+    return (
+      <em className={styles.contextInfo}>
+        <Icon name="database" />
+        {dataSource.name}
+      </em>
+    );
   }
 
   return (
@@ -224,6 +229,9 @@ const getStyles = (theme: GrafanaTheme2) => {
       color: theme.colors.text.secondary,
       paddingLeft: '10px',
       paddingRight: '10px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: theme.spacing(0.5),
     }),
     itemWrapper: css({
       display: 'flex',

@@ -47,11 +47,11 @@ export function VisualizationSuggestions({ searchQuery, onChange, data, panel, t
 
           return (
             <div>
-              <div className={styles.filterRow}>
+              {/* <div className={styles.filterRow}>
                 <div className={styles.infoText}>
                   <Trans i18nKey="panel.visualization-suggestions.based-on-current-data">Based on current data</Trans>
                 </div>
-              </div>
+              </div> */}
               <div className={styles.grid} style={{ gridTemplateColumns: `repeat(auto-fill, ${previewWidth}px)` }}>
                 {filteredSuggestions.map((suggestion, index) => (
                   <VisualizationSuggestionCard

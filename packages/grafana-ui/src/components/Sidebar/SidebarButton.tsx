@@ -139,6 +139,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
+      width: '100%',
       gap: theme.spacing(0),
     }),
     title: css({

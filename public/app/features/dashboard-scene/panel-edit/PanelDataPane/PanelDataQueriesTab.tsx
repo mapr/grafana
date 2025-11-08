@@ -13,7 +13,7 @@ import {
   SceneDataQuery,
 } from '@grafana/scenes';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
-import { Button, Stack, Tab } from '@grafana/ui';
+import { Box, Button, Stack, Tab } from '@grafana/ui';
 import { addQuery } from 'app/core/utils/query';
 import { getLastUsedDatasourceFromStorage } from 'app/features/dashboard/utils/dashboard';
 import { storeLastUsedDataSourceInLocalStorage } from 'app/features/datasources/components/picker/utils';
@@ -379,16 +379,16 @@ export function PanelDataQueriesTabRendered({ model }: SceneComponentProps<Panel
         onUpdateDatasources={queryLibraryEnabled ? model.updateDatasourceIfNeeded : undefined}
         app={CoreApp.PanelEditor}
       />
-      <QueryGroupTopSection
-        data={data}
-        dsSettings={dsSettings}
-        dataSource={datasource}
-        options={model.buildQueryOptions()}
-        onDataSourceChange={model.onChangeDataSource}
-        onOptionsChange={model.onQueryOptionsChange}
-        onOpenQueryInspector={model.onOpenInspector}
-      />
-      <Stack gap={2}>
+      <Box gap={2} paddingTop={2} paddingLeft={1} display="flex" alignItems="center">
+        <QueryGroupTopSection
+          data={data}
+          dsSettings={dsSettings}
+          dataSource={datasource}
+          options={model.buildQueryOptions()}
+          onDataSourceChange={model.onChangeDataSource}
+          onOptionsChange={model.onQueryOptionsChange}
+          onOpenQueryInspector={model.onOpenInspector}
+        />
         {showAddButton && (
           <>
             <Button
@@ -426,7 +426,7 @@ export function PanelDataQueriesTabRendered({ model }: SceneComponentProps<Panel
           </ExpressionTypeDropdown>
         )}
         {model.renderExtraActions()}
-      </Stack>
+      </Box>
     </div>
   );
 }

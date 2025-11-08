@@ -118,7 +118,6 @@ const getStyles = (theme: GrafanaTheme2) => ({
     flexDirection: 'column',
     flexGrow: 1,
     height: '100%',
-    gap: theme.spacing(2),
   }),
   closeButton: css({
     marginLeft: theme.spacing(1),
