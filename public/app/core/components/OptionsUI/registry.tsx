@@ -407,6 +407,7 @@ export const getAllStandardFieldConfigs = () => {
     editor: standardEditorsRegistry.get('fieldColor').editor,
     override: standardEditorsRegistry.get('fieldColor').editor,
     process: identityOverrideProcessor,
+    quickMode: true,
     shouldApply: () => true,
     settings: {
       byValueSupport: true,
