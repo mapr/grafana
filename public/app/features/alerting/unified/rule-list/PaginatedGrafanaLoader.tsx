@@ -35,20 +35,27 @@ export function PaginatedGrafanaLoader({ groupFilter, namespaceFilter }: LoaderP
 }
 
 function PaginatedGroupsLoader({ groupFilter, namespaceFilter }: LoaderProps) {
-  // If there are filters, we don't want to populate the cache to avoid performance issues
-  // Filtering may trigger multiple HTTP requests, which would populate the cache with a lot of groups hurting performance
+  // Backend API supports: groupName
+  // Client-side only: namespace
   const hasFilters = Boolean(groupFilter || namespaceFilter);
+  const hasClientSideFilters = Boolean(namespaceFilter);
 
   const grafanaGroupsGenerator = useGrafanaGroupsGenerator({
-    populateCache: hasFilters ? false : true,
+    // Only avoid cache when client-side filtering (multiple HTTP requests hurt performance)
+    populateCache: hasClientSideFilters ? false : true,
     limitAlerts: 0,
   });
 
-  // If there are no filters we can match one frontend page to one API page.
-  // However, if there are filters, we need to fetch more groups from the API to populate one frontend page
-  const apiGroupPageSize = getApiGroupPageSize(hasFilters);
+  const apiGroupPageSize = getApiGroupPageSize(hasClientSideFilters);
 
-  const groupsGenerator = useRef(toIndividualRuleGroups(grafanaGroupsGenerator(apiGroupPageSize)));
+  // Pass backend-supported filters to API
+  const groupsGenerator = useRef(
+    toIndividualRuleGroups(
+      grafanaGroupsGenerator(apiGroupPageSize, {
+        groupName: groupFilter,
+      })
+    )
+  );
 
   useEffect(() => {
     const currentGenerator = groupsGenerator.current;
@@ -61,9 +68,8 @@ function PaginatedGroupsLoader({ groupFilter, namespaceFilter }: LoaderProps) {
     () => (group: PromRuleGroupDTO) =>
       groupFilterFn(group, {
         namespace: namespaceFilter,
-        groupName: groupFilter,
       }),
-    [namespaceFilter, groupFilter]
+    [namespaceFilter]
   );
 
   const { isLoading, groups, hasMoreGroups, fetchMoreGroups, error } = useLazyLoadPrometheusGroups(

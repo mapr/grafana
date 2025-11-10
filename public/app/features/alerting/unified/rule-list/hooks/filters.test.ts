@@ -31,6 +31,7 @@ describe('groupFilter', () => {
 
     expect(groupFilter(group, getFilter({ groupName: 'cpu' }))).toBe(true);
     expect(groupFilter(group, getFilter({ groupName: 'memory' }))).toBe(false);
+    expect(groupFilter(group, getFilter({}))).toBe(true);
   });
 
   it('should return true when no filters are applied', () => {

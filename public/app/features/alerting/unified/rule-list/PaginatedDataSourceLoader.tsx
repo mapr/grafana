@@ -48,14 +48,16 @@ export function PaginatedDataSourceLoader({
 function PaginatedGroupsLoader({ rulesSourceIdentifier, application, groupFilter, namespaceFilter }: LoaderProps) {
   // If there are filters, we don't want to populate the cache to avoid performance issues
   // Filtering may trigger multiple HTTP requests, which would populate the cache with a lot of groups hurting performance
+  // Datasource APIs don't support backend filtering - all filters are client-side
   const hasFilters = Boolean(groupFilter || namespaceFilter);
+  const hasClientSideFilters = hasFilters;
 
   const { uid, name } = rulesSourceIdentifier;
   const prometheusGroupsGenerator = usePrometheusGroupsGenerator();
 
   // If there are no filters we can match one frontend page to one API page.
   // However, if there are filters, we need to fetch more groups from the API to populate one frontend page
-  const apiGroupPageSize = getApiGroupPageSize(hasFilters);
+  const apiGroupPageSize = getApiGroupPageSize(hasClientSideFilters);
 
   const groupsGenerator = useRef(
     toIndividualRuleGroups(prometheusGroupsGenerator(rulesSourceIdentifier, apiGroupPageSize))

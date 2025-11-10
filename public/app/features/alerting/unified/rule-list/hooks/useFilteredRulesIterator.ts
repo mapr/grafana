@@ -80,17 +80,20 @@ export function useFilteredRulesIteratorProvider() {
     const normalizedFilterState = normalizeFilterState(filterState);
     const hasDataSourceFilterActive = Boolean(filterState.dataSourceNames.length);
 
+    const apiFilter = {
+      contactPoint: filterState.contactPoint ?? undefined,
+      health: filterState.ruleHealth ? [filterState.ruleHealth] : [],
+      state: filterState.ruleState ? [filterState.ruleState] : [],
+      groupName: filterState.groupName ?? undefined,
+    };
+
     const grafanaRulesGenerator: AsyncIterableX<RuleWithOrigin> = from(
-      grafanaGroupsGenerator(groupLimit, {
-        contactPoint: filterState.contactPoint ?? undefined,
-        health: filterState.ruleHealth ? [filterState.ruleHealth] : [],
-        state: filterState.ruleState ? [filterState.ruleState] : [],
-      })
+      grafanaGroupsGenerator(groupLimit, apiFilter)
     ).pipe(
       withAbort(abortController.signal),
       concatMap((groups) =>
         groups
-          .filter((group) => groupFilter(group, normalizedFilterState))
+          .filter((group) => groupFilter(group, { namespace: normalizedFilterState.namespace }))
           .flatMap((group) => group.rules.map((rule) => ({ group, rule })))
           .filter(({ rule }) => ruleFilter(rule, normalizedFilterState))
           .map(({ group, rule }) => mapGrafanaRuleToRuleWithOrigin(group, rule))
@@ -115,7 +118,12 @@ export function useFilteredRulesIteratorProvider() {
           withAbort(abortController.signal),
           concatMap((groups) =>
             groups
-              .filter((group) => groupFilter(group, normalizedFilterState))
+              .filter((group) =>
+                groupFilter(group, {
+                  namespace: normalizedFilterState.namespace,
+                  groupName: normalizedFilterState.groupName,
+                })
+              )
               .flatMap((group) => group.rules.map((rule, index) => ({ group, rule, index })))
               .filter(({ rule }) => ruleFilter(rule, normalizedFilterState))
               .map(({ group, rule, index }) => mapRuleToRuleWithOrigin(dataSourceIdentifier, group, rule, index))

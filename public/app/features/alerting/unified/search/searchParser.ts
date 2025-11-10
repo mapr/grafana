@@ -85,7 +85,10 @@ function getFilterFromSyntaxNode(query: string, filterExpressionNode: SyntaxNode
 }
 
 function getNodeContent(query: string, node: SyntaxNode) {
-  return query.slice(node.from, node.to).trim().replace(/\"/g, '');
+  const content = query.slice(node.from, node.to).trim().replace(/\"/g, '');
+  // Unescape backslashes before punctuation only (e.g., "eval\-10s" -> "eval-10s")
+  // Don't unescape letters (preserve \n, \t, etc. as-is)
+  return content.replace(/\\([^\w])/g, '$1');
 }
 
 export function applyFiltersToQuery(
