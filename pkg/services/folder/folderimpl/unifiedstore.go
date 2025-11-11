@@ -438,39 +438,51 @@ func (ss *FolderUnifiedStoreImpl) GetDescendants(ctx context.Context, orgID int6
 		tree[parentUID][uid] = f
 	}
 
-	descendantsMap := map[string]*folder.Folder{}
-	seen := map[string]struct{}{}
-	err = getDescendants(nodes, tree, ancestor_uid, descendantsMap, seen)
-	if err != nil {
-		return nil, err
-	}
-
-	descendants := []*folder.Folder{}
-	for _, f := range descendantsMap {
-		descendants = append(descendants, f)
-	}
-
-	return descendants, nil
+	return getDescendants(nodes, tree, ancestor_uid)
 }
 
 func getDescendants(
 	nodes map[string]*folder.Folder,
 	tree map[string]map[string]*folder.Folder,
 	ancestorUID string,
-	descendantsMap map[string]*folder.Folder,
-	seen map[string]struct{},
-) error {
-	if _, exists := seen[ancestorUID]; exists {
-		return folder.ErrCircularReference.Errorf("circular reference detected at folder uid: %s", ancestorUID)
-	}
-	seen[ancestorUID] = struct{}{}
-	for uid := range tree[ancestorUID] {
-		descendantsMap[uid] = nodes[uid]
-		if err := getDescendants(nodes, tree, uid, descendantsMap, seen); err != nil {
-			return err
+) ([]*folder.Folder, error) {
+	descendants := make([]*folder.Folder, 0)
+	inProgress := make(map[string]struct{})
+	completed := make(map[string]struct{})
+
+	stack := []string{ancestorUID}
+	inProgress[ancestorUID] = struct{}{}
+
+	for len(stack) > 0 {
+		currentUID := stack[len(stack)-1]
+		hasUnvisitedChildren := false
+
+		for childUID := range tree[currentUID] {
+			if _, done := completed[childUID]; done {
+				continue
+			}
+
+			if _, inProg := inProgress[childUID]; inProg {
+				return nil, folder.ErrCircularReference.Errorf("circular reference detected at folder uid: %s", childUID)
+			}
+
+			inProgress[childUID] = struct{}{}
+			stack = append(stack, childUID)
+			hasUnvisitedChildren = true
+		}
+
+		if !hasUnvisitedChildren {
+			stack = stack[:len(stack)-1]
+			delete(inProgress, currentUID)
+			completed[currentUID] = struct{}{}
+
+			if currentUID != ancestorUID {
+				descendants = append(descendants, nodes[currentUID])
+			}
 		}
 	}
-	return nil
+
+	return descendants, nil
 }
 
 func (ss *FolderUnifiedStoreImpl) CountFolderContent(ctx context.Context, orgID int64, ancestor_uid string) (folder.DescendantCounts, error) {
