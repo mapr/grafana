@@ -231,6 +231,7 @@ func NewMapperRegistry() MapperRegistry {
 			"teams": newResourceTranslation("teams", "uid", false, map[string]bool{utils.VerbCreate: true}),
 			// ExternalGroupMappings is a special case. We translate team permissions from id to uid based.
 			"externalgroupmappings": newExternalGroupMappingTranslation(),
+			"resourcepermissions":   newResourceTranslation("resourcepermissions", "name", false, nil),
 			"coreroles": translation{
 				resource:  "roles",
 				attribute: "uid",
