@@ -179,6 +179,7 @@ export function PanelChrome({
   const isPanelTransparent = displayMode === 'transparent';
 
   const headerHeight = getHeaderHeight(theme, hasHeader);
+  height = height ? Math.round(height) : height;
   const { contentStyle, innerWidth, innerHeight } = getContentStyle(
     padding,
     theme,
@@ -193,7 +194,8 @@ export function PanelChrome({
     cursor: dragClass ? 'move' : 'auto',
   };
 
-  const containerStyles: CSSProperties = { width, height: collapsed ? undefined : height };
+  const containerStyles: CSSProperties = { width, height: collapsed ? undefined : height ? height + 1 : undefined };
+  console.log('containerHeight', containerStyles.height);
   const [ref, { width: loadingBarWidth }] = useMeasure<HTMLDivElement>();
 
   /** Old property name now maps to actions */
@@ -331,6 +333,7 @@ export function PanelChrome({
 
   return (
     // tabIndex={0} is needed for keyboard accessibility in the plot area
+    // Container
     <section
       className={cx(
         styles.container,
@@ -415,11 +418,12 @@ export function PanelChrome({
       )}
 
       {!collapsed && (
+        // content
         <div
           id={panelContentId}
           data-testid={selectors.components.Panels.Panel.content}
           className={cx(styles.content, height === undefined && styles.containNone)}
-          style={contentStyle}
+          style={{ ...contentStyle, height: innerHeight - 1 }}
           onPointerDown={onContentPointerDown}
         >
           {typeof children === 'function' ? children(innerWidth, innerHeight) : children}
