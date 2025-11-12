@@ -51,10 +51,7 @@ type xormRepositoryImpl struct {
 }
 
 func NewXormStore(cfg *setting.Cfg, l log.Logger, db db.DB, tagService tag.Service, reg prometheus.Registerer) *xormRepositoryImpl {
-	err := migrations.RunDashboardUIDMigrations(db.GetEngine().NewSession(), db.GetEngine().DriverName())
-	if err != nil {
-		l.Error("failed to populate dashboard_uid for annotations", "error", err)
-	}
+	triggerAlwaysOnMigrations(cfg, l, db)
 
 	repo := &xormRepositoryImpl{
 		cfg:        cfg,
@@ -94,6 +91,19 @@ func NewXormStore(cfg *setting.Cfg, l log.Logger, db db.DB, tagService tag.Servi
 		reg.MustRegister(repo.queryRangeStart, repo.queryRangeDuration, repo.queryResultsCount)
 	}
 	return repo
+}
+
+func triggerAlwaysOnMigrations(cfg *setting.Cfg, l log.Logger, db db.DB) {
+	sec := cfg.Raw.Section("database")
+	skipDashboardUIDMigration := sec.Key("skip_dashboard_uid_migration_on_startup").MustBool(false)
+	if skipDashboardUIDMigration {
+		l.Debug("skipped dashboard UID startup migration")
+		return
+	}
+	err := migrations.RunDashboardUIDMigrations(db.GetEngine().NewSession(), db.GetEngine().DriverName())
+	if err != nil {
+		l.Error("failed to populate dashboard_uid for annotations", "error", err)
+	}
 }
 
 func (r *xormRepositoryImpl) Type() string {
