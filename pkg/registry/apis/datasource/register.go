@@ -76,26 +76,6 @@ func RegisterAPIService(
 			return nil, fmt.Errorf("plugin client is not a PluginClient: %T", pluginClient)
 		}
 
-		// TODO: can we just do a hard swap here? The api server isnt using this, right?
-		// TODO remove this builder once query service is using the shorter api group name everywhere
-		builder, err = NewDataSourceAPIBuilder(
-			pluginJSON,
-			client,
-			datasources.GetDatasourceProvider(pluginJSON),
-			contextProvider,
-			accessControl,
-			//nolint:staticcheck // not yet migrated to OpenFeature
-			features.IsEnabledGlobally(featuremgmt.FlagDatasourceQueryTypes),
-			false,
-			false, // useShorterAPIGroupName
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		apiRegistrar.RegisterAPI(builder)
-
-		// Also register the plugin with the new apiGroup naming convention. The other endpoint will be deleted in the near future.
 		builder, err = NewDataSourceAPIBuilder(pluginJSON,
 			client,
 			datasources.GetDatasourceProvider(pluginJSON),
