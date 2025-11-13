@@ -23,6 +23,7 @@ export const panelsToCheckFirst = [
   'flamegraph',
   'traces',
   'nodeGraph',
+  'heatmap',
 ];
 
 export async function getAllSuggestions(

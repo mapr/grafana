@@ -118,6 +118,7 @@ scenario('Single frame with time and number field', (ctx) => {
       expect.objectContaining({ pluginId: 'table' }),
       expect.objectContaining({ pluginId: 'state-timeline' }),
       expect.objectContaining({ pluginId: 'status-history' }),
+      expect.objectContaining({ pluginId: 'heatmap' }),
     ]);
   });
 
@@ -164,6 +165,7 @@ scenario('Single frame with time 2 number fields', (ctx) => {
       expect.objectContaining({ pluginId: 'table' }),
       expect.objectContaining({ pluginId: 'state-timeline' }),
       expect.objectContaining({ pluginId: 'status-history' }),
+      expect.objectContaining({ pluginId: 'heatmap' }),
     ]);
   });
 
