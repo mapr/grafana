@@ -69,7 +69,10 @@ scenario('No series', (ctx) => {
   ctx.setData([]);
 
   it('should return correct suggestions', () => {
-    expect(ctx.names()).toEqual([SuggestionName.Table, SuggestionName.TextPanel]);
+    expect(ctx.suggestions).toEqual([
+      expect.objectContaining({ pluginId: 'table' }),
+      expect.objectContaining({ name: SuggestionName.TextPanel }),
+    ]);
   });
 });
 
@@ -84,7 +87,7 @@ scenario('No rows', (ctx) => {
   ]);
 
   it('should return correct suggestions', () => {
-    expect(ctx.names()).toEqual([SuggestionName.Table]);
+    expect(ctx.suggestions).toEqual([expect.objectContaining({ pluginId: 'table' })]);
   });
 });
 
@@ -112,7 +115,7 @@ scenario('Single frame with time and number field', (ctx) => {
       expect.objectContaining({ name: SuggestionName.StatColoredBackground }),
       expect.objectContaining({ name: SuggestionName.BarGaugeBasic }),
       expect.objectContaining({ name: SuggestionName.BarGaugeLCD }),
-      expect.objectContaining({ name: SuggestionName.Table }),
+      expect.objectContaining({ pluginId: 'table' }),
       expect.objectContaining({ pluginId: 'state-timeline' }),
       expect.objectContaining({ name: SuggestionName.StatusHistory }),
     ]);
@@ -158,7 +161,7 @@ scenario('Single frame with time 2 number fields', (ctx) => {
       expect.objectContaining({ name: SuggestionName.PieChartDonut }),
       expect.objectContaining({ name: SuggestionName.BarGaugeBasic }),
       expect.objectContaining({ name: SuggestionName.BarGaugeLCD }),
-      expect.objectContaining({ name: SuggestionName.Table }),
+      expect.objectContaining({ pluginId: 'table' }),
       expect.objectContaining({ pluginId: 'state-timeline' }),
       expect.objectContaining({ name: SuggestionName.StatusHistory }),
     ]);
@@ -235,18 +238,18 @@ scenario('Single frame with string and number field', (ctx) => {
   ]);
 
   it('should return correct suggestions', () => {
-    expect(ctx.names()).toEqual([
-      SuggestionName.BarChart,
-      SuggestionName.BarChartHorizontal,
-      SuggestionName.Gauge,
-      SuggestionName.GaugeNoThresholds,
-      SuggestionName.Stat,
-      SuggestionName.StatColoredBackground,
-      SuggestionName.PieChart,
-      SuggestionName.PieChartDonut,
-      SuggestionName.BarGaugeBasic,
-      SuggestionName.BarGaugeLCD,
-      SuggestionName.Table,
+    expect(ctx.suggestions).toEqual([
+      expect.objectContaining({ name: SuggestionName.BarChart }),
+      expect.objectContaining({ name: SuggestionName.BarChartHorizontal }),
+      expect.objectContaining({ name: SuggestionName.Gauge }),
+      expect.objectContaining({ name: SuggestionName.GaugeNoThresholds }),
+      expect.objectContaining({ name: SuggestionName.Stat }),
+      expect.objectContaining({ name: SuggestionName.StatColoredBackground }),
+      expect.objectContaining({ name: SuggestionName.PieChart }),
+      expect.objectContaining({ name: SuggestionName.PieChartDonut }),
+      expect.objectContaining({ name: SuggestionName.BarGaugeBasic }),
+      expect.objectContaining({ name: SuggestionName.BarGaugeLCD }),
+      expect.objectContaining({ pluginId: 'table' }),
     ]);
   });
 
@@ -271,22 +274,22 @@ scenario('Single frame with string and 2 number field', (ctx) => {
   ]);
 
   it('should return correct suggestions', () => {
-    expect(ctx.names()).toEqual([
-      SuggestionName.BarChart,
-      SuggestionName.BarChartStacked,
-      SuggestionName.BarChartStackedPercent,
-      SuggestionName.BarChartHorizontal,
-      SuggestionName.BarChartHorizontalStacked,
-      SuggestionName.BarChartHorizontalStackedPercent,
-      SuggestionName.Gauge,
-      SuggestionName.GaugeNoThresholds,
-      SuggestionName.Stat,
-      SuggestionName.StatColoredBackground,
-      SuggestionName.PieChart,
-      SuggestionName.PieChartDonut,
-      SuggestionName.BarGaugeBasic,
-      SuggestionName.BarGaugeLCD,
-      SuggestionName.Table,
+    expect(ctx.suggestions).toEqual([
+      expect.objectContaining({ name: SuggestionName.BarChart }),
+      expect.objectContaining({ name: SuggestionName.BarChartStacked }),
+      expect.objectContaining({ name: SuggestionName.BarChartStackedPercent }),
+      expect.objectContaining({ name: SuggestionName.BarChartHorizontal }),
+      expect.objectContaining({ name: SuggestionName.BarChartHorizontalStacked }),
+      expect.objectContaining({ name: SuggestionName.BarChartHorizontalStackedPercent }),
+      expect.objectContaining({ name: SuggestionName.Gauge }),
+      expect.objectContaining({ name: SuggestionName.GaugeNoThresholds }),
+      expect.objectContaining({ name: SuggestionName.Stat }),
+      expect.objectContaining({ name: SuggestionName.StatColoredBackground }),
+      expect.objectContaining({ name: SuggestionName.PieChart }),
+      expect.objectContaining({ name: SuggestionName.PieChartDonut }),
+      expect.objectContaining({ name: SuggestionName.BarGaugeBasic }),
+      expect.objectContaining({ name: SuggestionName.BarGaugeLCD }),
+      expect.objectContaining({ pluginId: 'table' }),
     ]);
   });
 });
@@ -299,7 +302,10 @@ scenario('Single frame with only string field', (ctx) => {
   ]);
 
   it('should return correct suggestions', () => {
-    expect(ctx.names()).toEqual([SuggestionName.Stat, SuggestionName.Table]);
+    expect(ctx.suggestions).toEqual([
+      expect.objectContaining({ name: SuggestionName.Stat }),
+      expect.objectContaining({ pluginId: 'table' }),
+    ]);
   });
 
   it('Stat panels have reduceOptions.fields set to show all fields', () => {
@@ -359,7 +365,7 @@ scenario('Given a preferredVisualisationType', (ctx) => {
   ]);
 
   it('should return the preferred visualization first', () => {
-    expect(ctx.names()[0]).toEqual(SuggestionName.Table);
+    expect(ctx.suggestions[0]).toEqual(expect.objectContaining({ pluginId: 'table' }));
   });
 });
 

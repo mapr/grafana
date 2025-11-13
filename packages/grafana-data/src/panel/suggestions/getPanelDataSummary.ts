@@ -7,9 +7,12 @@ import { DataFrame, FieldType } from '../../types/dataFrame';
 export interface PanelDataSummary {
   hasData?: boolean;
   rowCountTotal: number;
+  /** max number of rows in any given dataframe in the panel data */
   rowCountMax: number;
   frameCount: number;
   fieldCount: number;
+  /** max number of fields in any given dataframe in the panel data */
+  fieldCountMax: number;
   fieldCountByType: (type: FieldType) => number;
   hasFieldType: (type: FieldType) => boolean;
   /** The first frame that set's this value */
@@ -40,6 +43,7 @@ export function getPanelDataSummary(frames: DataFrame[] = []): PanelDataSummary 
   let rowCountTotal = 0;
   let rowCountMax = 0;
   let fieldCount = 0;
+  let fieldCountMax = 0;
   const countByType: Partial<Record<FieldType, number>> = {};
   let preferredVisualisationType: PreferredVisualisationType | undefined;
 
@@ -58,6 +62,9 @@ export function getPanelDataSummary(frames: DataFrame[] = []): PanelDataSummary 
     if (frame.length > rowCountMax) {
       rowCountMax = frame.length;
     }
+    if (frame.fields.length > fieldCountMax) {
+      fieldCountMax = frame.fields.length;
+    }
   }
 
   const fieldCountByType = (f: FieldType) => countByType[f] ?? 0;
@@ -66,6 +73,7 @@ export function getPanelDataSummary(frames: DataFrame[] = []): PanelDataSummary 
     rowCountTotal,
     rowCountMax,
     fieldCount,
+    fieldCountMax,
     preferredVisualisationType,
     frameCount: frames.length,
     hasData: rowCountTotal > 0,
