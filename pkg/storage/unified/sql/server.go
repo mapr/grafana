@@ -117,7 +117,6 @@ func NewResourceServer(opts ServerOptions) (resource.ResourceServer, error) {
 		serverOptions.Diagnostics = backend
 		serverOptions.Lifecycle = backend
 	}
-	// Add Datamigration after starting server
 
 	serverOptions.Search = opts.SearchOptions
 	serverOptions.IndexMetrics = opts.IndexMetrics
