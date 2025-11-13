@@ -22,7 +22,6 @@ export enum SuggestionName {
   GaugeNoThresholds = 'Gauge no thresholds',
   BarGaugeBasic = 'Bar gauge basic',
   BarGaugeLCD = 'Bar gauge LCD',
-  StatusHistory = 'Status history',
   TextPanel = 'Text',
   DashboardList = 'Dashboard list',
   Logs = 'Logs',

@@ -117,7 +117,7 @@ scenario('Single frame with time and number field', (ctx) => {
       expect.objectContaining({ name: SuggestionName.BarGaugeLCD }),
       expect.objectContaining({ pluginId: 'table' }),
       expect.objectContaining({ pluginId: 'state-timeline' }),
-      expect.objectContaining({ name: SuggestionName.StatusHistory }),
+      expect.objectContaining({ pluginId: 'status-history' }),
     ]);
   });
 
@@ -163,7 +163,7 @@ scenario('Single frame with time 2 number fields', (ctx) => {
       expect.objectContaining({ name: SuggestionName.BarGaugeLCD }),
       expect.objectContaining({ pluginId: 'table' }),
       expect.objectContaining({ pluginId: 'state-timeline' }),
-      expect.objectContaining({ name: SuggestionName.StatusHistory }),
+      expect.objectContaining({ pluginId: 'status-history' }),
     ]);
   });
 
