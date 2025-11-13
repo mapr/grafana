@@ -101,6 +101,7 @@ func RegisterAPIService(
 			datasources.GetDatasourceProvider(pluginJSON),
 			contextProvider,
 			accessControl,
+			//nolint:staticcheck // not yet migrated to OpenFeature
 			features.IsEnabledGlobally(featuremgmt.FlagDatasourceQueryTypes),
 			false,
 			true, // useShorterAPIGroupName
