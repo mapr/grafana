@@ -6,7 +6,6 @@ import { transformDataFrames } from '../../../features/explore/TraceView/utils/t
 
 import { TagsEditor } from './TagsEditor';
 import { TracesPanel } from './TracesPanel';
-import { TracesSuggestionsSupplier } from './suggestions';
 
 export const plugin = new PanelPlugin(TracesPanel)
   .setPanelOptions((builder, context) => {
@@ -105,4 +104,4 @@ export const plugin = new PanelPlugin(TracesPanel)
       defaultValue: undefined,
     });
   })
-  .setSuggestionsSupplier(new TracesSuggestionsSupplier());
+  .setSuggestionsHandler((ds) => ds.preferredVisualisationType === 'trace');
