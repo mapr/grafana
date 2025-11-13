@@ -8,7 +8,7 @@ import {
   toDataFrame,
   PanelPluginVisualizationSuggestion,
 } from '@grafana/data';
-import { GraphFieldConfig, ReduceDataOptions } from '@grafana/schema';
+import { BigValueColorMode, GraphFieldConfig, ReduceDataOptions } from '@grafana/schema';
 import { config } from 'app/core/config';
 import { SuggestionName } from 'app/types/suggestions';
 
@@ -111,8 +111,11 @@ scenario('Single frame with time and number field', (ctx) => {
       expect.objectContaining({ name: SuggestionName.BarChartGradientColorScheme }),
       expect.objectContaining({ name: SuggestionName.Gauge }),
       expect.objectContaining({ name: SuggestionName.GaugeNoThresholds }),
-      expect.objectContaining({ name: SuggestionName.Stat }),
-      expect.objectContaining({ name: SuggestionName.StatColoredBackground }),
+      expect.objectContaining({ pluginId: 'stat' }),
+      expect.objectContaining({
+        pluginId: 'stat',
+        options: expect.objectContaining({ colorMode: BigValueColorMode.Background }),
+      }),
       expect.objectContaining({ name: SuggestionName.BarGaugeBasic }),
       expect.objectContaining({ name: SuggestionName.BarGaugeLCD }),
       expect.objectContaining({ pluginId: 'table' }),
@@ -156,8 +159,11 @@ scenario('Single frame with time 2 number fields', (ctx) => {
       expect.objectContaining({ name: SuggestionName.BarChartStackedPercent }),
       expect.objectContaining({ name: SuggestionName.Gauge }),
       expect.objectContaining({ name: SuggestionName.GaugeNoThresholds }),
-      expect.objectContaining({ name: SuggestionName.Stat }),
-      expect.objectContaining({ name: SuggestionName.StatColoredBackground }),
+      expect.objectContaining({ pluginId: 'stat' }),
+      expect.objectContaining({
+        pluginId: 'stat',
+        options: expect.objectContaining({ colorMode: BigValueColorMode.Background }),
+      }),
       expect.objectContaining({ name: SuggestionName.PieChart }),
       expect.objectContaining({ name: SuggestionName.PieChartDonut }),
       expect.objectContaining({ name: SuggestionName.BarGaugeBasic }),
@@ -245,8 +251,11 @@ scenario('Single frame with string and number field', (ctx) => {
       expect.objectContaining({ name: SuggestionName.BarChartHorizontal }),
       expect.objectContaining({ name: SuggestionName.Gauge }),
       expect.objectContaining({ name: SuggestionName.GaugeNoThresholds }),
-      expect.objectContaining({ name: SuggestionName.Stat }),
-      expect.objectContaining({ name: SuggestionName.StatColoredBackground }),
+      expect.objectContaining({ pluginId: 'stat' }),
+      expect.objectContaining({
+        pluginId: 'stat',
+        options: expect.objectContaining({ colorMode: BigValueColorMode.Background }),
+      }),
       expect.objectContaining({ name: SuggestionName.PieChart }),
       expect.objectContaining({ name: SuggestionName.PieChartDonut }),
       expect.objectContaining({ name: SuggestionName.BarGaugeBasic }),
@@ -285,8 +294,11 @@ scenario('Single frame with string and 2 number field', (ctx) => {
       expect.objectContaining({ name: SuggestionName.BarChartHorizontalStackedPercent }),
       expect.objectContaining({ name: SuggestionName.Gauge }),
       expect.objectContaining({ name: SuggestionName.GaugeNoThresholds }),
-      expect.objectContaining({ name: SuggestionName.Stat }),
-      expect.objectContaining({ name: SuggestionName.StatColoredBackground }),
+      expect.objectContaining({ pluginId: 'stat' }),
+      expect.objectContaining({
+        pluginId: 'stat',
+        options: expect.objectContaining({ colorMode: BigValueColorMode.Background }),
+      }),
       expect.objectContaining({ name: SuggestionName.PieChart }),
       expect.objectContaining({ name: SuggestionName.PieChartDonut }),
       expect.objectContaining({ name: SuggestionName.BarGaugeBasic }),
@@ -305,7 +317,7 @@ scenario('Single frame with only string field', (ctx) => {
 
   it('should return correct suggestions', () => {
     expect(ctx.suggestions).toEqual([
-      expect.objectContaining({ name: SuggestionName.Stat }),
+      expect.objectContaining({ pluginId: 'stat' }),
       expect.objectContaining({ pluginId: 'table' }),
     ]);
   });

@@ -15,8 +15,6 @@ export enum SuggestionName {
   Candlestick = 'Candlestick',
   PieChart = 'Pie chart',
   PieChartDonut = 'Pie chart donut',
-  Stat = 'Stat',
-  StatColoredBackground = 'Stat colored background',
   Gauge = 'Gauge',
   GaugeCircular = 'Circular gauge',
   GaugeNoThresholds = 'Gauge no thresholds',
