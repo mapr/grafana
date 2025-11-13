@@ -1283,7 +1283,7 @@
   },
   "public/app/core/core.ts": {
     "no-barrel-files/no-barrel-files": {
-      "count": 7
+      "count": 3
     }
   },
   "public/app/core/navigation/types.ts": {
