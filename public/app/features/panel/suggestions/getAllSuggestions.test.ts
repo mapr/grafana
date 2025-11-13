@@ -333,7 +333,10 @@ scenario('Given default loki logs data', (ctx) => {
   ]);
 
   it('should return correct suggestions', () => {
-    expect(ctx.names()).toEqual([SuggestionName.Logs, SuggestionName.Table]);
+    expect(ctx.suggestions).toEqual([
+      expect.objectContaining({ pluginId: 'logs' }),
+      expect.objectContaining({ pluginId: 'table' }),
+    ]);
   });
 });
 

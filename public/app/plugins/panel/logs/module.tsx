@@ -1,10 +1,9 @@
-import { PanelPlugin, LogsSortOrder, LogsDedupStrategy, LogsDedupDescription } from '@grafana/data';
+import { PanelPlugin, LogsSortOrder, LogsDedupStrategy, LogsDedupDescription, FieldType } from '@grafana/data';
 import { t } from '@grafana/i18n';
 import { config } from '@grafana/runtime';
 
 import { LogsPanel } from './LogsPanel';
 import { Options } from './panelcfg.gen';
-import { LogsPanelSuggestionsSupplier } from './suggestions';
 
 export const plugin = new PanelPlugin<Options>(LogsPanel)
   .setPanelOptions((builder, context) => {
@@ -207,4 +206,4 @@ export const plugin = new PanelPlugin<Options>(LogsPanel)
         defaultValue: LogsSortOrder.Descending,
       });
   })
-  .setSuggestionsSupplier(new LogsPanelSuggestionsSupplier());
+  .setSuggestionsHandler((ds) => ds.hasData && ds.hasFieldType(FieldType.time) && ds.hasFieldType(FieldType.string));
