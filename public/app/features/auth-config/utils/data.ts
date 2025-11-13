@@ -18,6 +18,7 @@ export const emptySettings: SSOProviderDTO = {
   clientAuthentication: '',
   clientId: '',
   clientSecret: '',
+  serverDiscoveryUrl: '',
   managedIdentityClientId: '',
   federatedCredentialAudience: '',
   workloadIdentityTokenFile: '',

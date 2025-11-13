@@ -137,7 +137,8 @@ export type OAuth =
   // | 'grafananet' Deprecated. Key always changed to "grafana_com"
   | 'grafana_com'
   | 'azuread'
-  | 'okta';
+  | 'okta'
+  | 'oidc';
 
 /** Map of enabled OAuth services and their respective names
  *

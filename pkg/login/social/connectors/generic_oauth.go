@@ -22,8 +22,6 @@ import (
 )
 
 const (
-	nameAttributePathKey    = "name_attribute_path"
-	loginAttributePathKey   = "login_attribute_path"
 	idTokenAttributeNameKey = "id_token_attribute_name" // #nosec G101 not a hardcoded credential
 )
 
@@ -66,7 +64,7 @@ func NewGenericOAuthProvider(info *social.OAuthInfo, cfg *setting.Cfg, orgRoleMa
 	}
 
 	provider := &SocialGenericOAuth{
-		SocialBase:           newSocialBase(social.GenericOAuthProviderName, orgRoleMapper, info, features, cfg),
+		SocialBase:           s,
 		teamsUrl:             info.TeamsUrl,
 		emailAttributeName:   info.EmailAttributeName,
 		emailAttributePath:   info.EmailAttributePath,

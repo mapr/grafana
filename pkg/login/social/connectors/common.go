@@ -16,8 +16,34 @@ import (
 
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/login/social"
+	"github.com/grafana/grafana/pkg/services/ssosettings"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/util"
+)
+
+const (
+	nameAttributePathKey  = "name_attribute_path"
+	loginAttributePathKey = "login_attribute_path"
+)
+
+type standardClaim string
+
+const (
+	claimPreferredUsername standardClaim = "preferred_username"
+	claimName              standardClaim = "name"
+	claimSub               standardClaim = "sub"
+	claimNickname          standardClaim = "nickname"
+	claimEmail             standardClaim = "email"
+)
+
+var (
+	nameAttributeClaims  = []standardClaim{claimPreferredUsername, claimName, claimSub, claimNickname, claimEmail}
+	loginAttributeClaims = []standardClaim{claimSub, claimEmail}
+)
+
+const (
+	defaultNameAttributeClaim  = claimName
+	defaultLoginAttributeClaim = claimSub
 )
 
 type ExtraFieldType int
@@ -165,6 +191,59 @@ func MustBool(value any, defaultValue bool) bool {
 	}
 
 	return result
+}
+
+func ensureDefaultAttributeClaims(info *social.OAuthInfo) {
+	if info == nil {
+		return
+	}
+
+	if info.Extra == nil {
+		info.Extra = map[string]string{}
+	}
+
+	if info.Extra[nameAttributePathKey] == "" {
+		info.Extra[nameAttributePathKey] = string(defaultNameAttributeClaim)
+	}
+
+	if info.Extra[loginAttributePathKey] == "" {
+		info.Extra[loginAttributePathKey] = string(defaultLoginAttributeClaim)
+	}
+}
+
+func validateStandardAttributeClaims(info *social.OAuthInfo) error {
+	if info == nil {
+		return nil
+	}
+
+	ensureDefaultAttributeClaims(info)
+
+	if !isAllowedClaim(info.Extra[nameAttributePathKey], nameAttributeClaims) {
+		return ssosettings.ErrInvalidOAuthConfig(fmt.Sprintf("name attribute path must be one of: %s", strings.Join(allowedClaimValues(nameAttributeClaims), ", ")))
+	}
+
+	if !isAllowedClaim(info.Extra[loginAttributePathKey], loginAttributeClaims) {
+		return ssosettings.ErrInvalidOAuthConfig(fmt.Sprintf("login attribute path must be one of: %s", strings.Join(allowedClaimValues(loginAttributeClaims), ", ")))
+	}
+
+	return nil
+}
+
+func isAllowedClaim(value string, allowed []standardClaim) bool {
+	for _, claim := range allowed {
+		if value == string(claim) {
+			return true
+		}
+	}
+	return false
+}
+
+func allowedClaimValues(claims []standardClaim) []string {
+	values := make([]string, len(claims))
+	for i, claim := range claims {
+		values[i] = string(claim)
+	}
+	return values
 }
 
 // CreateOAuthInfoFromKeyValuesWithLogging creates an OAuthInfo struct from a map[string]any using mapstructure

@@ -215,6 +215,8 @@ func createOAuthConnector(name string, info *social.OAuthInfo, cfg *setting.Cfg,
 		return connectors.NewGrafanaComProvider(info, cfg, orgRoleMapper, ssoSettings, features), nil
 	case social.OktaProviderName:
 		return connectors.NewOktaProvider(info, cfg, orgRoleMapper, ssoSettings, features), nil
+	case social.OIDCProviderName:
+		return connectors.NewOIDCProvider(info, cfg, orgRoleMapper, ssoSettings, features, cache), nil
 	default:
 		return nil, fmt.Errorf("unknown oauth provider: %s", name)
 	}

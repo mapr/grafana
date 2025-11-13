@@ -22,6 +22,7 @@ var extraKeysByProvider = map[string]map[string]connectors.ExtraKeyInfo{
 	social.GoogleProviderName:       connectors.ExtraGoogleSettingKeys,
 	social.GrafanaComProviderName:   connectors.ExtraGrafanaComSettingKeys,
 	social.GrafanaNetProviderName:   connectors.ExtraGrafanaComSettingKeys,
+	social.OIDCProviderName:         connectors.ExtraOIDCSettingKeys,
 }
 
 var _ ssosettings.FallbackStrategy = (*OAuthStrategy)(nil)
@@ -82,6 +83,7 @@ func (s *OAuthStrategy) loadSettingsForProvider(provider string) map[string]any 
 		"auth_url":                      section.Key("auth_url").Value(),
 		"token_url":                     section.Key("token_url").Value(),
 		"api_url":                       section.Key("api_url").Value(),
+		"server_discovery_url":          section.Key("server_discovery_url").Value(),
 		"teams_url":                     section.Key("teams_url").Value(),
 		"enabled":                       section.Key("enabled").MustBool(false),
 		"email_attribute_name":          section.Key("email_attribute_name").Value(),

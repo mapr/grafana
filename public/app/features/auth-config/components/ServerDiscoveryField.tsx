@@ -44,6 +44,7 @@ export const ServerDiscoveryField = ({ setValue }: Props) => {
       if (res['userinfo_endpoint']) {
         setValue('apiUrl', res['userinfo_endpoint']);
       }
+      setValue('serverDiscoveryUrl', data.url);
 
       appEvents.publish({
         type: AppEvents.alertSuccess.name,

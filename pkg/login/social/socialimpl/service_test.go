@@ -40,7 +40,7 @@ func TestIntegrationSocialService_ProvideService(t *testing.T) {
 	}{
 		{
 			name:                                "should load all social connectors",
-			expectedSocialMapLength:             7,
+			expectedSocialMapLength:             8,
 			expectedGenericOAuthSkipOrgRoleSync: false,
 		},
 	}
@@ -153,6 +153,7 @@ func TestIntegrationSocialService_ProvideService_GrafanaComGrafanaNet(t *testing
 				ClientId:  "grafanaComClientId",
 				Extra: map[string]string{
 					"allowed_organizations": "",
+					"server_discovery_url":  "",
 				},
 			},
 		},
@@ -174,6 +175,7 @@ func TestIntegrationSocialService_ProvideService_GrafanaComGrafanaNet(t *testing
 				ClientId:  "grafanaNetClientId",
 				Extra: map[string]string{
 					"allowed_organizations": "",
+					"server_discovery_url":  "",
 				},
 			},
 		},
@@ -195,6 +197,7 @@ func TestIntegrationSocialService_ProvideService_GrafanaComGrafanaNet(t *testing
 				ClientId:  "grafanaComClientId",
 				Extra: map[string]string{
 					"allowed_organizations": "",
+					"server_discovery_url":  "",
 				},
 			},
 		},
@@ -216,6 +219,7 @@ func TestIntegrationSocialService_ProvideService_GrafanaComGrafanaNet(t *testing
 				ClientId:  "grafanaComClientId",
 				Extra: map[string]string{
 					"allowed_organizations": "",
+					"server_discovery_url":  "",
 				},
 			},
 		},

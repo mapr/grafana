@@ -11,5 +11,6 @@ export const UIMap: Record<string, [IconName, string]> = {
   grafana_com: ['grafana', 'Grafana.com'],
   azuread: ['microsoft', 'Entra ID'],
   okta: ['okta', 'Okta'],
+  oidc: ['lock', 'OpenID Connect'],
   scim: ['scim', 'SCIM'],
 };

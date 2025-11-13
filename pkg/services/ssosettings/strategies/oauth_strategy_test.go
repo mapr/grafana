@@ -84,6 +84,7 @@ var (
 		"auth_url":                      "test_auth_url",
 		"token_url":                     "test_token_url",
 		"api_url":                       "test_api_url",
+		"server_discovery_url":          "",
 		"teams_url":                     "test_teams_url",
 		"allowed_domains":               "domain1.com",
 		"allowed_groups":                "",

@@ -7,7 +7,7 @@ import { TextLink } from '@grafana/ui';
 import { contextSrv } from 'app/core/core';
 
 import { ServerDiscoveryField } from './components/ServerDiscoveryField';
-import { FieldData, SSOProvider, SSOSettingsField } from './types';
+import { FieldData, OIDCStandardClaim, SSOProvider, SSOSettingsField } from './types';
 import { isSelectableValue, isSelectableValueArray } from './utils/guards';
 import { isUrlValid, isValidDomain } from './utils/url';
 
@@ -121,6 +121,59 @@ export const getSectionFields = (): Section => {
           { name: 'teamIds', dependsOn: 'defineAllowedTeamsIds' },
           { name: 'teamsUrl', dependsOn: 'defineAllowedTeamsIds' },
           { name: 'teamIdsAttributePath', dependsOn: 'defineAllowedTeamsIds' },
+          'usePkce',
+          'useRefreshToken',
+          'tlsSkipVerifyInsecure',
+          'tlsClientCert',
+          'tlsClientKey',
+          'tlsClientCa',
+        ],
+      },
+    ],
+    oidc: [
+      {
+        name: generalSettingsLabel,
+        id: 'general',
+        fields: [
+          'name',
+          'clientId',
+          'clientSecret',
+          'authStyle',
+          'scopes',
+          'serverDiscoveryUrl',
+          'authUrl',
+          'tokenUrl',
+          'apiUrl',
+          'allowSignUp',
+          'autoLogin',
+          'signoutRedirectUrl',
+          'loginPrompt',
+        ],
+      },
+      {
+        name: userMappingLabel,
+        id: 'user',
+        fields: [
+          'nameAttributePath',
+          'loginAttributePath',
+          'emailAttributePath',
+          'roleAttributePath',
+          'roleAttributeStrict',
+          'orgMapping',
+          'orgAttributePath',
+          'groupsAttributePath',
+          'allowAssignGrafanaAdmin',
+          'skipOrgRoleSync',
+        ],
+      },
+      {
+        name: extraSecurityLabel,
+        id: 'extra',
+        fields: [
+          'allowedDomains',
+          'defineAllowedGroups',
+          { name: 'allowedGroups', dependsOn: 'defineAllowedGroups' },
+          { name: 'groupsAttributePath', dependsOn: 'defineAllowedGroups' },
           'usePkce',
           'useRefreshToken',
           'tlsSkipVerifyInsecure',
@@ -316,6 +369,19 @@ const apiURLLabel = 'API URL';
 const jmesPathLabel = 'JMESPath';
 const workloadIdentityLabel = 'Workload identity';
 
+const oidcNameAttributeOptions: Array<SelectableValue<string>> = [
+  { value: OIDCStandardClaim.PreferredUsername, label: OIDCStandardClaim.PreferredUsername },
+  { value: OIDCStandardClaim.Name, label: OIDCStandardClaim.Name },
+  { value: OIDCStandardClaim.Sub, label: OIDCStandardClaim.Sub },
+  { value: OIDCStandardClaim.Nickname, label: OIDCStandardClaim.Nickname },
+  { value: OIDCStandardClaim.Email, label: OIDCStandardClaim.Email },
+];
+
+const oidcLoginAttributeOptions: Array<SelectableValue<string>> = [
+  { value: OIDCStandardClaim.Sub, label: OIDCStandardClaim.Sub },
+  { value: OIDCStandardClaim.Email, label: OIDCStandardClaim.Email },
+];
+
 /**
  * List all the fields that can be used in the form
  */
@@ -444,13 +510,17 @@ export function fieldMap(provider: string): Record<string, FieldData> {
       label: authURLLabel,
       type: 'text',
       description: t('auth-config.fields.auth-url-description', 'The authorization endpoint of your OAuth2 provider.'),
-      validation: {
-        required: true,
-        validate: (value) => {
-          return isUrlValid(value);
-        },
-        message: t('auth-config.fields.auth-url-required', 'This field is required and must be a valid URL.'),
-      },
+      hidden: provider === 'oidc',
+      validation:
+        provider === 'oidc'
+          ? undefined
+          : {
+              required: true,
+              validate: (value) => {
+                return isUrlValid(value);
+              },
+              message: t('auth-config.fields.auth-url-required', 'This field is required and must be a valid URL.'),
+            },
     },
     authStyle: {
       label: t('auth-config.fields.auth-style-label', 'Auth style'),
@@ -474,13 +544,17 @@ export function fieldMap(provider: string): Record<string, FieldData> {
       label: tokenURLLabel,
       type: 'text',
       description: t('auth-config.fields.token-url-description', 'The token endpoint of your OAuth2 provider.'),
-      validation: {
-        required: true,
-        validate: (value) => {
-          return isUrlValid(value);
-        },
-        message: t('auth-config.fields.token-url-required', 'This field is required and must be a valid URL.'),
-      },
+      hidden: provider === 'oidc',
+      validation:
+        provider === 'oidc'
+          ? undefined
+          : {
+              required: true,
+              validate: (value) => {
+                return isUrlValid(value);
+              },
+              message: t('auth-config.fields.token-url-required', 'This field is required and must be a valid URL.'),
+            },
     },
     scopes: {
       label: scopesLabel,
@@ -504,7 +578,7 @@ export function fieldMap(provider: string): Record<string, FieldData> {
           <Trans i18nKey="auth-config.fields.allowed-groups-description">
             List of comma- or space-separated groups. The user should be a member of at least one group to log in.
           </Trans>{' '}
-          {provider === 'generic_oauth' &&
+          {['generic_oauth', 'oidc'].includes(provider) &&
             t(
               'auth-config.fields.allowed-groups-description-oauth',
               'If you configure "{{ allowedGroupsLabel }}", you must also configure "{{ groupsAttributePathLabel }}".',
@@ -565,6 +639,7 @@ export function fieldMap(provider: string): Record<string, FieldData> {
         },
         message: t('auth-config.fields.api-url-required', 'This field must be a valid URL if set.'),
       },
+      hidden: provider === 'oidc',
     },
     roleAttributePath: {
       label: t('auth-config.fields.role-attribute-path-label', 'Role attribute path'),
@@ -625,23 +700,54 @@ export function fieldMap(provider: string): Record<string, FieldData> {
         'JMESPath expression to use for user email lookup from the user information.'
       ),
       type: 'text',
+      hidden: provider === 'oidc',
     },
-    nameAttributePath: {
-      label: t('auth-config.fields.name-attribute-path-label', 'Name attribute path'),
-      description: t(
-        'auth-config.fields.name-attribute-path-description',
-        "JMESPath expression to use for user name lookup from the user ID token. \nThis name will be used as the user's display name."
-      ),
-      type: 'text',
-    },
-    loginAttributePath: {
-      label: t('auth-config.fields.login-attribute-path-label', 'Login attribute path'),
-      description: t(
-        'auth-config.fields.login-attribute-path-description',
-        'JMESPath expression to use for user login lookup from the user ID token.'
-      ),
-      type: 'text',
-    },
+    nameAttributePath:
+      provider === 'oidc'
+        ? {
+            label: t('auth-config.fields.name-attribute-path-label', 'Name attribute path'),
+            description: t(
+              'auth-config.fields.name-attribute-claim-description',
+              'Standard claim to use for the user display name.'
+            ),
+            type: 'select',
+            options: oidcNameAttributeOptions,
+            defaultValue: {
+              value: OIDCStandardClaim.Name,
+              label: OIDCStandardClaim.Name,
+            },
+          }
+        : {
+            label: t('auth-config.fields.name-attribute-path-label', 'Name attribute path'),
+            description: t(
+              'auth-config.fields.name-attribute-path-description',
+              "JMESPath expression to use for user name lookup from the user ID token. \nThis name will be used as the user's display name."
+            ),
+            type: 'text',
+          },
+    loginAttributePath:
+      provider === 'oidc'
+        ? {
+            label: t('auth-config.fields.login-attribute-path-label', 'Login attribute path'),
+            description: t(
+              'auth-config.fields.login-attribute-claim-description',
+              'Standard claim to use for the user login name.'
+            ),
+            type: 'select',
+            options: oidcLoginAttributeOptions,
+            defaultValue: {
+              value: OIDCStandardClaim.Sub,
+              label: OIDCStandardClaim.Sub,
+            },
+          }
+        : {
+            label: t('auth-config.fields.login-attribute-path-label', 'Login attribute path'),
+            description: t(
+              'auth-config.fields.login-attribute-path-description',
+              'JMESPath expression to use for user login lookup from the user ID token.'
+            ),
+            type: 'text',
+          },
     idTokenAttributeName: {
       label: t('auth-config.fields.id-token-attribute-name-label', 'ID token attribute name'),
       description: t(
@@ -696,7 +802,7 @@ export function fieldMap(provider: string): Record<string, FieldData> {
         { orgMappingLabel, orgAttributePathLabel }
       ),
       type: 'text',
-      hidden: !(['generic_oauth', 'okta'].includes(provider) && contextSrv.isGrafanaAdmin),
+      hidden: !(['generic_oauth', 'oidc', 'okta'].includes(provider) && contextSrv.isGrafanaAdmin),
     },
     defineAllowedGroups: {
       label: t('auth-config.fields.define-allowed-groups-label', 'Define allowed groups'),

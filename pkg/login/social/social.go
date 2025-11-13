@@ -31,6 +31,7 @@ const (
 	// legacy/old settings for the provider
 	GrafanaNetProviderName = "grafananet"
 	OktaProviderName       = "okta"
+	OIDCProviderName       = "oidc"
 	SAMLProviderName       = "saml"
 	LDAPProviderName       = "ldap"
 )

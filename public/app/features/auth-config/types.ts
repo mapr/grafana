@@ -3,6 +3,14 @@ import { Validate, UseFormSetValue } from 'react-hook-form';
 
 import { IconName, SelectableValue } from '@grafana/data';
 import { Settings } from 'app/types/settings';
+
+export enum OIDCStandardClaim {
+  PreferredUsername = 'preferred_username',
+  Name = 'name',
+  Sub = 'sub',
+  Nickname = 'nickname',
+  Email = 'email',
+}
 export interface AuthProviderInfo {
   id: string;
   type: string;
