@@ -3,6 +3,7 @@ package encryption
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -43,7 +44,7 @@ func (ss *encryptionStoreImpl) GetDataKey(ctx context.Context, namespace, uid st
 		attribute.String("namespace", namespace),
 		attribute.String("uid", uid),
 	))
-
+	randomSleep()
 	defer func() {
 		span.End()
 		ss.metrics.GetDataKeyDuration.Observe(float64(time.Since(start)))
@@ -106,6 +107,7 @@ func (ss *encryptionStoreImpl) GetCurrentDataKey(ctx context.Context, namespace,
 		attribute.String("namespace", namespace),
 		attribute.String("label", label),
 	))
+	randomSleep()
 	defer func() {
 		span.End()
 		ss.metrics.GetCurrentDataKeyDuration.Observe(float64(time.Since(start)))
@@ -167,6 +169,7 @@ func (ss *encryptionStoreImpl) ListDataKeys(ctx context.Context, namespace strin
 	ctx, span := ss.tracer.Start(ctx, "DataKeyStorage.ListDataKeys", trace.WithAttributes(
 		attribute.String("namespace", namespace),
 	))
+	randomSleep()
 	defer func() {
 		span.End()
 		ss.metrics.ListDataKeysDuration.Observe(float64(time.Since(start)))
@@ -230,6 +233,7 @@ func (ss *encryptionStoreImpl) CreateDataKey(ctx context.Context, dataKey *contr
 		attribute.String("namespace", dataKey.Namespace),
 		attribute.Bool("active", dataKey.Active),
 	))
+	randomSleep()
 	defer func() {
 		span.End()
 		ss.metrics.CreateDataKeyDuration.Observe(float64(time.Since(start)))
@@ -274,6 +278,7 @@ func (ss *encryptionStoreImpl) DisableDataKeys(ctx context.Context, namespace st
 	ctx, span := ss.tracer.Start(ctx, "DataKeyStorage.DisableDataKeys", trace.WithAttributes(
 		attribute.String("namespace", namespace),
 	))
+	randomSleep()
 	defer func() {
 		span.End()
 		ss.metrics.DisableDataKeysDuration.Observe(float64(time.Since(start)))
@@ -313,6 +318,7 @@ func (ss *encryptionStoreImpl) DeleteDataKey(ctx context.Context, namespace, uid
 		attribute.String("uid", uid),
 		attribute.String("namespace", namespace),
 	))
+	randomSleep()
 	defer func() {
 		span.End()
 		ss.metrics.DeleteDataKeyDuration.Observe(float64(time.Since(start)))
@@ -380,6 +386,7 @@ func (ss *globalEncryptionStoreImpl) DisableAllDataKeys(ctx context.Context) err
 		ss.metrics.DisableAllDataKeysDuration.Observe(float64(time.Since(start)))
 	}()
 
+	randomSleep()
 	req := disableAllDataKeys{
 		SQLTemplate: sqltemplate.New(ss.dialect),
 		Updated:     time.Now(),
@@ -405,4 +412,8 @@ func (ss *globalEncryptionStoreImpl) DisableAllDataKeys(ctx context.Context) err
 	}
 
 	return nil
+}
+
+func randomSleep() {
+	time.Sleep(time.Duration(50+rand.Intn(150)) * time.Millisecond)
 }
