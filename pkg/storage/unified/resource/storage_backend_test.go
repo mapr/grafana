@@ -1957,9 +1957,9 @@ func TestKvStorageBackend_ResourceLastImportTime(t *testing.T) {
 
 	for _, lastImportTime := range lastImportTimes {
 		err := backend.updateLastImportTime(ctx, &resourcepb.ResourceKey{
-			Namespace: lastImportTime.NamespacedResource.Namespace,
-			Group:     lastImportTime.NamespacedResource.Group,
-			Resource:  lastImportTime.NamespacedResource.Resource,
+			Namespace: lastImportTime.Namespace,
+			Group:     lastImportTime.Group,
+			Resource:  lastImportTime.Resource,
 		}, lastImportTime.LastImportTime)
 
 		require.NoError(t, err)
