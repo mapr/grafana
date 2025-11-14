@@ -5,6 +5,7 @@ import (
 	"crypto/aes"
 	cpr "crypto/cipher"
 	"crypto/rand"
+	"fmt"
 	"io"
 
 	"github.com/grafana/grafana/pkg/registry/apis/secret/encryption/cipher"
@@ -90,17 +91,17 @@ func (c aesGcmCipher) Decrypt(_ context.Context, payload []byte, secret string) 
 
 	key, err := aes256CipherKey(secret, salt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to calculate key: %w", err)
 	}
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create block: %w", err)
 	}
 
 	gcm, err := cpr.NewGCM(block)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create GCM: %w", err)
 	}
 
 	if len(payload) < gcm.NonceSize() {

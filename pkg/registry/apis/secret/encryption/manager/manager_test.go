@@ -678,7 +678,7 @@ func TestEncryptionService_FlushCache(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a real OSS DEK cache
-	dekCache := ProvideOSSDataKeyCache(cfg)
+	dekCache := ProvideOSSDataKeyCache(cfg, enc)
 
 	encMgr, err := ProvideEncryptionManager(
 		tracer,
@@ -731,4 +731,321 @@ func TestEncryptionService_FlushCache(t *testing.T) {
 	// Verify the key is back in the cache after the decrypt operation
 	_, existsById = dekCache.GetById(namespace.String(), dataKeyID)
 	assert.True(t, existsById, "DEK should be re-cached by ID after decrypt")
+}
+
+func BenchmarkEncryptionManager_EncryptDecrypt(b *testing.B) {
+	ctx := context.Background()
+	namespace := xkube.Namespace("benchmark-namespace")
+	plaintext := []byte("benchmark secret data that needs encryption")
+
+	benchmarks := []struct {
+		name      string
+		cacheType string
+		setupFunc func(b *testing.B) (*EncryptionManager, encryption.DataKeyCache)
+	}{
+		{
+			name:      "NoopCache",
+			cacheType: "noop",
+			setupFunc: func(b *testing.B) (*EncryptionManager, encryption.DataKeyCache) {
+				testDB := sqlstore.NewTestStore(b, sqlstore.WithMigrator(migrator.New()))
+				tracer := noop.NewTracerProvider().Tracer("benchmark")
+				database := database.ProvideDatabase(testDB, tracer)
+
+				cfg := &setting.Cfg{
+					SecretsManagement: setting.SecretsManagerSettings{
+						CurrentEncryptionProvider: "secret_key.v1",
+						ConfiguredKMSProviders:    map[string]map[string]string{"secret_key.v1": {"secret_key": "SW2YcwTIb9zpOOhoPsMm"}},
+					},
+				}
+
+				store, err := encryptionstorage.ProvideDataKeyStorage(database, tracer, nil)
+				require.NoError(b, err)
+
+				usageStats := &usagestats.UsageStatsMock{T: b}
+				enc, err := service.ProvideAESGCMCipherService(tracer, usageStats)
+				require.NoError(b, err)
+
+				ossProviders, err := osskmsproviders.ProvideOSSKMSProviders(cfg, enc)
+				require.NoError(b, err)
+
+				noopCache := &NoopDataKeyCache{}
+				encMgr, err := ProvideEncryptionManager(
+					tracer,
+					store,
+					usageStats,
+					enc,
+					ossProviders,
+					noopCache,
+					cfg,
+				)
+				require.NoError(b, err)
+
+				return encMgr.(*EncryptionManager), noopCache
+			},
+		},
+		{
+			name:      "OSSCache",
+			cacheType: "oss_plaintext",
+			setupFunc: func(b *testing.B) (*EncryptionManager, encryption.DataKeyCache) {
+				testDB := sqlstore.NewTestStore(b, sqlstore.WithMigrator(migrator.New()))
+				tracer := noop.NewTracerProvider().Tracer("benchmark")
+				database := database.ProvideDatabase(testDB, tracer)
+
+				cfg := &setting.Cfg{
+					SecretsManagement: setting.SecretsManagerSettings{
+						CurrentEncryptionProvider:  "secret_key.v1",
+						ConfiguredKMSProviders:     map[string]map[string]string{"secret_key.v1": {"secret_key": "SW2YcwTIb9zpOOhoPsMm"}},
+						DataKeysCacheTTL:           time.Hour,
+						DataKeysCacheCautionPeriod: 0 * time.Second,
+					},
+				}
+
+				store, err := encryptionstorage.ProvideDataKeyStorage(database, tracer, nil)
+				require.NoError(b, err)
+
+				usageStats := &usagestats.UsageStatsMock{T: b}
+				enc, err := service.ProvideAESGCMCipherService(tracer, usageStats)
+				require.NoError(b, err)
+
+				ossProviders, err := osskmsproviders.ProvideOSSKMSProviders(cfg, enc)
+				require.NoError(b, err)
+
+				ossCache := ProvideOSSDataKeyCache(cfg, enc)
+				encMgr, err := ProvideEncryptionManager(
+					tracer,
+					store,
+					usageStats,
+					enc,
+					ossProviders,
+					ossCache,
+					cfg,
+				)
+				require.NoError(b, err)
+
+				return encMgr.(*EncryptionManager), ossCache
+			},
+		},
+		{
+			name:      "OSSCacheWithEncryption",
+			cacheType: "oss_encrypted",
+			setupFunc: func(b *testing.B) (*EncryptionManager, encryption.DataKeyCache) {
+				testDB := sqlstore.NewTestStore(b, sqlstore.WithMigrator(migrator.New()))
+				tracer := noop.NewTracerProvider().Tracer("benchmark")
+				database := database.ProvideDatabase(testDB, tracer)
+
+				cfg := &setting.Cfg{
+					SecretsManagement: setting.SecretsManagerSettings{
+						CurrentEncryptionProvider:  "secret_key.v1",
+						ConfiguredKMSProviders:     map[string]map[string]string{"secret_key.v1": {"secret_key": "SW2YcwTIb9zpOOhoPsMm"}},
+						DataKeysCacheTTL:           time.Hour,
+						DataKeysCacheCautionPeriod: 0 * time.Second,
+						UseCipherForDataKeyCache:   true, // Enable encryption of data keys in cache
+					},
+				}
+
+				store, err := encryptionstorage.ProvideDataKeyStorage(database, tracer, nil)
+				require.NoError(b, err)
+
+				usageStats := &usagestats.UsageStatsMock{T: b}
+				enc, err := service.ProvideAESGCMCipherService(tracer, usageStats)
+				require.NoError(b, err)
+
+				ossProviders, err := osskmsproviders.ProvideOSSKMSProviders(cfg, enc)
+				require.NoError(b, err)
+
+				ossCache := ProvideOSSDataKeyCache(cfg, enc)
+				encMgr, err := ProvideEncryptionManager(
+					tracer,
+					store,
+					usageStats,
+					enc,
+					ossProviders,
+					ossCache,
+					cfg,
+				)
+				require.NoError(b, err)
+
+				return encMgr.(*EncryptionManager), ossCache
+			},
+		},
+		{
+			name:      "OSSCacheWithLongDEKEncryption",
+			cacheType: "oss_long_dek_plaintext",
+			setupFunc: func(b *testing.B) (*EncryptionManager, encryption.DataKeyCache) {
+				testDB := sqlstore.NewTestStore(b, sqlstore.WithMigrator(migrator.New()))
+				tracer := noop.NewTracerProvider().Tracer("benchmark")
+				database := database.ProvideDatabase(testDB, tracer)
+
+				cfg := &setting.Cfg{
+					SecretsManagement: setting.SecretsManagerSettings{
+						CurrentEncryptionProvider:     "secret_key.v1",
+						ConfiguredKMSProviders:        map[string]map[string]string{"secret_key.v1": {"secret_key": "SW2YcwTIb9zpOOhoPsMm"}},
+						DataKeysCacheTTL:              time.Hour,
+						DataKeysCacheCautionPeriod:    0 * time.Second,
+						SimulateLongDEKEncryptionTime: true, // Simulate 100ms delay for DEK encryption
+					},
+				}
+
+				store, err := encryptionstorage.ProvideDataKeyStorage(database, tracer, nil)
+				require.NoError(b, err)
+
+				usageStats := &usagestats.UsageStatsMock{T: b}
+				enc, err := service.ProvideAESGCMCipherService(tracer, usageStats)
+				require.NoError(b, err)
+
+				ossProviders, err := osskmsproviders.ProvideOSSKMSProviders(cfg, enc)
+				require.NoError(b, err)
+
+				ossCache := ProvideOSSDataKeyCache(cfg, enc)
+				encMgr, err := ProvideEncryptionManager(
+					tracer,
+					store,
+					usageStats,
+					enc,
+					ossProviders,
+					ossCache,
+					cfg,
+				)
+				require.NoError(b, err)
+
+				return encMgr.(*EncryptionManager), ossCache
+			},
+		},
+		{
+			name:      "OSSCacheWithLongDEKEncryptionAndCipher",
+			cacheType: "oss_long_dek_cipher_encrypted",
+			setupFunc: func(b *testing.B) (*EncryptionManager, encryption.DataKeyCache) {
+				testDB := sqlstore.NewTestStore(b, sqlstore.WithMigrator(migrator.New()))
+				tracer := noop.NewTracerProvider().Tracer("benchmark")
+				database := database.ProvideDatabase(testDB, tracer)
+
+				cfg := &setting.Cfg{
+					SecretsManagement: setting.SecretsManagerSettings{
+						CurrentEncryptionProvider:     "secret_key.v1",
+						ConfiguredKMSProviders:        map[string]map[string]string{"secret_key.v1": {"secret_key": "SW2YcwTIb9zpOOhoPsMm"}},
+						DataKeysCacheTTL:              time.Hour,
+						DataKeysCacheCautionPeriod:    0 * time.Second,
+						SimulateLongDEKEncryptionTime: true, // Simulate 100ms delay for DEK encryption
+						UseCipherForDataKeyCache:      true, // Also encrypt data keys in cache
+					},
+				}
+
+				store, err := encryptionstorage.ProvideDataKeyStorage(database, tracer, nil)
+				require.NoError(b, err)
+
+				usageStats := &usagestats.UsageStatsMock{T: b}
+				enc, err := service.ProvideAESGCMCipherService(tracer, usageStats)
+				require.NoError(b, err)
+
+				ossProviders, err := osskmsproviders.ProvideOSSKMSProviders(cfg, enc)
+				require.NoError(b, err)
+
+				ossCache := ProvideOSSDataKeyCache(cfg, enc)
+				encMgr, err := ProvideEncryptionManager(
+					tracer,
+					store,
+					usageStats,
+					enc,
+					ossProviders,
+					ossCache,
+					cfg,
+				)
+				require.NoError(b, err)
+
+				return encMgr.(*EncryptionManager), ossCache
+			},
+		},
+		{
+			name:      "NoopCacheWithLongDEKEncryption",
+			cacheType: "noop_long_dek_plaintext",
+			setupFunc: func(b *testing.B) (*EncryptionManager, encryption.DataKeyCache) {
+				testDB := sqlstore.NewTestStore(b, sqlstore.WithMigrator(migrator.New()))
+				tracer := noop.NewTracerProvider().Tracer("benchmark")
+				database := database.ProvideDatabase(testDB, tracer)
+
+				cfg := &setting.Cfg{
+					SecretsManagement: setting.SecretsManagerSettings{
+						CurrentEncryptionProvider:     "secret_key.v1",
+						ConfiguredKMSProviders:        map[string]map[string]string{"secret_key.v1": {"secret_key": "SW2YcwTIb9zpOOhoPsMm"}},
+						SimulateLongDEKEncryptionTime: true, // Simulate 100ms delay for DEK encryption
+					},
+				}
+
+				store, err := encryptionstorage.ProvideDataKeyStorage(database, tracer, nil)
+				require.NoError(b, err)
+
+				usageStats := &usagestats.UsageStatsMock{T: b}
+				enc, err := service.ProvideAESGCMCipherService(tracer, usageStats)
+				require.NoError(b, err)
+
+				ossProviders, err := osskmsproviders.ProvideOSSKMSProviders(cfg, enc)
+				require.NoError(b, err)
+
+				noopCache := &NoopDataKeyCache{}
+				encMgr, err := ProvideEncryptionManager(
+					tracer,
+					store,
+					usageStats,
+					enc,
+					ossProviders,
+					noopCache,
+					cfg,
+				)
+				require.NoError(b, err)
+
+				return encMgr.(*EncryptionManager), noopCache
+			},
+		},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name+"/Encrypt", func(b *testing.B) {
+			svc, _ := bm.setupFunc(b)
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				_, err := svc.Encrypt(ctx, namespace, plaintext)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+
+		b.Run(bm.name+"/Decrypt", func(b *testing.B) {
+			svc, _ := bm.setupFunc(b)
+
+			// Pre-encrypt some data to decrypt during the benchmark
+			encrypted, err := svc.Encrypt(ctx, namespace, plaintext)
+			require.NoError(b, err)
+
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				_, err := svc.Decrypt(ctx, namespace, encrypted)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+
+		b.Run(bm.name+"/EncryptDecrypt", func(b *testing.B) {
+			svc, _ := bm.setupFunc(b)
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				encrypted, err := svc.Encrypt(ctx, namespace, plaintext)
+				if err != nil {
+					b.Fatal(err)
+				}
+
+				_, err = svc.Decrypt(ctx, namespace, encrypted)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
 }

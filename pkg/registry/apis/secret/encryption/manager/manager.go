@@ -208,6 +208,9 @@ func (s *EncryptionManager) dataKeyByLabel(ctx context.Context, namespace, label
 	if err != nil {
 		return "", nil, err
 	}
+	if s.cfg.SecretsManagement.SimulateLongDEKEncryptionTime {
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	// 3. Store the decrypted data key into the in-memory cache.
 	s.cacheDataKey(namespace, dataKey, decrypted)
@@ -239,6 +242,9 @@ func (s *EncryptionManager) newDataKey(ctx context.Context, namespace string, la
 	encrypted, err := provider.Encrypt(ctx, dataKey)
 	if err != nil {
 		return "", nil, err
+	}
+	if s.cfg.SecretsManagement.SimulateLongDEKEncryptionTime {
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	// 3. Store its encrypted value into the DB.
@@ -346,6 +352,9 @@ func (s *EncryptionManager) dataKeyById(ctx context.Context, namespace, id strin
 	if err != nil {
 		return nil, err
 	}
+	if s.cfg.SecretsManagement.SimulateLongDEKEncryptionTime {
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	// 3. Store the decrypted data key into the in-memory cache.
 	s.cacheDataKey(namespace, dataKey, decrypted)
@@ -413,6 +422,15 @@ func (s *EncryptionManager) cacheDataKey(namespace string, dataKey *contracts.Se
 		Label:     dataKey.Label,
 		DataKey:   decrypted,
 		Active:    dataKey.Active,
+	}
+
+	if s.cfg.SecretsManagement.UseCipherForDataKeyCache {
+		dek, err := s.cipher.Encrypt(context.TODO(), decrypted, string(dataKey.UID))
+		if err != nil {
+			return
+		}
+		entry.EncryptedDataKey = dek
+		entry.DataKey = nil
 	}
 
 	s.dataKeyCache.AddById(namespace, entry)

@@ -17,7 +17,7 @@ func TestOSSDataKeyCache(t *testing.T) {
 	settings.SecretsManagement = setting.SecretsManagerSettings{
 		DataKeysCacheTTL: 999 * time.Hour, // avoid expiration for testing
 	}
-	cache := ProvideOSSDataKeyCache(settings)
+	cache := ProvideOSSDataKeyCache(settings, nil)
 
 	namespace := "test-namespace"
 	entry := &encryption.DataKeyCacheEntry{
@@ -54,7 +54,7 @@ func TestOSSDataKeyCache(t *testing.T) {
 	})
 
 	t.Run("GetById and GetByLabel are independent", func(t *testing.T) {
-		cache2 := ProvideOSSDataKeyCache(settings)
+		cache2 := ProvideOSSDataKeyCache(settings, nil)
 		ns := "independent-test"
 
 		entryById := &encryption.DataKeyCacheEntry{
@@ -98,7 +98,7 @@ func TestOSSDataKeyCache_FalseConditions(t *testing.T) {
 	settings.SecretsManagement = setting.SecretsManagerSettings{
 		DataKeysCacheTTL: 999 * time.Hour,
 	}
-	cache := ProvideOSSDataKeyCache(settings)
+	cache := ProvideOSSDataKeyCache(settings, nil)
 
 	namespace := "test-namespace"
 	entry := &encryption.DataKeyCacheEntry{
@@ -135,7 +135,7 @@ func TestOSSDataKeyCache_FalseConditions(t *testing.T) {
 		shortTTLSettings.SecretsManagement = setting.SecretsManagerSettings{
 			DataKeysCacheTTL: 1 * time.Millisecond,
 		}
-		shortCache := ProvideOSSDataKeyCache(shortTTLSettings)
+		shortCache := ProvideOSSDataKeyCache(shortTTLSettings, nil)
 
 		namespace := "test-ns"
 		expiredEntry := &encryption.DataKeyCacheEntry{
@@ -156,7 +156,7 @@ func TestOSSDataKeyCache_FalseConditions(t *testing.T) {
 		shortTTLSettings.SecretsManagement = setting.SecretsManagerSettings{
 			DataKeysCacheTTL: 1 * time.Millisecond,
 		}
-		shortCache := ProvideOSSDataKeyCache(shortTTLSettings)
+		shortCache := ProvideOSSDataKeyCache(shortTTLSettings, nil)
 
 		namespace := "test-ns"
 		expiredEntry := &encryption.DataKeyCacheEntry{
@@ -175,7 +175,7 @@ func TestOSSDataKeyCache_FalseConditions(t *testing.T) {
 	t.Run("GetById returns false when entry namespace doesn't match", func(t *testing.T) {
 		// This tests the entry.Namespace != namespace check in GetById
 		// This is a defensive check that shouldn't normally happen if AddById works correctly
-		testCache := ProvideOSSDataKeyCache(settings).(*ossDataKeyCache)
+		testCache := ProvideOSSDataKeyCache(settings, nil).(*ossDataKeyCache)
 
 		// Manually insert an entry with mismatched namespace to test the defensive check
 		mismatchedEntry := &encryption.DataKeyCacheEntry{
@@ -198,7 +198,7 @@ func TestOSSDataKeyCache_FalseConditions(t *testing.T) {
 
 	t.Run("GetByLabel returns false when entry namespace doesn't match", func(t *testing.T) {
 		// This tests the entry.Namespace != namespace check in GetByLabel
-		testCache := ProvideOSSDataKeyCache(settings).(*ossDataKeyCache)
+		testCache := ProvideOSSDataKeyCache(settings, nil).(*ossDataKeyCache)
 
 		// Manually insert an entry with mismatched namespace to test the defensive check
 		mismatchedEntry := &encryption.DataKeyCacheEntry{
@@ -228,7 +228,7 @@ func TestOSSDataKeyCache_NamespaceIsolation(t *testing.T) {
 	settings.SecretsManagement = setting.SecretsManagerSettings{
 		DataKeysCacheTTL: 999 * time.Hour,
 	}
-	cache := ProvideOSSDataKeyCache(settings)
+	cache := ProvideOSSDataKeyCache(settings, nil)
 
 	namespace1 := "namespace-1"
 	namespace2 := "namespace-2"
@@ -305,7 +305,7 @@ func TestOSSDataKeyCache_Expiration(t *testing.T) {
 		settings.SecretsManagement = setting.SecretsManagerSettings{
 			DataKeysCacheTTL: 50 * time.Millisecond,
 		}
-		cache := ProvideOSSDataKeyCache(settings)
+		cache := ProvideOSSDataKeyCache(settings, nil)
 
 		namespace := "test-ns"
 		entry := &encryption.DataKeyCacheEntry{
@@ -340,7 +340,7 @@ func TestOSSDataKeyCache_Expiration(t *testing.T) {
 		settings.SecretsManagement = setting.SecretsManagerSettings{
 			DataKeysCacheTTL: 50 * time.Millisecond,
 		}
-		cache := ProvideOSSDataKeyCache(settings)
+		cache := ProvideOSSDataKeyCache(settings, nil)
 
 		namespace := "test-ns"
 
@@ -404,7 +404,7 @@ func TestOSSDataKeyCache_Expiration(t *testing.T) {
 		settings.SecretsManagement = setting.SecretsManagerSettings{
 			DataKeysCacheTTL: 50 * time.Millisecond,
 		}
-		cache := ProvideOSSDataKeyCache(settings)
+		cache := ProvideOSSDataKeyCache(settings, nil)
 
 		ns1 := "namespace-1"
 		ns2 := "namespace-2"
@@ -482,7 +482,7 @@ func TestOSSDataKeyCache_Flush(t *testing.T) {
 	settings.SecretsManagement = setting.SecretsManagerSettings{
 		DataKeysCacheTTL: 999 * time.Hour,
 	}
-	cache := ProvideOSSDataKeyCache(settings)
+	cache := ProvideOSSDataKeyCache(settings, nil)
 
 	namespace1 := "namespace-1"
 	namespace2 := "namespace-2"

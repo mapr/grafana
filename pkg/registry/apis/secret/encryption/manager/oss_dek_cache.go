@@ -1,27 +1,33 @@
 package manager
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/grafana/grafana/pkg/registry/apis/secret/encryption"
+	"github.com/grafana/grafana/pkg/registry/apis/secret/encryption/cipher"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type ossDataKeyCache struct {
-	mtx      sync.RWMutex
-	byId     map[string]map[string]*encryption.DataKeyCacheEntry
-	byLabel  map[string]map[string]*encryption.DataKeyCacheEntry
-	cacheTTL time.Duration
+	mtx       sync.RWMutex
+	byId      map[string]map[string]*encryption.DataKeyCacheEntry
+	byLabel   map[string]map[string]*encryption.DataKeyCacheEntry
+	cacheTTL  time.Duration
+	optCipher cipher.Cipher
+	cfg       *setting.Cfg
 }
 
-func ProvideOSSDataKeyCache(cfg *setting.Cfg) encryption.DataKeyCache {
+func ProvideOSSDataKeyCache(cfg *setting.Cfg, cipher cipher.Cipher) encryption.DataKeyCache {
 	return &ossDataKeyCache{
-		byId:     make(map[string]map[string]*encryption.DataKeyCacheEntry),
-		byLabel:  make(map[string]map[string]*encryption.DataKeyCacheEntry),
-		cacheTTL: cfg.SecretsManagement.DataKeysCacheTTL,
+		byId:      make(map[string]map[string]*encryption.DataKeyCacheEntry),
+		byLabel:   make(map[string]map[string]*encryption.DataKeyCacheEntry),
+		cacheTTL:  cfg.SecretsManagement.DataKeysCacheTTL,
+		optCipher: cipher,
+		cfg:       cfg,
 	}
 }
 
@@ -45,6 +51,23 @@ func (c *ossDataKeyCache) GetById(namespace, id string) (_ *encryption.DataKeyCa
 		return nil, false
 	}
 
+	if c.cfg.SecretsManagement.UseCipherForDataKeyCache {
+		dek, err := c.optCipher.Decrypt(context.TODO(), entry.EncryptedDataKey, string(entry.Id))
+		if err != nil {
+			return nil, false
+		}
+		// Create a copy to avoid mutating the cached entry
+		entryCopy := &encryption.DataKeyCacheEntry{
+			Namespace:  entry.Namespace,
+			Id:         entry.Id,
+			Label:      entry.Label,
+			DataKey:    dek,
+			Active:     entry.Active,
+			Expiration: entry.Expiration,
+		}
+		return entryCopy, true
+	}
+
 	return entry, true
 }
 
@@ -66,6 +89,23 @@ func (c *ossDataKeyCache) GetByLabel(namespace, label string) (_ *encryption.Dat
 	entry, exists := entries[label]
 	if !exists || entry.IsExpired() || entry.Namespace != namespace {
 		return nil, false
+	}
+
+	if c.cfg.SecretsManagement.UseCipherForDataKeyCache {
+		dek, err := c.optCipher.Decrypt(context.TODO(), entry.EncryptedDataKey, string(entry.Id))
+		if err != nil {
+			return nil, false
+		}
+		// Create a copy to avoid mutating the cached entry
+		entryCopy := &encryption.DataKeyCacheEntry{
+			Namespace:  entry.Namespace,
+			Id:         entry.Id,
+			Label:      entry.Label,
+			DataKey:    dek,
+			Active:     entry.Active,
+			Expiration: entry.Expiration,
+		}
+		return entryCopy, true
 	}
 
 	return entry, true

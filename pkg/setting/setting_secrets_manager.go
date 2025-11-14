@@ -23,6 +23,9 @@ type SecretsManagerSettings struct {
 	// Whether to use a Redis cache for data keys instead of the in-memory cache
 	DataKeysCacheUseRedis bool
 
+	UseCipherForDataKeyCache      bool
+	SimulateLongDEKEncryptionTime bool
+
 	// ConfiguredKMSProviders is a map of KMS providers found in the config file. The keys are in the format of <provider>.<keyName>, and the values are a map of the properties in that section
 	// In OSS, the provider type can only be "secret_key". In Enterprise, it can additionally be one of: "aws_kms", "azure_keyvault", "google_kms", "hashicorp_vault"
 	ConfiguredKMSProviders map[string]map[string]string
