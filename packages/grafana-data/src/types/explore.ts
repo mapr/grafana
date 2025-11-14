@@ -76,7 +76,6 @@ export interface ExploreTracePanelState {
 
 export interface ExploreLogsPanelState {
   id?: string;
-  columns?: Record<number, string>;
   visualisationType?: 'table' | 'logs';
   labelFieldName?: string;
   // Used for logs table visualisation, contains the refId of the dataFrame that is currently visualized
