@@ -348,6 +348,7 @@ type Cfg struct {
 	AlertingAnnotationCleanupSetting   AnnotationCleanupSettings
 	DashboardAnnotationCleanupSettings AnnotationCleanupSettings
 	APIAnnotationCleanupSettings       AnnotationCleanupSettings
+	AnnotationsLoki                    AnnotationsLokiSettings
 
 	// GrafanaJavascriptAgent config
 	GrafanaJavascriptAgent GrafanaJavascriptAgent
@@ -836,6 +837,9 @@ func (cfg *Cfg) readAnnotationSettings() error {
 
 	cfg.DashboardAnnotationCleanupSettings = newAnnotationCleanupSettings(dashboardAnnotation, "max_age")
 	cfg.APIAnnotationCleanupSettings = newAnnotationCleanupSettings(apiIAnnotation, "max_age")
+
+	// Read annotations Loki settings
+	cfg.readAnnotationsLokiSettings(cfg.Raw)
 
 	return nil
 }

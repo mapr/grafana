@@ -32,10 +32,21 @@ type AuthService struct {
 	db                        db.DB
 	features                  featuremgmt.FeatureToggles
 	dashSvc                   dashboards.DashboardService
+	annotationsReader         annotationsReader
 	searchDashboardsPageLimit int64
 }
 
-func NewAuthService(db db.DB, features featuremgmt.FeatureToggles, dashSvc dashboards.DashboardService, cfg *setting.Cfg) *AuthService {
+// annotationsReader is an interface to avoid circular dependency
+// It allows AuthService to read annotations without going through Repository.Find
+//
+// This interface was introduced to support Loki annotations store in addition to SQL.
+// Previously, getAnnotationDashboard used direct SQL queries which only worked with SQL backend.
+// Now it uses annotationsReader which works with both SQL and Loki backends.
+type annotationsReader interface {
+	Get(ctx context.Context, query annotations.ItemQuery, accessResources *AccessResources) ([]*annotations.ItemDTO, error)
+}
+
+func NewAuthService(db db.DB, features featuremgmt.FeatureToggles, dashSvc dashboards.DashboardService, cfg *setting.Cfg, annotationsReader annotationsReader) *AuthService {
 	section := cfg.Raw.Section("annotations")
 	searchDashboardsPageLimit := section.Key("search_dashboards_page_limit").MustInt64(1000)
 
@@ -43,6 +54,7 @@ func NewAuthService(db db.DB, features featuremgmt.FeatureToggles, dashSvc dashb
 		db:                        db,
 		features:                  features,
 		dashSvc:                   dashSvc,
+		annotationsReader:         annotationsReader,
 		searchDashboardsPageLimit: searchDashboardsPageLimit,
 	}
 }
@@ -90,20 +102,19 @@ func (authz *AuthService) Authorize(ctx context.Context, query annotations.ItemQ
 }
 
 func (authz *AuthService) getAnnotationDashboard(ctx context.Context, query annotations.ItemQuery) (string, error) {
-	var items []annotations.Item
-	params := make([]any, 0)
-	err := authz.db.WithDbSession(ctx, func(sess *db.Session) error {
-		sql := `
-			SELECT
-				a.id,
-				a.org_id,
-				a.dashboard_uid
-			FROM annotation as a
-			WHERE a.org_id = ? AND a.id = ?
-			`
-		params = append(params, query.OrgID, query.AnnotationID)
+	// Use annotations reader directly to avoid circular dependency.
+	// This allows us to work with both SQL and Loki annotation stores.
+	//
+	// Skip access control since we're just looking up the dashboard UID for authorization.
+	// The actual access control check happens later in dashboardsWithVisibleAnnotations.
+	lookupQuery := annotations.ItemQuery{
+		AnnotationID: query.AnnotationID,
+		OrgID:        query.OrgID,
+		SignedInUser: query.SignedInUser,
+	}
 
-		return sess.SQL(sql, params...).Find(&items)
+	items, err := authz.annotationsReader.Get(ctx, lookupQuery, &AccessResources{
+		SkipAccessControlFilter: true,
 	})
 	if err != nil {
 		return "", err
@@ -112,7 +123,11 @@ func (authz *AuthService) getAnnotationDashboard(ctx context.Context, query anno
 		return "", ErrAccessControlInternal.Errorf("annotation not found")
 	}
 
-	return items[0].DashboardUID, nil
+	// Extract dashboard UID from the annotation
+	if items[0].DashboardUID != nil {
+		return *items[0].DashboardUID, nil
+	}
+	return "", nil // Organization annotation (no dashboard)
 }
 
 func (authz *AuthService) dashboardsWithVisibleAnnotations(ctx context.Context, query annotations.ItemQuery) (map[string]int64, error) {

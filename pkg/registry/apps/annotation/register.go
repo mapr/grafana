@@ -245,6 +245,7 @@ func (s *legacyStorage) Create(ctx context.Context,
 	createValidation rest.ValidateObjectFunc,
 	options *metav1.CreateOptions,
 ) (runtime.Object, error) {
+
 	return nil, errors.New("not implemented")
 	// resource, ok := obj.(*correlationsV0.Correlation)
 	// if !ok {
