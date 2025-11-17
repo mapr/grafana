@@ -255,7 +255,12 @@ func (s *service) RegisterAppInstaller(i appsdkapiserver.AppInstaller) {
 // nolint:gocyclo
 func (s *service) start(ctx context.Context) error {
 	// Get the list of groups the server will support
-	builders := s.builders
+	builders, err := builder.ForPlugins(s.cfg, s.pluginClient)
+	if err != nil {
+		return nil
+	}
+	builders = append(s.builders, builders...)
+
 	groupVersions := make([]schema.GroupVersion, 0, len(builders))
 
 	// Install schemas for existing builders
