@@ -52,6 +52,18 @@ func (cfg *Cfg) setUnifiedStorageConfig() {
 
 	// Set indexer config for unified storage
 	section := cfg.Raw.Section("unified_storage")
+
+	cfg.DisableDataMigrations = section.Key("disable_data_migrations").MustBool(false)
+	if !cfg.DisableDataMigrations {
+		for resource := range cfg.UnifiedStorage {
+			cfg.Logger.Info("Enforcing unified storage in mode 5", "resource", resource)
+			cfg.UnifiedStorage[resource] = UnifiedStorageConfig{
+				DualWriterMode:                      5,
+				DualWriterMigrationDataSyncDisabled: true,
+			}
+		}
+	}
+
 	cfg.MaxPageSizeBytes = section.Key("max_page_size_bytes").MustInt(0)
 	cfg.IndexPath = section.Key("index_path").String()
 	cfg.IndexWorkers = section.Key("index_workers").MustInt(10)
@@ -82,7 +94,4 @@ func (cfg *Cfg) setUnifiedStorageConfig() {
 
 	cfg.MaxFileIndexAge = section.Key("max_file_index_age").MustDuration(0)
 	cfg.MinFileIndexBuildVersion = section.Key("min_file_index_build_version").MustString("")
-
-	// parse skip_data_migrations from resource section
-	cfg.SkipDataMigrations = section.Key("skip_data_migrations").MustBool(true)
 }

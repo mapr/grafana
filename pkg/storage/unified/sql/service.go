@@ -341,7 +341,7 @@ func (s *service) starting(ctx context.Context) error {
 	}()
 
 	// Move this to its own server
-	if !s.cfg.SkipDataMigrations { // replace with s.cfg.StackID == ""
+	if !s.cfg.DisableDataMigrations { // replace with s.cfg.StackID == ""
 		go func() {
 			mg := migrator.NewMigrator(s.db.GetEngine(), s.cfg)
 

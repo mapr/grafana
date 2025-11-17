@@ -574,20 +574,23 @@ type Cfg struct {
 
 	// Unified Storage
 	UnifiedStorage map[string]UnifiedStorageConfig
-	// SkipDataMigrations migrates resources to unified storage at startup
+	// DisableDataMigrations migrates resources to unified storage at startup
 	// Requires:
 	// [feature_toggles]
-	// unifiedStorage = true
-	// unifiedStorageSearchUI = true
-	// unifiedStorageSearch = true
+	// unifiedStorageSearchUI = true // needs to be enabled in UI code by default
+	// kubernetesDashboards = true // enabled by default, remove? Used in UI
+
+	// unifiedStorageSearch = true // fine to move to configuration, needs refactoring IMO
+	// unifiedStorage = true // only used in hosted grafana, not needed on-prem
+	// unifiedStorageHistoryPruner=true // Already is enabeld by default, can be removed
+
 	// [unified_storage]
 	// - DualWriterMode to rest.Mode5
 	// - DualWriterMigrationDataSyncDisabled to true
 	// - DualWriterPeriodicDataSyncJobEnabled to false
 	// Maybe:
-	// unifiedStorageHistoryPruner=true // ask JP
 	// grafanaAPIServerWithExperimentalAPIs = true
-	SkipDataMigrations                         bool
+	DisableDataMigrations                      bool
 	MaxPageSizeBytes                           int
 	IndexPath                                  string
 	IndexWorkers                               int

@@ -26,7 +26,7 @@ type LegacyMigrator interface {
 
 // AddMigrator registers unified storage migrations with the provided dependencies
 func AddMigrator(mg *migrator.Migrator, deps *Dependencies) {
-	if mg.Cfg.SkipDataMigrations {
+	if mg.Cfg.DisableDataMigrations {
 		return
 	}
 
