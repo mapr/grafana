@@ -22,6 +22,8 @@ import (
 
 	"github.com/grafana/grafana/pkg/tsdb/grafana-pyroscope-datasource/annotation"
 	"github.com/grafana/grafana/pkg/tsdb/grafana-pyroscope-datasource/kinds/dataquery"
+
+	typesv1 "github.com/grafana/pyroscope/api/gen/proto/go/types/v1"
 )
 
 type queryModel struct {
@@ -80,6 +82,10 @@ func (d *PyroscopeDatasource) query(ctx context.Context, pCtx backend.PluginCont
 					logger.Error("Failed to parse the MinStep using default", "MinStep", dsJson.MinStep, "function", logEntrypoint())
 				}
 			}
+			exemplarType := typesv1.ExemplarType_EXEMPLAR_TYPE_NONE
+			if qm.IncludeExemplars {
+				exemplarType = typesv1.ExemplarType_EXEMPLAR_TYPE_INDIVIDUAL
+			}
 			seriesResp, err := d.client.GetSeries(
 				gCtx,
 				profileTypeId,
@@ -89,7 +95,7 @@ func (d *PyroscopeDatasource) query(ctx context.Context, pCtx backend.PluginCont
 				qm.GroupBy,
 				qm.Limit,
 				math.Max(query.Interval.Seconds(), parsedInterval.Seconds()),
-				qm.IncludeExemplars,
+				exemplarType,
 			)
 			if err != nil {
 				span.RecordError(err)

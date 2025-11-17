@@ -108,18 +108,18 @@ func (c *PyroscopeClient) ProfileTypes(ctx context.Context, start int64, end int
 	}
 }
 
-func (c *PyroscopeClient) GetSeries(ctx context.Context, profileTypeID string, labelSelector string, start int64, end int64, groupBy []string, limit *int64, step float64, includeExemplars *bool) (*SeriesResponse, error) {
+func (c *PyroscopeClient) GetSeries(ctx context.Context, profileTypeID string, labelSelector string, start int64, end int64, groupBy []string, limit *int64, step float64, exemplarType typesv1.ExemplarType) (*SeriesResponse, error) {
 	ctx, span := tracing.DefaultTracer().Start(ctx, "datasource.pyroscope.GetSeries", trace.WithAttributes(attribute.String("profileTypeID", profileTypeID), attribute.String("labelSelector", labelSelector)))
 	defer span.End()
 	req := connect.NewRequest(&querierv1.SelectSeriesRequest{
-		ProfileTypeID:    profileTypeID,
-		LabelSelector:    labelSelector,
-		Start:            start,
-		End:              end,
-		Step:             step,
-		GroupBy:          groupBy,
-		Limit:            limit,
-		IncludeExemplars: includeExemplars,
+		ProfileTypeID: profileTypeID,
+		LabelSelector: labelSelector,
+		Start:         start,
+		End:           end,
+		Step:          step,
+		GroupBy:       groupBy,
+		Limit:         limit,
+		ExemplarType:  exemplarType,
 	})
 
 	resp, err := c.connectClient.SelectSeries(ctx, req)

@@ -44,7 +44,7 @@ type GrafanaPyroscopeDataQuery struct {
 	// TODO make this required and give it a default
 	QueryType *string `json:"queryType,omitempty"`
 	// If set to true, exemplars will be requested
-	IncludeExemplars *bool `json:"includeExemplars,omitempty"`
+	IncludeExemplars bool `json:"includeExemplars"`
 	// For mixed data sources the selected datasource is on the query level.
 	// For non mixed scenarios this is undefined.
 	// TODO find a better way to do this ^ that's friendly to schema
@@ -55,7 +55,8 @@ type GrafanaPyroscopeDataQuery struct {
 // NewGrafanaPyroscopeDataQuery creates a new GrafanaPyroscopeDataQuery object.
 func NewGrafanaPyroscopeDataQuery() *GrafanaPyroscopeDataQuery {
 	return &GrafanaPyroscopeDataQuery{
-		LabelSelector: "{}",
-		GroupBy:       []string{},
+		LabelSelector:    "{}",
+		GroupBy:          []string{},
+		IncludeExemplars: false,
 	}
 }

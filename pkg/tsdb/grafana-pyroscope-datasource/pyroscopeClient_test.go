@@ -20,8 +20,7 @@ func Test_PyroscopeClient(t *testing.T) {
 
 	t.Run("GetSeries", func(t *testing.T) {
 		limit := int64(42)
-		includeExemplars := false
-		resp, err := client.GetSeries(context.Background(), "memory:alloc_objects:count:space:bytes", "{}", 0, 100, []string{}, &limit, 15, &includeExemplars)
+		resp, err := client.GetSeries(context.Background(), "memory:alloc_objects:count:space:bytes", "{}", 0, 100, []string{}, &limit, 15, typesv1.ExemplarType_EXEMPLAR_TYPE_NONE)
 		require.Nil(t, err)
 
 		series := &SeriesResponse{

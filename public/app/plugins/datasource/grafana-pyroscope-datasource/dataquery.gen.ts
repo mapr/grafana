@@ -26,7 +26,7 @@ export interface GrafanaPyroscopeDataQuery extends common.DataQuery {
   /**
    * If set to true, exemplars will be requested
    */
-  includeExemplars?: boolean;
+  includeExemplars: boolean;
   /**
    * Specifies the query label selectors.
    */
@@ -51,6 +51,7 @@ export interface GrafanaPyroscopeDataQuery extends common.DataQuery {
 
 export const defaultGrafanaPyroscopeDataQuery: Partial<GrafanaPyroscopeDataQuery> = {
   groupBy: [],
+  includeExemplars: false,
   labelSelector: '{}',
   spanSelector: [],
 };

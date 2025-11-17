@@ -45,7 +45,7 @@ composableKinds: DataQuery: {
 				// If set to true, the response will contain annotations
 				annotations?: bool
 				// If set to true, exemplars will be requested
-				includeExemplars?: bool
+				includeExemplars: bool | *false
 			}
 		}]
 		lenses: []
