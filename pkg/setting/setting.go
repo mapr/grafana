@@ -619,6 +619,7 @@ type Cfg struct {
 	CACertPath                                 string
 	HttpsSkipVerify                            bool
 	ResourceServerJoinRingTimeout              time.Duration
+	EnableSearch                               bool
 
 	// Secrets Management
 	SecretsManagement SecretsManagerSettings
