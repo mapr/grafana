@@ -532,9 +532,12 @@ func PrepareRuleGroupStatusesV2(log log.Logger, store ListAlertRulesStoreV2, opt
 	rulesTotals := make(map[string]int64, len(groupedRules))
 	for _, rg := range groupedRules {
 		ruleGroup, totals := toRuleGroup(log, rg.GroupKey, rg.Folder, rg.Rules, provenanceRecords, limitAlertsPerRule, stateFilterSet, matchers, labelOptions, ruleStatusMutator, alertStateMutator)
-		ruleGroup.Totals = totals
-		for k, v := range totals {
-			rulesTotals[k] += v
+		// Only set totals if limit_rules is not 0
+		if limitRulesPerGroup != 0 {
+			ruleGroup.Totals = totals
+			for k, v := range totals {
+				rulesTotals[k] += v
+			}
 		}
 
 		if len(stateFilterSet) > 0 {
@@ -549,21 +552,22 @@ func PrepareRuleGroupStatusesV2(log log.Logger, store ListAlertRulesStoreV2, opt
 			ruleGroup.Rules = ruleGroup.Rules[0:limitRulesPerGroup]
 		}
 
-		if len(ruleGroup.Rules) > 0 {
+		if len(ruleGroup.Rules) > 0 || limitRulesPerGroup == 0 {
 			ruleResponse.Data.RuleGroups = append(ruleResponse.Data.RuleGroups, *ruleGroup)
 		}
 	}
 
 	ruleResponse.Data.NextToken = continueToken
 
-	// Only return Totals if there is no pagination
-	if maxGroups == -1 {
+	// Only return Totals if there is no pagination and limit_rules is not 0
+	if maxGroups == -1 && limitRulesPerGroup != 0 {
 		ruleResponse.Data.Totals = rulesTotals
 	}
 
 	return ruleResponse
 }
 
+//nolint:gocyclo
 func PrepareRuleGroupStatuses(log log.Logger, store ListAlertRulesStore, opts RuleGroupStatusesOptions, ruleStatusMutator RuleStatusMutator, alertStateMutator RuleAlertStateMutator, provenanceRecords map[string]ngmodels.Provenance) apimodels.RuleResponse {
 	ruleResponse := apimodels.RuleResponse{
 		DiscoveryBase: apimodels.DiscoveryBase{
@@ -692,9 +696,12 @@ func PrepareRuleGroupStatuses(log log.Logger, store ListAlertRulesStore, opts Ru
 		}
 
 		ruleGroup, totals := toRuleGroup(log, rg.GroupKey, rg.Folder, rg.Rules, provenanceRecords, limitAlertsPerRule, stateFilterSet, matchers, labelOptions, ruleStatusMutator, alertStateMutator)
-		ruleGroup.Totals = totals
-		for k, v := range totals {
-			rulesTotals[k] += v
+		// Only set totals if limit_rules is not 0
+		if limitRulesPerGroup != 0 {
+			ruleGroup.Totals = totals
+			for k, v := range totals {
+				rulesTotals[k] += v
+			}
 		}
 
 		if len(stateFilterSet) > 0 {
@@ -709,15 +716,15 @@ func PrepareRuleGroupStatuses(log log.Logger, store ListAlertRulesStore, opts Ru
 			ruleGroup.Rules = ruleGroup.Rules[0:limitRulesPerGroup]
 		}
 
-		if len(ruleGroup.Rules) > 0 {
+		if len(ruleGroup.Rules) > 0 || limitRulesPerGroup == 0 {
 			ruleResponse.Data.RuleGroups = append(ruleResponse.Data.RuleGroups, *ruleGroup)
 		}
 	}
 
 	ruleResponse.Data.NextToken = newToken
 
-	// Only return Totals if there is no pagination
-	if maxGroups == -1 {
+	// Only return Totals if there is no pagination and limit_rules is not 0
+	if maxGroups == -1 && limitRulesPerGroup != 0 {
 		ruleResponse.Data.Totals = rulesTotals
 	}
 
