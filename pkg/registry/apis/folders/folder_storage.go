@@ -39,7 +39,9 @@ type folderStorage struct {
 	store          grafanarest.Storage
 	tableConverter rest.TableConvertor
 
-	permissionsOnCreate  bool // cfg.RBAC.PermissionsOnCreation("folder")
+	permissionsOnCreate    bool // cfg.RBAC.PermissionsOnCreation("folder")
+	dataMigrationsDisabled bool // cfg.DisableDataMigrations
+
 	features             featuremgmt.FeatureToggles
 	folderPermissionsSvc accesscontrol.FolderPermissionsService
 	acService            accesscontrol.Service
@@ -155,8 +157,9 @@ func (s *folderStorage) setDefaultFolderPermissions(ctx context.Context, orgID i
 	var permissions []accesscontrol.SetResourcePermissionCommand
 
 	isNested := parentUID != ""
+	// DisableDataMigrations check can be removed together with featuremgmt.FlagKubernetesDashboards
 	//nolint:staticcheck // not yet migrated to OpenFeature
-	if s.features.IsEnabledGlobally(featuremgmt.FlagKubernetesDashboards) && isNested {
+	if (!s.dataMigrationsDisabled || s.features.IsEnabledGlobally(featuremgmt.FlagKubernetesDashboards)) && isNested {
 		// No permissions on nested folders when kubernetesDashboards is enabled
 		return nil
 	}

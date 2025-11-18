@@ -24,6 +24,7 @@ import {
   PluginExtensions,
   TimeOption,
   UnifiedAlertingConfig,
+  UnifiedStorageConfig,
   GrafanaConfig,
   CurrentUserDTO,
 } from '@grafana/data';
@@ -200,6 +201,9 @@ export class GrafanaBootConfig {
     // Backward compatibility fields - populated by backend
     alertStateHistoryBackend: undefined,
     alertStateHistoryPrimary: undefined,
+  };
+  unifiedStorage: UnifiedStorageConfig = {
+    disableDataMigrations: false,
   };
   applicationInsightsConnectionString?: string;
   applicationInsightsEndpointUrl?: string;

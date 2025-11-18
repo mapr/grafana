@@ -15,6 +15,7 @@ export function isV2StoredVersion(version: string | undefined): boolean {
 
 export function getDashboardsApiVersion(responseFormat?: 'v1' | 'v2') {
   const isDashboardSceneEnabled = config.featureToggles.dashboardScene;
+  // TODO: check if we want to compare with !config.unifiedStorage.disableDataMigrations;
   const isKubernetesDashboardsEnabled = config.featureToggles.kubernetesDashboards;
   const forcingOldDashboardArch = locationService.getSearch().get('scenes') === 'false';
 

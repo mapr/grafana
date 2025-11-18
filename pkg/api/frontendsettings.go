@@ -338,6 +338,10 @@ func (hs *HTTPServer) getFrontendSettings(c *contextmodel.ReqContext) (*dtos.Fro
 			MinInterval: hs.Cfg.UnifiedAlerting.MinInterval.String(),
 		},
 
+		UnifiedStorage: dtos.FrontendSettingsUnifiedStorageDTO{
+			DisableDataMigrations: hs.Cfg.DisableDataMigrations,
+		},
+
 		Oauth:                   hs.getEnabledOAuthProviders(),
 		SamlEnabled:             hs.samlEnabled(),
 		SamlName:                hs.samlName(),

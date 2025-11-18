@@ -477,6 +477,7 @@ export type {
   LicenseInfo,
   PreinstalledPlugin,
   UnifiedAlertingConfig,
+  UnifiedStorageConfig,
 } from './types/config';
 export { availableIconsIndex, type IconName, isIconName, toIconName } from './types/icon';
 export type { WithAccessControlMetadata } from './types/accesscontrol';

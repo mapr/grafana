@@ -125,6 +125,11 @@ export interface UnifiedAlertingConfig {
   alertStateHistoryPrimary?: string;
 }
 
+// UnifiedStorageConfig can be removed together with kubernetesDashboards feature toggle
+export interface UnifiedStorageConfig {
+  disableDataMigrations?: boolean;
+}
+
 /** Supported OAuth services
  *
  * @public
@@ -277,6 +282,7 @@ export interface GrafanaConfig {
   geomapDisableCustomBaseLayer: boolean;
   unifiedAlertingEnabled: boolean;
   unifiedAlerting: UnifiedAlertingConfig;
+  unifiedStorage: UnifiedStorageConfig;
   feedbackLinksEnabled: boolean;
   supportBundlesEnabled: boolean;
   secureSocksDSProxyEnabled: boolean;

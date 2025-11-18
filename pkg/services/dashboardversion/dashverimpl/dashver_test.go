@@ -360,6 +360,7 @@ func TestRestoreVersion(t *testing.T) {
 		dashboardVersionService := Service{
 			dashSvc:  dashboardService,
 			features: features,
+			cfg:      setting.NewCfg(),
 			log:      log.New("dashboard-version"),
 		}
 		mockCli := new(client.MockK8sHandler)
@@ -427,9 +428,12 @@ func TestRestoreVersion(t *testing.T) {
 	t.Run("should use legacy restoration when k8s feature toggles are disabled", func(t *testing.T) {
 		dashboardService := dashboards.NewFakeDashboardService(t)
 		features := featuremgmt.WithFeatures() // No k8s features enabled
+		cfg := setting.NewCfg()
+		cfg.DisableDataMigrations = true
 		dashboardVersionService := Service{
 			dashSvc:  dashboardService,
 			features: features,
+			cfg:      cfg,
 			log:      log.New("dashboard-version"),
 		}
 
@@ -492,6 +496,7 @@ func TestRestoreVersion(t *testing.T) {
 		dashboardVersionService := Service{
 			dashSvc:  dashboardService,
 			features: features,
+			cfg:      setting.NewCfg(),
 			log:      log.New("dashboard-version"),
 		}
 		mockCli := new(client.MockK8sHandler)
@@ -523,6 +528,7 @@ func TestRestoreVersion(t *testing.T) {
 		dashboardVersionService := Service{
 			dashSvc:  dashboardService,
 			features: features,
+			cfg:      setting.NewCfg(),
 			log:      log.New("dashboard-version"),
 		}
 		mockCli := new(client.MockK8sHandler)
@@ -568,6 +574,7 @@ func TestRestoreVersion(t *testing.T) {
 		dashboardVersionService := Service{
 			dashSvc:  dashboardService,
 			features: features,
+			cfg:      setting.NewCfg(),
 			log:      log.New("dashboard-version"),
 		}
 		mockCli := new(client.MockK8sHandler)

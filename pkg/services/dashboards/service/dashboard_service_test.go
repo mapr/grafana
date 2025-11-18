@@ -2202,15 +2202,18 @@ func TestSetDefaultPermissionsAfterCreate(t *testing.T) {
 				// Setup mocks and service
 				dashboardStore := &dashboards.FakeDashboardStore{}
 				features := featuremgmt.WithFeatures()
+				cfg := setting.NewCfg()
 				if tc.featureKubernetesDashboards {
 					features = featuremgmt.WithFeatures(featuremgmt.FlagKubernetesDashboards)
+				} else {
+					cfg.DisableDataMigrations = true
 				}
 
 				permService := acmock.NewMockedPermissionsService()
 				permService.On("SetPermissions", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]accesscontrol.ResourcePermission{}, nil)
 
 				service := &DashboardServiceImpl{
-					cfg:                       setting.NewCfg(),
+					cfg:                       cfg,
 					log:                       log.New("test-logger"),
 					dashboardStore:            dashboardStore,
 					features:                  features,

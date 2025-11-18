@@ -48,14 +48,15 @@ var resourceInfo = folders.FolderResourceInfo
 
 // This is used just so wire has something unique to return
 type FolderAPIBuilder struct {
-	features            featuremgmt.FeatureToggles
-	namespacer          request.NamespaceMapper
-	storage             grafanarest.Storage
-	permissionStore     reconcilers.PermissionStore
-	accessClient        authlib.AccessClient
-	parents             parentsGetter
-	searcher            resourcepb.ResourceIndexClient
-	permissionsOnCreate bool
+	features               featuremgmt.FeatureToggles
+	namespacer             request.NamespaceMapper
+	storage                grafanarest.Storage
+	permissionStore        reconcilers.PermissionStore
+	accessClient           authlib.AccessClient
+	parents                parentsGetter
+	searcher               resourcepb.ResourceIndexClient
+	permissionsOnCreate    bool
+	dataMigrationsDisabled bool
 
 	// Legacy services -- these will not exist in the MT environment
 	folderSvc              folder.LegacyService
@@ -78,16 +79,17 @@ func RegisterAPIService(cfg *setting.Cfg,
 	zanzanaClient zanzana.Client,
 ) *FolderAPIBuilder {
 	builder := &FolderAPIBuilder{
-		features:             features,
-		namespacer:           request.GetNamespaceMapper(cfg),
-		folderSvc:            folderSvc,
-		folderPermissionsSvc: folderPermissionsSvc,
-		acService:            acService,
-		ac:                   accessControl,
-		accessClient:         accessClient,
-		permissionsOnCreate:  cfg.RBAC.PermissionsOnCreation("folder"),
-		searcher:             unified,
-		permissionStore:      reconcilers.NewZanzanaPermissionStore(zanzanaClient),
+		features:               features,
+		namespacer:             request.GetNamespaceMapper(cfg),
+		folderSvc:              folderSvc,
+		folderPermissionsSvc:   folderPermissionsSvc,
+		acService:              acService,
+		ac:                     accessControl,
+		accessClient:           accessClient,
+		permissionsOnCreate:    cfg.RBAC.PermissionsOnCreation("folder"),
+		dataMigrationsDisabled: cfg.DisableDataMigrations,
+		searcher:               unified,
+		permissionStore:        reconcilers.NewZanzanaPermissionStore(zanzanaClient),
 	}
 	apiregistration.RegisterAPI(builder)
 	return builder
@@ -166,12 +168,13 @@ func (b *FolderAPIBuilder) UpdateAPIGroupInfo(apiGroupInfo *genericapiserver.API
 			return err
 		}
 		b.storage = &folderStorage{
-			tableConverter:       resourceInfo.TableConverter(),
-			folderPermissionsSvc: b.folderPermissionsSvc,
-			features:             b.features,
-			acService:            b.acService,
-			permissionsOnCreate:  b.permissionsOnCreate,
-			store:                dw,
+			tableConverter:         resourceInfo.TableConverter(),
+			folderPermissionsSvc:   b.folderPermissionsSvc,
+			dataMigrationsDisabled: b.dataMigrationsDisabled,
+			features:               b.features,
+			acService:              b.acService,
+			permissionsOnCreate:    b.permissionsOnCreate,
+			store:                  dw,
 		}
 	}
 

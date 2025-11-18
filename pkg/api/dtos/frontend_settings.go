@@ -111,6 +111,10 @@ type FrontendSettingsUnifiedAlertingDTO struct {
 	AlertStateHistoryPrimary string `json:"alertStateHistoryPrimary,omitempty"`
 }
 
+type FrontendSettingsUnifiedStorageDTO struct {
+	DisableDataMigrations bool `json:"disableDataMigrations"`
+}
+
 // Enterprise-only
 type FrontendSettingsLicensingDTO struct {
 	Slug                   *string `json:"slug,omitempty"`
@@ -270,6 +274,7 @@ type FrontendSettingsDTO struct {
 	Analytics               FrontendSettingsAnalyticsDTO       `json:"analytics"`
 	UnifiedAlertingEnabled  bool                               `json:"unifiedAlertingEnabled"`
 	UnifiedAlerting         FrontendSettingsUnifiedAlertingDTO `json:"unifiedAlerting"`
+	UnifiedStorage          FrontendSettingsUnifiedStorageDTO  `json:"unifiedStorage"`
 	Oauth                   map[string]any                     `json:"oauth"`
 	SamlEnabled             bool                               `json:"samlEnabled"`
 	SamlName                string                             `json:"samlName"`
