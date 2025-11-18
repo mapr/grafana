@@ -7,7 +7,6 @@ package server
 
 import (
 	"context"
-
 	"github.com/google/wire"
 	httpclient2 "github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana/apps/advisor/pkg/app/checkregistry"
@@ -286,7 +285,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+)
 
+import (
 	_ "github.com/grafana/grafana/pkg/extensions"
 )
 
@@ -798,7 +799,7 @@ func Initialize(ctx context.Context, cfg *setting.Cfg, opts Options, apiOpts api
 	if err != nil {
 		return nil, err
 	}
-	annotationAppInstaller, err := annotation.RegisterAppInstaller(cfg, featureToggles, repositoryImpl)
+	annotationAppInstaller, err := annotation.RegisterAppInstaller(cfg, featureToggles, repositoryImpl, cleanupServiceImpl)
 	if err != nil {
 		return nil, err
 	}
@@ -1439,7 +1440,7 @@ func InitializeForTest(ctx context.Context, t sqlutil.ITestDB, testingT interfac
 	if err != nil {
 		return nil, err
 	}
-	annotationAppInstaller, err := annotation.RegisterAppInstaller(cfg, featureToggles, repositoryImpl)
+	annotationAppInstaller, err := annotation.RegisterAppInstaller(cfg, featureToggles, repositoryImpl, cleanupServiceImpl)
 	if err != nil {
 		return nil, err
 	}
