@@ -62,9 +62,11 @@ func (cfg *Cfg) setUnifiedStorageConfig() {
 				DualWriterMigrationDataSyncDisabled: true,
 			}
 		}
+		cfg.EnableSearch = section.Key("enable_search").MustBool(true)
+	} else {
+		cfg.EnableSearch = section.Key("enable_search").MustBool(false)
 	}
 
-	cfg.EnableSearch = section.Key("enable_search").MustBool(false)
 	cfg.MaxPageSizeBytes = section.Key("max_page_size_bytes").MustInt(0)
 	cfg.IndexPath = section.Key("index_path").String()
 	cfg.IndexWorkers = section.Key("index_workers").MustInt(10)
