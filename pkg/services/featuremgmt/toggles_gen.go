@@ -79,10 +79,6 @@ const (
 	// Support overriding cookie preferences per user
 	FlagIndividualCookiePreferences = "individualCookiePreferences"
 
-	// FlagInfluxdbBackendMigration
-	// Query InfluxDB InfluxQL without the proxy
-	FlagInfluxdbBackendMigration = "influxdbBackendMigration"
-
 	// FlagStarsFromAPIServer
 	// populate star status from apiserver
 	FlagStarsFromAPIServer = "starsFromAPIServer"
