@@ -289,7 +289,3 @@ func generateLabels(fields []*data.Field, row int) data.Labels {
 func isTimestampField(fieldName string) bool {
 	return fieldName == "@timestamp" || fieldName == "@ingestionTime"
 }
-
-func isTimestampField(fieldName string) bool {
-	return fieldName == "@timestamp" || fieldName == "@ingestionTime"
-}
