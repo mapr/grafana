@@ -13,6 +13,7 @@ import {
   FieldType,
   TimeRange,
   hasTimeField,
+  InterpolateFunction,
 } from '@grafana/data';
 import { TableCellDisplayMode, TableCellHeight } from '@grafana/schema';
 
@@ -23,7 +24,13 @@ import { usePanelContext } from '../PanelChrome';
 import { ExpandedRow, getExpandedRowHeight } from './ExpandedRow';
 import { TableCell } from './TableCell';
 import { TableStyles } from './styles';
-import { CellColors, TableFieldOptions, TableFilterActionCallback } from './types';
+import {
+  CellColors,
+  GetActionsFunction,
+  TableFieldOptions,
+  TableFilterActionCallback,
+  TableInspectCellCallback,
+} from './types';
 import {
   calculateAroundPointThreshold,
   getCellColors,
@@ -54,6 +61,9 @@ interface RowsListProps {
   headerGroups: HeaderGroup[];
   longestField?: Field;
   textWrapField?: Field;
+  getActions?: GetActionsFunction;
+  replaceVariables?: InterpolateFunction;
+  setInspectCell?: TableInspectCellCallback;
 }
 
 export const RowsList = (props: RowsListProps) => {
@@ -80,6 +90,9 @@ export const RowsList = (props: RowsListProps) => {
     headerGroups,
     longestField,
     textWrapField,
+    getActions,
+    replaceVariables,
+    setInspectCell,
   } = props;
 
   const [rowHighlightIndex, setRowHighlightIndex] = useState<number | undefined>(initialRowIndex);
@@ -285,6 +298,7 @@ export const RowsList = (props: RowsListProps) => {
         const { bgColor, textColor } = rowBg(row.index);
         style.background = bgColor;
         style.color = textColor;
+        style.borderLeft = `2px solid ${bgColor}`;
       }
 
       // If there's a text wrapping field we set the height of it here
@@ -337,33 +351,41 @@ export const RowsList = (props: RowsListProps) => {
               rowStyled={rowBg !== undefined}
               rowExpanded={rowExpanded}
               textWrapped={textWrapFinal !== undefined}
-              height={Number(style.height)}
+              // VariableSizeList overrides calculated in buildCellContainerStyle height of the cell,
+              // so we need to subtract 1 to respect the row border
+              height={Number(style.height) - 1}
+              getActions={getActions}
+              replaceVariables={replaceVariables}
+              setInspectCell={setInspectCell}
             />
           ))}
         </div>
       );
     },
     [
-      cellHeight,
-      data,
-      nestedDataField,
-      onCellFilterAdded,
-      onRowHover,
-      onRowLeave,
-      prepareRow,
       rowIndexForPagination,
       rows,
+      prepareRow,
       tableState.expanded,
-      tableStyles,
-      textWrapFinal,
-      theme.components.table.rowSelected,
-      theme.typography.fontSize,
-      theme.typography.body.lineHeight,
-      timeRange,
-      width,
+      nestedDataField,
       rowBg,
+      textWrapFinal,
+      tableStyles,
+      onRowLeave,
+      width,
+      cellHeight,
+      theme.components.table.rowSelected,
+      theme.typography.body.lineHeight,
+      theme.typography.fontSize,
+      data,
       headerGroups,
       osContext,
+      onRowHover,
+      onCellFilterAdded,
+      timeRange,
+      getActions,
+      replaceVariables,
+      setInspectCell,
     ]
   );
 
@@ -400,9 +422,6 @@ export const RowsList = (props: RowsListProps) => {
     }
   };
 
-  // Key the virtualizer for expanded rows
-  const expandedKey = Object.keys(tableState.expanded).join('|');
-
   // It's a hack for text wrapping.
   // VariableSizeList component didn't know that we manually set row height.
   // So we need to reset the list when the rows high changes.
@@ -415,8 +434,7 @@ export const RowsList = (props: RowsListProps) => {
   return (
     <CustomScrollbar onScroll={handleScroll} hideHorizontalTrack={true} scrollTop={scrollTop}>
       <VariableSizeList
-        // This component needs an unmount/remount when row height, page changes, or expanded rows change
-        key={`${rowHeight}${pageIndex}${expandedKey}`}
+        key={`${rowHeight}${pageIndex}`}
         height={listHeight}
         itemCount={itemCount}
         itemSize={getItemSize}

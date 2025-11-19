@@ -35,8 +35,7 @@ export function JSONViewCell(props: TableCellProps): JSX.Element {
   return (
     <div {...cellProps} className={inspectEnabled ? tableStyles.cellContainerNoOverflow : tableStyles.cellContainer}>
       <div className={cx(tableStyles.cellText, txt)}>
-        {!hasLinks && <div className={tableStyles.cellText}>{displayValue}</div>}
-        {hasLinks && (
+        {hasLinks ? (
           <DataLinksContextMenu links={() => getCellLinks(field, row) || []}>
             {(api) => {
               if (api.openMenu) {
@@ -50,6 +49,8 @@ export function JSONViewCell(props: TableCellProps): JSX.Element {
               }
             }}
           </DataLinksContextMenu>
+        ) : (
+          <div className={tableStyles.cellText}>{displayValue}</div>
         )}
       </div>
       {inspectEnabled && <CellActions {...props} previewMode={TableCellInspectorMode.code} />}

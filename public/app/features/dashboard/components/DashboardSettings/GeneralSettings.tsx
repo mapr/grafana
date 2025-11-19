@@ -13,6 +13,7 @@ import {
   TextArea,
   Box,
   Stack,
+  WeekStart,
 } from '@grafana/ui';
 import { Page } from 'app/core/components/Page/Page';
 import { FolderPicker } from 'app/core/components/Select/FolderPicker';
@@ -39,7 +40,6 @@ export function GeneralSettingsUnconnected({
   updateTimeZone,
   updateWeekStart,
   sectionNav,
-  toolbar,
 }: Props): JSX.Element {
   const [renderCounter, setRenderCounter] = useState(0);
   const [dashboardTitle, setDashboardTitle] = useState(dashboard.title);
@@ -98,7 +98,7 @@ export function GeneralSettingsUnconnected({
     updateTimeZone(timeZone);
   };
 
-  const onWeekStartChange = (weekStart: string) => {
+  const onWeekStartChange = (weekStart?: WeekStart) => {
     dashboard.weekStart = weekStart;
     setRenderCounter(renderCounter + 1);
     updateWeekStart(weekStart);
@@ -120,7 +120,7 @@ export function GeneralSettingsUnconnected({
   ];
 
   return (
-    <Page navModel={sectionNav} pageNav={pageNav} toolbar={toolbar}>
+    <Page navModel={sectionNav} pageNav={pageNav}>
       <div style={{ maxWidth: '600px' }}>
         <Box marginBottom={5}>
           <Field

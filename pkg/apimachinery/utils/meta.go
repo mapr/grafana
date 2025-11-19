@@ -17,6 +17,18 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+// LabelKeyGetHistory is used to select object history for an given resource
+const LabelKeyGetHistory = "grafana.app/get-history"
+
+// LabelKeyGetTrash is used to list objects that have been (soft) deleted
+const LabelKeyGetTrash = "grafana.app/get-trash"
+
+// AnnoKeyKubectlLastAppliedConfig is the annotation kubectl writes with the entire previous config
+const AnnoKeyKubectlLastAppliedConfig = "kubectl.kubernetes.io/last-applied-configuration"
+
+// DeletedGeneration is set on Resources that have been (soft) deleted
+const DeletedGeneration = int64(-999)
+
 // Annotation keys
 
 const AnnoKeyCreatedBy = "grafana.app/createdBy"
@@ -29,30 +41,27 @@ const AnnoKeyMessage = "grafana.app/message"
 
 // Identify where values came from
 
-const AnnoKeyOriginName = "grafana.app/originName"
-const AnnoKeyOriginPath = "grafana.app/originPath"
-const AnnoKeyOriginHash = "grafana.app/originHash"
-const AnnoKeyOriginTimestamp = "grafana.app/originTimestamp"
+const oldAnnoKeyRepoName = "grafana.app/repoName"
+const oldAnnoKeyRepoPath = "grafana.app/repoPath"
+const oldAnnoKeyRepoHash = "grafana.app/repoHash"
+const oldAnnoKeyRepoTimestamp = "grafana.app/repoTimestamp"
 
-// ResourceOriginInfo is saved in annotations.  This is used to identify where the resource came from
-// This object can model the same data as our existing provisioning table or a more general git sync
-type ResourceOriginInfo struct {
-	// Name of the origin/provisioning source
-	Name string `json:"name,omitempty"`
+// Annotations used to store manager properties
 
-	// The path within the named origin above (external_id in the existing dashboard provisioing)
-	Path string `json:"path,omitempty"`
+const AnnoKeyManagerKind = "grafana.app/managedBy"
+const AnnoKeyManagerIdentity = "grafana.app/managerId"
+const AnnoKeyManagerAllowsEdits = "grafana.app/managerAllowsEdits"
+const AnnoKeyManagerSuspended = "grafana.app/managerSuspended"
 
-	// Verification/identification hash (check_sum in existing dashboard provisioning)
-	Hash string `json:"hash,omitempty"`
+// Annotations used to store source properties
 
-	// Origin modification timestamp when the resource was saved
-	// This will be before the resource updated time
-	Timestamp *time.Time `json:"time,omitempty"`
+const AnnoKeySourcePath = "grafana.app/sourcePath"
+const AnnoKeySourceChecksum = "grafana.app/sourceChecksum"
+const AnnoKeySourceTimestamp = "grafana.app/sourceTimestamp"
 
-	// Avoid extending
-	_ any `json:"-"`
-}
+// LabelKeyDeprecatedInternalID gives the deprecated internal ID of a resource
+// Deprecated: will be removed in grafana 13
+const LabelKeyDeprecatedInternalID = "grafana.app/deprecatedInternalID"
 
 // Accessor functions for k8s objects
 type GrafanaMetaAccessor interface {
@@ -85,12 +94,11 @@ type GrafanaMetaAccessor interface {
 	SetBlob(v *BlobInfo)
 	GetBlob() *BlobInfo
 
-	GetOriginInfo() (*ResourceOriginInfo, error)
-	SetOriginInfo(info *ResourceOriginInfo)
-	GetOriginName() string
-	GetOriginPath() string
-	GetOriginHash() string
-	GetOriginTimestamp() (*time.Time, error)
+	// Deprecated: This will be removed in Grafana 13
+	GetDeprecatedInternalID() int64
+
+	// Deprecated: This will be removed in Grafana 13
+	SetDeprecatedInternalID(id int64)
 
 	GetSpec() (any, error)
 	SetSpec(any) error
@@ -108,6 +116,22 @@ type GrafanaMetaAccessor interface {
 	//  * title
 	// and return an empty string if nothing was found
 	FindTitle(defaultTitle string) string
+
+	// GetManagerProperties returns the identity of the tool,
+	// which is responsible for managing the resource.
+	//
+	// If the identity is not known, the second return value will be false.
+	GetManagerProperties() (ManagerProperties, bool)
+
+	// SetManagerProperties sets the identity of the tool,
+	// which is responsible for managing the resource.
+	SetManagerProperties(ManagerProperties)
+
+	// GetSourceProperties returns the source properties of the resource.
+	GetSourceProperties() (SourceProperties, bool)
+
+	// SetSourceProperties sets the source properties of the resource.
+	SetSourceProperties(SourceProperties)
 }
 
 var _ GrafanaMetaAccessor = (*grafanaMetaAccessor)(nil)
@@ -225,8 +249,9 @@ func (m *grafanaMetaAccessor) GetBlob() *BlobInfo {
 func (m *grafanaMetaAccessor) SetBlob(info *BlobInfo) {
 	if info == nil {
 		m.SetAnnotation(AnnoKeyBlob, "") // delete
+	} else {
+		m.SetAnnotation(AnnoKeyBlob, info.String())
 	}
-	m.SetAnnotation(AnnoKeyBlob, info.String())
 }
 
 func (m *grafanaMetaAccessor) GetFolder() string {
@@ -253,70 +278,42 @@ func (m *grafanaMetaAccessor) SetSlug(v string) {
 	m.SetAnnotation(AnnoKeySlug, v)
 }
 
-func (m *grafanaMetaAccessor) SetOriginInfo(info *ResourceOriginInfo) {
-	anno := m.obj.GetAnnotations()
-	if anno == nil {
-		if info == nil {
-			return
-		}
-		anno = make(map[string]string, 0)
+// This will be removed in Grafana 13. Do not add any new usage of it.
+func (m *grafanaMetaAccessor) GetDeprecatedInternalID() int64 {
+	labels := m.obj.GetLabels()
+	if labels == nil {
+		return 0
 	}
 
-	delete(anno, AnnoKeyOriginName)
-	delete(anno, AnnoKeyOriginPath)
-	delete(anno, AnnoKeyOriginHash)
-	delete(anno, AnnoKeyOriginTimestamp)
-	if info != nil && info.Name != "" {
-		anno[AnnoKeyOriginName] = info.Name
-		if info.Path != "" {
-			anno[AnnoKeyOriginPath] = info.Path
-		}
-		if info.Hash != "" {
-			anno[AnnoKeyOriginHash] = info.Hash
-		}
-		if info.Timestamp != nil {
-			anno[AnnoKeyOriginTimestamp] = info.Timestamp.UTC().Format(time.RFC3339)
+	if internalID, ok := labels[LabelKeyDeprecatedInternalID]; ok {
+		id, err := strconv.ParseInt(internalID, 10, 64)
+		if err == nil {
+			return id
 		}
 	}
-	m.obj.SetAnnotations(anno)
+
+	return 0
 }
 
-func (m *grafanaMetaAccessor) GetOriginInfo() (*ResourceOriginInfo, error) {
-	v, ok := m.obj.GetAnnotations()[AnnoKeyOriginName]
-	if !ok {
-		return nil, nil
+// This will be removed in Grafana 13. Do not add any new usage of it.
+func (m *grafanaMetaAccessor) SetDeprecatedInternalID(id int64) {
+	labels := m.obj.GetLabels()
+
+	// disallow setting it to 0
+	if id == 0 {
+		if labels != nil {
+			delete(labels, LabelKeyDeprecatedInternalID)
+			m.obj.SetLabels(labels)
+		}
+		return
 	}
-	t, err := m.GetOriginTimestamp()
-	return &ResourceOriginInfo{
-		Name:      v,
-		Path:      m.GetOriginPath(),
-		Hash:      m.GetOriginHash(),
-		Timestamp: t,
-	}, err
-}
 
-func (m *grafanaMetaAccessor) GetOriginName() string {
-	return m.get(AnnoKeyOriginName)
-}
-
-func (m *grafanaMetaAccessor) GetOriginPath() string {
-	return m.get(AnnoKeyOriginPath)
-}
-
-func (m *grafanaMetaAccessor) GetOriginHash() string {
-	return m.get(AnnoKeyOriginHash)
-}
-
-func (m *grafanaMetaAccessor) GetOriginTimestamp() (*time.Time, error) {
-	v, ok := m.obj.GetAnnotations()[AnnoKeyOriginTimestamp]
-	if !ok || v == "" {
-		return nil, nil
+	if labels == nil {
+		labels = make(map[string]string)
 	}
-	t, err := time.Parse(time.RFC3339, v)
-	if err != nil {
-		return nil, fmt.Errorf("invalid origin timestamp: %s", err.Error())
-	}
-	return &t, nil
+
+	labels[LabelKeyDeprecatedInternalID] = strconv.FormatInt(id, 10)
+	m.obj.SetLabels(labels)
 }
 
 // GetAnnotations implements GrafanaMetaAccessor.
@@ -612,11 +609,171 @@ func (m *grafanaMetaAccessor) FindTitle(defaultTitle string) string {
 		}
 	}
 
+	obj, ok := m.obj.(*unstructured.Unstructured)
+	if ok {
+		title, ok, _ := unstructured.NestedString(obj.Object, "spec", "title")
+		if ok && title != "" {
+			return title
+		}
+		title, ok, _ = unstructured.NestedString(obj.Object, "spec", "name")
+		if ok && title != "" {
+			return title
+		}
+	}
+
 	title := m.r.FieldByName("Title")
 	if title.IsValid() && title.Kind() == reflect.String {
 		return title.String()
 	}
 	return defaultTitle
+}
+
+func (m *grafanaMetaAccessor) GetManagerProperties() (ManagerProperties, bool) {
+	res := ManagerProperties{
+		Identity:    "",
+		Kind:        ManagerKindUnknown,
+		AllowsEdits: false,
+		Suspended:   false,
+	}
+
+	annot := m.obj.GetAnnotations()
+
+	id, ok := annot[AnnoKeyManagerIdentity]
+	if !ok || id == "" {
+		// Temporarily support the repo name annotation
+		repo := annot[oldAnnoKeyRepoName]
+		if repo != "" {
+			return ManagerProperties{
+				Kind:     ManagerKindRepo,
+				Identity: repo,
+			}, true
+		}
+
+		// If the identity is not set, we should ignore the other annotations and return the default values.
+		//
+		// This is to prevent inadvertently marking resources as managed,
+		// since that can potentially block updates from other sources.
+		return res, false
+	}
+	res.Identity = id
+
+	if v, ok := annot[AnnoKeyManagerKind]; ok {
+		res.Kind = ParseManagerKindString(v)
+	}
+
+	if v, ok := annot[AnnoKeyManagerAllowsEdits]; ok {
+		res.AllowsEdits = v == "true"
+	}
+
+	if v, ok := annot[AnnoKeyManagerSuspended]; ok {
+		res.Suspended = v == "true"
+	}
+
+	return res, true
+}
+
+func (m *grafanaMetaAccessor) SetManagerProperties(v ManagerProperties) {
+	annot := m.obj.GetAnnotations()
+	if annot == nil {
+		annot = make(map[string]string, 4)
+	}
+
+	if v.Identity != "" {
+		annot[AnnoKeyManagerIdentity] = v.Identity
+	} else {
+		delete(annot, AnnoKeyManagerIdentity)
+	}
+
+	if string(v.Kind) != "" {
+		annot[AnnoKeyManagerKind] = string(v.Kind)
+	} else {
+		delete(annot, AnnoKeyManagerKind)
+	}
+
+	if v.AllowsEdits {
+		annot[AnnoKeyManagerAllowsEdits] = strconv.FormatBool(v.AllowsEdits)
+	} else {
+		delete(annot, AnnoKeyManagerAllowsEdits)
+	}
+	if v.Suspended {
+		annot[AnnoKeyManagerSuspended] = strconv.FormatBool(v.Suspended)
+	} else {
+		delete(annot, AnnoKeyManagerSuspended)
+	}
+
+	// Clean up old annotation access
+	delete(annot, oldAnnoKeyRepoName)
+
+	m.obj.SetAnnotations(annot)
+}
+
+func (m *grafanaMetaAccessor) GetSourceProperties() (SourceProperties, bool) {
+	var (
+		res   SourceProperties
+		found bool
+	)
+
+	annot := m.obj.GetAnnotations()
+	if annot == nil {
+		return res, false
+	}
+
+	if path, ok := annot[AnnoKeySourcePath]; ok && path != "" {
+		res.Path = path
+		found = true
+	} else if path, ok := annot[oldAnnoKeyRepoPath]; ok && path != "" {
+		res.Path = path
+		found = true
+	}
+
+	if hash, ok := annot[AnnoKeySourceChecksum]; ok && hash != "" {
+		res.Checksum = hash
+		found = true
+	} else if hash, ok := annot[oldAnnoKeyRepoHash]; ok && hash != "" {
+		res.Checksum = hash
+		found = true
+	}
+
+	t, ok := annot[AnnoKeySourceTimestamp]
+	if !ok {
+		t, ok = annot[oldAnnoKeyRepoTimestamp]
+	}
+	if ok && t != "" {
+		var err error
+		res.TimestampMillis, err = strconv.ParseInt(t, 10, 64)
+		if err != nil {
+			found = true
+		}
+	}
+
+	return res, found
+}
+
+func (m *grafanaMetaAccessor) SetSourceProperties(v SourceProperties) {
+	annot := m.obj.GetAnnotations()
+	if annot == nil {
+		annot = make(map[string]string, 3)
+	}
+
+	if v.Path != "" {
+		annot[AnnoKeySourcePath] = v.Path
+	} else {
+		delete(annot, AnnoKeySourcePath)
+	}
+
+	if v.Checksum != "" {
+		annot[AnnoKeySourceChecksum] = v.Checksum
+	} else {
+		delete(annot, AnnoKeySourceChecksum)
+	}
+
+	if v.TimestampMillis > 0 {
+		annot[AnnoKeySourceTimestamp] = strconv.FormatInt(v.TimestampMillis, 10)
+	} else {
+		delete(annot, AnnoKeySourceTimestamp)
+	}
+
+	m.obj.SetAnnotations(annot)
 }
 
 type BlobInfo struct {

@@ -15,7 +15,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/auth"
 	"github.com/grafana/grafana/pkg/services/authn"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
-	"github.com/grafana/grafana/pkg/services/featuremgmt"
+	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginaccesscontrol"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginstore"
@@ -137,9 +137,7 @@ func CanAdminPlugins(cfg *setting.Cfg, accessControl ac.AccessControl) func(c *c
 	}
 }
 
-func RoleAppPluginAuth(accessControl ac.AccessControl, ps pluginstore.Store, features featuremgmt.FeatureToggles,
-	logger log.Logger,
-) func(c *contextmodel.ReqContext) {
+func RoleAppPluginAuth(accessControl ac.AccessControl, ps pluginstore.Store, logger log.Logger) func(c *contextmodel.ReqContext) {
 	return func(c *contextmodel.ReqContext) {
 		pluginID := web.Params(c.Req)[":id"]
 		p, exists := ps.Plugin(c.Req.Context(), pluginID)
@@ -163,12 +161,11 @@ func RoleAppPluginAuth(accessControl ac.AccessControl, ps pluginstore.Store, fea
 			}
 
 			if normalizeIncludePath(u.Path) == path {
-				useRBAC := features.IsEnabledGlobally(featuremgmt.FlagAccessControlOnCall) && i.RequiresRBACAction()
-				if useRBAC && !hasAccess(pluginaccesscontrol.GetPluginRouteEvaluator(pluginID, i.Action)) {
+				if i.RequiresRBACAction() && !hasAccess(pluginaccesscontrol.GetPluginRouteEvaluator(pluginID, i.Action)) {
 					logger.Debug("Plugin include is covered by RBAC, user doesn't have access", "plugin", pluginID, "include", i.Name)
 					permitted = false
 					break
-				} else if !useRBAC && !c.HasUserRole(i.Role) {
+				} else if !i.RequiresRBACAction() && !c.HasUserRole(i.Role) {
 					permitted = false
 					break
 				}
@@ -235,9 +232,9 @@ func Auth(options *AuthOptions) web.Handler {
 	}
 }
 
-// SnapshotPublicModeOrSignedIn creates a middleware that allows access
-// if snapshot public mode is enabled or if user is signed in.
-func SnapshotPublicModeOrSignedIn(cfg *setting.Cfg) web.Handler {
+// SnapshotPublicModeOrCreate creates a middleware that allows access
+// if snapshot public mode is enabled or if user has creation permission.
+func SnapshotPublicModeOrCreate(cfg *setting.Cfg, ac2 ac.AccessControl) web.Handler {
 	return func(c *contextmodel.ReqContext) {
 		if cfg.SnapshotPublicMode {
 			return
@@ -247,6 +244,25 @@ func SnapshotPublicModeOrSignedIn(cfg *setting.Cfg) web.Handler {
 			notAuthorized(c)
 			return
 		}
+
+		ac.Middleware(ac2)(ac.EvalPermission(dashboards.ActionSnapshotsCreate))
+	}
+}
+
+// SnapshotPublicModeOrDelete creates a middleware that allows access
+// if snapshot public mode is enabled or if user has delete permission.
+func SnapshotPublicModeOrDelete(cfg *setting.Cfg, ac2 ac.AccessControl) web.Handler {
+	return func(c *contextmodel.ReqContext) {
+		if cfg.SnapshotPublicMode {
+			return
+		}
+
+		if !c.IsSignedIn {
+			notAuthorized(c)
+			return
+		}
+
+		ac.Middleware(ac2)(ac.EvalPermission(dashboards.ActionSnapshotsDelete))
 	}
 }
 

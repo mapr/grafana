@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/grafana/grafana/pkg/setting"
 )
@@ -78,7 +78,7 @@ func parseRedisConnStr(connStr string) (*redis.Options, error) {
 	return options, nil
 }
 
-func newRedisStorage(opts *setting.RemoteCacheOptions) (*redisStorage, error) {
+func newRedisStorage(opts *setting.RemoteCacheSettings) (*redisStorage, error) {
 	opt, err := parseRedisConnStr(opts.ConnStr)
 	if err != nil {
 		return nil, err

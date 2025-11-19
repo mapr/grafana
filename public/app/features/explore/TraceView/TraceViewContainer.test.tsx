@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 
+import { TimeRange } from '@grafana/data';
+
 import { configureStore } from '../../../store/configureStore';
 
 import { frameOld } from './TraceView.test';
@@ -11,6 +13,7 @@ jest.mock('@grafana/runtime', () => {
   return {
     ...jest.requireActual('@grafana/runtime'),
     reportInteraction: jest.fn(),
+    usePluginLinks: jest.fn().mockReturnValue({ isLoading: false, links: [] }),
   };
 });
 
@@ -19,7 +22,7 @@ function renderTraceViewContainer(frames = [frameOld]) {
 
   const { container, baseElement } = render(
     <Provider store={store}>
-      <TraceViewContainer exploreId="left" dataFrames={frames} splitOpenFn={() => {}} />
+      <TraceViewContainer exploreId="left" dataFrames={frames} splitOpenFn={() => {}} timeRange={{} as TimeRange} />
     </Provider>
   );
   return {
@@ -125,7 +128,7 @@ describe('TraceViewContainer', () => {
     await user.click(tagOption);
 
     expect(screen.queryAllByText('', { selector: 'div[data-testid="span-view"]' }).length).toBe(3);
-    const matchesSwitch = screen.getByRole('checkbox', { name: 'Show matches only switch' });
+    const matchesSwitch = screen.getByRole('switch', { name: 'Show matches only switch' });
     expect(matchesSwitch).toBeInTheDocument();
     await user.click(matchesSwitch);
     expect(screen.queryAllByText('', { selector: 'div[data-testid="span-view"]' }).length).toBe(1);

@@ -9,10 +9,10 @@ import { Trans } from 'app/core/internationalization';
 
 import { forceActivateFullSceneObjectTree } from '../utils/utils';
 
-import { DashboardGridItem } from './DashboardGridItem';
 import { DashboardScene } from './DashboardScene';
+import { DashboardGridItem } from './layout-default/DashboardGridItem';
 import { DefaultGridLayoutManager } from './layout-default/DefaultGridLayoutManager';
-import { DashboardRepeatsProcessedEvent } from './types';
+import { DashboardRepeatsProcessedEvent } from './types/DashboardRepeatsProcessedEvent';
 
 export interface Props {
   dashboard: DashboardScene;

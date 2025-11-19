@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/centrifugal/centrifuge"
-	"github.com/go-redis/redis/v8"
 	"github.com/gobwas/glob"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/live"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/grafana/grafana/pkg/api/dtos"
@@ -110,9 +110,11 @@ func ProvideService(plugCtxProvider *plugincontext.Provider, cfg *setting.Cfg, r
 	// things. For example Node allows to publish messages to channels from server
 	// side with its Publish method.
 	node, err := centrifuge.New(centrifuge.Config{
-		LogHandler:         handleLog,
-		LogLevel:           centrifuge.LogLevelError,
-		MetricsNamespace:   "grafana_live",
+		LogHandler: handleLog,
+		LogLevel:   centrifuge.LogLevelError,
+		Metrics: centrifuge.MetricsConfig{
+			MetricsNamespace: "grafana_live",
+		},
 		ClientQueueMaxSize: 4194304, // 4MB
 		// Use reasonably large expiration interval for stream meta key,
 		// much bigger than maximum HistoryLifetime value in Node config.
@@ -132,7 +134,7 @@ func ProvideService(plugCtxProvider *plugincontext.Provider, cfg *setting.Cfg, r
 		// globally since kept inside Redis.
 		err := setupRedisLiveEngine(g, node)
 		if err != nil {
-			logger.Error("failed to setup redis live engine: %v", err)
+			logger.Error("failed to setup redis live engine", "error", err)
 		} else {
 			redisHealthy = true
 		}
@@ -149,7 +151,7 @@ func ProvideService(plugCtxProvider *plugincontext.Provider, cfg *setting.Cfg, r
 		})
 		cmd := redisClient.Ping(context.Background())
 		if _, err := cmd.Result(); err != nil {
-			logger.Error("live engine failed to ping redis, proceeding without live ha, error: %v", err)
+			logger.Error("live engine failed to ping redis, proceeding without live ha", "error", err)
 			redisClient = nil
 		}
 	}
@@ -269,12 +271,14 @@ func ProvideService(plugCtxProvider *plugincontext.Provider, cfg *setting.Cfg, r
 	originGlobs, _ := setting.GetAllowedOriginGlobs(originPatterns) // error already checked on config load.
 	checkOrigin := getCheckOriginFunc(appURL, originPatterns, originGlobs)
 
+	wsCfg := centrifuge.WebsocketConfig{
+		ReadBufferSize:   1024,
+		WriteBufferSize:  1024,
+		CheckOrigin:      checkOrigin,
+		MessageSizeLimit: cfg.LiveMessageSizeLimit,
+	}
 	// Use a pure websocket transport.
-	wsHandler := centrifuge.NewWebsocketHandler(node, centrifuge.WebsocketConfig{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin:     checkOrigin,
-	})
+	wsHandler := centrifuge.NewWebsocketHandler(node, wsCfg)
 
 	pushWSHandler := pushws.NewHandler(g.ManagedStreamRunner, pushws.Config{
 		ReadBufferSize:  1024,

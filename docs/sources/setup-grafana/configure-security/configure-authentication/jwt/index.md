@@ -23,6 +23,10 @@ This method of authentication is useful for integrating with other systems that
 use JWKS but can't directly integrate with Grafana or if you want to use pass-through
 authentication in an app embedding Grafana.
 
+{{< admonition type="note" >}}
+Grafana does not currently support refresh tokens.
+{{< /admonition >}}
+
 ## Enable JWT
 
 To use JWT authentication:
@@ -92,18 +96,18 @@ email_attribute_path = user.emails[1] # user's email is professional@email.com
 If you want to embed Grafana in an iframe while maintaining user identity and role checks,
 you can use JWT authentication to authenticate the iframe.
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 For Grafana Cloud, or scenarios where verifying viewer identity is not required,
-embed [public dashboards](../../../../dashboards/dashboard-public/).
-{{% /admonition %}}
+embed [shared dashboards](https://grafana.com/docs/grafana/<GRAFANA_VERSION>/dashboards/share-dashboards-panels/shared-dashboards/).
+{{< /admonition >}}
 
 In this scenario, you will need to configure Grafana to accept a JWT
 provided in the HTTP header and a reverse proxy should rewrite requests to the
 Grafana instance to include the JWT in the request's headers.
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 For embedding to work, you must enable `allow_embedding` in the [security section](../../../configure-grafana/#allow_embedding). This setting is not available in Grafana Cloud.
-{{% /admonition %}}
+{{< /admonition >}}
 
 In a scenario where it is not possible to rewrite the request headers you
 can use URL login instead.
@@ -115,10 +119,10 @@ can use URL login instead.
 
 **Note**: You need to have enabled JWT before setting this setting see section Enabled JWT
 
-{{% admonition type="warning" %}}
+{{< admonition type="warning" >}}
 this can lead to JWTs being exposed in logs and possible session hijacking if the server is not
 using HTTP over TLS.
-{{% /admonition %}}
+{{< /admonition >}}
 
 ```ini
 # [auth.jwt]
@@ -183,7 +187,8 @@ key_id = my-key-id
 
 By default, only `"exp"`, `"nbf"` and `"iat"` claims are validated.
 
-You might also want to validate that other claims are really what you expect them to be.
+Consider validating that other claims match your expectations by using the `expect_claims` configuration option.
+Token claims must match exactly the values set here.
 
 ```ini
 # This can be seen as a required "subset" of a JWT Claims Set.
@@ -194,7 +199,8 @@ expect_claims = {"iss": "https://your-token-issuer", "your-custom-claim": "foo"}
 
 Grafana checks for the presence of a role using the [JMESPath](http://jmespath.org/examples.html) specified via the `role_attribute_path` configuration option. The JMESPath is applied to JWT token claims. The result after evaluation of the `role_attribute_path` JMESPath expression should be a valid Grafana role, for example, `None`, `Viewer`, `Editor` or `Admin`.
 
-The organization that the role is assigned to can be configured using the `X-Grafana-Org-Id` header.
+To assign the role to a specific organization include the `X-Grafana-Org-Id` header along with your JWT when making API requests to Grafana.
+To learn more about the header, please refer to the [documentation](../../../../developers/http_api/#x-grafana-org-id-header).
 
 ### JMESPath examples
 

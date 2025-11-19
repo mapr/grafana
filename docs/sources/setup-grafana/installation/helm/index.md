@@ -16,9 +16,9 @@ This topic includes instructions for installing and running Grafana on Kubernete
 
 [Helm](https://helm.sh/) is an open-source command line tool used for managing Kubernetes applications. It is a graduate project in the [CNCF Landscape](https://www.cncf.io/projects/helm/).
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 The Grafana open-source community offers Helm Charts for running it on Kubernetes. Please be aware that the code is provided without any warranties. If you encounter any problems, you can report them to the [Official GitHub repository](https://github.com/grafana/helm-charts/).
-{{% /admonition %}}
+{{< /admonition >}}
 
 Watch this video to learn more about installing Grafana using Helm Charts: {{< youtube id="sgYrEleW24E">}}
 
@@ -199,9 +199,9 @@ In order to make any configuration changes, download the `values.yaml` file from
 
 https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 Depending on your use case requirements, you can use a single YAML file that contains your configuration changes or you can create multiple YAML files.
-{{% /admonition %}}
+{{< /admonition >}}
 
 ### Enable persistent storage **(recommended)**
 
@@ -277,6 +277,67 @@ To install plugins in the Grafana Helm Charts, complete the following steps:
 1. Navigate to UI -> Administration -> Plugins
 
 1. Search for the above plugins and they should be marked as installed.
+
+### Configure a Private CA (Certificate Authority)
+
+In many enterprise networks, TLS certificates are issued by a private certificate authority and are not trusted by default (using the provided OS trust chain).
+
+If your Grafana instance needs to interact with services exposing certificates issued by these private CAs, then you need to ensure Grafana trusts the root certificate.
+
+You might need to configure this if you:
+
+- have plugins that require connectivity to other self hosted systems. For example, if you've installed the Grafana Enterprise Metrics, Logs, or Traces (GEM, GEL, GET) plugins, and your GEM (or GEL/GET) cluster is using a private certificate.
+- want to connect to data sources which are listening on HTTPS with a private certificate.
+- are using a backend database for persistence, or caching service that uses private certificates for encryption in transit.
+
+In some cases you can specify a self-signed certificate within Grafana (such as in some data sources), or choose to skip TLS certificate validation (this is not recommended unless absolutely necessary).
+
+A simple solution which should work across your entire instance (plugins, data sources, and backend connections) is to add your self-signed CA certificate to your Kubernetes deployment.
+
+1. Create a ConfigMap containing the certificate, and deploy it to your Kubernetes cluster
+
+   ```yaml
+   # grafana-ca-configmap.yaml
+   ---
+   apiVersion: v1
+   kind: ConfigMap
+   metadata:
+     name: grafana-ca-cert
+   data:
+     ca.pem: |
+       -----BEGIN CERTIFICATE-----
+       (rest of the CA cert)
+       -----END CERTIFICATE-----
+   ```
+
+   ```bash
+   kubectl apply --filename grafana-ca-configmap.yaml --namespace monitoring
+   ```
+
+1. Open the Helm `values.yaml` file in your favorite editor.
+
+1. Find the line that says `extraConfigmapMounts:` and under that section, specify the additional ConfigMap that you want to mount.
+
+   ```yaml
+   .......
+   ............
+   ......
+   extraConfigmapMounts:
+      - name: ca-certs-configmap
+        mountPath: /etc/ssl/certs/ca.pem
+        subPath: ca.pem
+        configMap: grafana-ca-cert
+        readOnly: true
+   .......
+   ............
+   ......
+   ```
+
+1. Save the changes and use the `helm upgrade` command to update your Grafana deployment and mount the new ConfigMap:
+
+   ```bash
+   helm upgrade my-grafana grafana/grafana --values values.yaml --namespace monitoring
+   ```
 
 ## Troubleshooting
 

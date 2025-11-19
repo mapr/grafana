@@ -4,13 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/grafana/authlib/claims"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	claims "github.com/grafana/authlib/types"
+
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/services/authn"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/login"
 	"github.com/grafana/grafana/pkg/services/login/authinfoimpl"
 	"github.com/grafana/grafana/pkg/services/login/authinfotest"
@@ -46,7 +48,9 @@ func TestUserSync_SyncUserHook(t *testing.T) {
 			AuthModule: "oauth",
 			AuthId:     "2032",
 			UserId:     1,
-			Id:         1}}
+			Id:         1,
+		},
+	}
 
 	userService := &usertest.FakeUserService{ExpectedUser: &user.User{
 		ID:    1,
@@ -435,7 +439,7 @@ func TestUserSync_SyncUserHook(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := ProvideUserSync(tt.fields.userService, userProtection, tt.fields.authInfoService, tt.fields.quotaService, tracing.InitializeTracerForTest())
+			s := ProvideUserSync(tt.fields.userService, userProtection, tt.fields.authInfoService, tt.fields.quotaService, tracing.InitializeTracerForTest(), featuremgmt.WithFeatures())
 			err := s.SyncUserHook(tt.args.ctx, tt.args.id, nil)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -460,6 +464,7 @@ func TestUserSync_SyncUserRetryFetch(t *testing.T) {
 		&authinfotest.FakeService{},
 		&quotatest.FakeQuotaService{},
 		tracing.NewNoopTracerService(),
+		featuremgmt.WithFeatures(),
 	)
 
 	email := "test@test.com"

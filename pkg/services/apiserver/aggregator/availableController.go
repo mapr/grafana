@@ -14,10 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/grafana/grafana/pkg/apis/service/v0alpha1"
-	informersservicev0alpha1 "github.com/grafana/grafana/pkg/generated/informers/externalversions/service/v0alpha1"
-	listersservicev0alpha1 "github.com/grafana/grafana/pkg/generated/listers/service/v0alpha1"
-
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -36,6 +32,10 @@ import (
 	informers "k8s.io/kube-aggregator/pkg/client/informers/externalversions/apiregistration/v1"
 	listers "k8s.io/kube-aggregator/pkg/client/listers/apiregistration/v1"
 	"k8s.io/kube-aggregator/pkg/controllers"
+
+	"github.com/grafana/grafana/pkg/apis/service/v0alpha1"
+	informersservicev0alpha1 "github.com/grafana/grafana/pkg/generated/informers/externalversions/service/v0alpha1"
+	listersservicev0alpha1 "github.com/grafana/grafana/pkg/generated/listers/service/v0alpha1"
 )
 
 type certKeyFunc func() ([]byte, []byte)
@@ -69,6 +69,7 @@ type AvailableConditionController struct {
 	cache map[string]map[string][]string
 	// this lock protects operations on the above cache
 	cacheLock sync.RWMutex
+	metrics   *Metrics
 }
 
 // NewAvailableConditionController returns a new AvailableConditionController.
@@ -79,6 +80,7 @@ func NewAvailableConditionController(
 	proxyTransportDial *transport.DialHolder,
 	proxyCurrentCertKeyContent certKeyFunc,
 	serviceResolver ServiceResolver,
+	metrics *Metrics,
 ) (*AvailableConditionController, error) {
 	c := &AvailableConditionController{
 		apiServiceClient:   apiServiceClient,
@@ -94,6 +96,7 @@ func NewAvailableConditionController(
 		),
 		proxyTransportDial:         proxyTransportDial,
 		proxyCurrentCertKeyContent: proxyCurrentCertKeyContent,
+		metrics:                    metrics,
 	}
 
 	// resync on this one because it is low cardinality and rechecking the actual discovery
@@ -124,6 +127,10 @@ func NewAvailableConditionController(
 func (c *AvailableConditionController) sync(key string) error {
 	originalAPIService, err := c.apiServiceLister.Get(key)
 	if apierrors.IsNotFound(err) {
+		if originalAPIService.Spec.Service != nil {
+			// Only reset state, if the service was a remote service
+			c.metrics.ForgetAPIService(key)
+		}
 		return nil
 	}
 	if err != nil {
@@ -197,6 +204,10 @@ func (c *AvailableConditionController) sync(key string) error {
 		results := make(chan error, attempts)
 		for i := 0; i < attempts; i++ {
 			go func() {
+				// stagger these requests to reduce pressure on aggregated services
+				waitDuration := time.Second * time.Duration(int32(i))
+				time.Sleep(waitDuration)
+
 				discoveryURL, err := c.serviceResolver.ResolveEndpoint(apiService.Spec.Service.Namespace, apiService.Spec.Service.Name, *apiService.Spec.Service.Port)
 				if err != nil {
 					results <- err
@@ -219,13 +230,15 @@ func (c *AvailableConditionController) sync(key string) error {
 					}
 
 					// setting the system-masters identity ensures that we will always have access rights
-					transport.SetAuthProxyHeaders(newReq, "system:kube-aggregator", []string{"system:masters"}, nil)
+					uid := ""
+					var extra map[string][]string
+					transport.SetAuthProxyHeaders(newReq, "system:kube-aggregator", uid, []string{"system:masters"}, extra)
 					resp, err := discoveryClient.Do(newReq)
 					if resp != nil {
 						_ = resp.Body.Close()
 						// we should always been in the 200s or 300s
 						if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-							errCh <- fmt.Errorf("bad status from %v: %v", discoveryURL, resp.StatusCode)
+							errCh <- fmt.Errorf("bad status from %v: %d", discoveryURL, resp.StatusCode)
 							return
 						}
 					}
@@ -285,6 +298,12 @@ func (c *AvailableConditionController) sync(key string) error {
 // updateAPIServiceStatus only issues an update if a change is detected.  We have a tight resync loop to quickly detect dead
 // apiservices. Doing that means we don't want to quickly issue no-op updates.
 func (c *AvailableConditionController) updateAPIServiceStatus(originalAPIService, newAPIService *apiregistrationv1.APIService) (*apiregistrationv1.APIService, error) {
+	// update this metric on every sync operation to reflect the actual state
+	if newAPIService.Spec.Service != nil {
+		// Only expose the metric for remote services, trusts the type on the new object
+		c.metrics.SetUnavailableGauge(newAPIService)
+	}
+
 	if equality.Semantic.DeepEqual(originalAPIService.Status, newAPIService.Status) {
 		return newAPIService, nil
 	}
@@ -310,6 +329,10 @@ func (c *AvailableConditionController) updateAPIServiceStatus(originalAPIService
 		return nil, err
 	}
 
+	if newAPIService.Spec.Service != nil {
+		// Only expose the metric for remote services, trusts the type on the new object
+		c.metrics.SetUnavailableCounter(originalAPIService, newAPIService)
+	}
 	return newAPIService, nil
 }
 

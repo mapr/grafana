@@ -25,7 +25,7 @@ title: RBAC HTTP API
 
 The API can be used to create, update, delete, get, and list roles.
 
-To check which basic or fixed roles have the required permissions, refer to [RBAC role definitions]({{< ref "/docs/grafana/latest/administration/roles-and-permissions/access-control/rbac-fixed-basic-role-definitions" >}}).
+To check which basic or fixed roles have the required permissions, refer to [RBAC role definitions](/docs/grafana/latest/administration/roles-and-permissions/access-control/rbac-fixed-basic-role-definitions).
 
 ## Get status
 
@@ -494,7 +494,7 @@ Permission validation only occurs when permission validation is enabled (`rbac.p
 
 > It has been enabled by default since Grafana 10.2.
 
-For more information, refer to [Create role validation errors]({{< ref "#create-role-validation-errors" >}}).
+For more information, refer to [Create role validation errors](#create-role-validation-errors).
 
 #### Status codes
 
@@ -711,7 +711,7 @@ Content-Type: application/json; charset=UTF-8
 Assign a role to a specific user.
 
 For bulk updates consider
-[Set user role assignments]({{< ref "#set-user-role-assignments" >}}).
+[Set user role assignments](#set-user-role-assignments).
 
 #### Required permissions
 
@@ -769,7 +769,7 @@ Content-Type: application/json; charset=UTF-8
 Revoke a role from a user.
 
 For bulk updates consider
-[Set user role assignments]({{< ref "#set-user-role-assignments" >}}).
+[Set user role assignments](#set-user-role-assignments).
 
 #### Required permissions
 
@@ -821,8 +821,8 @@ This will remove any assigned roles that aren't in the request and add
 roles that are in the set but are not already assigned to the user.
 
 If you want to add or remove a single role, consider using
-[Add a user role assignment]({{< ref "#add-a-user-role-assignment" >}}) or
-[Remove a user role assignment]({{< ref "#remove-a-user-role-assignment" >}})
+[Add a user role assignment](#add-a-user-role-assignment) or
+[Remove a user role assignment](#remove-a-user-role-assignment)
 instead.
 
 #### Required permissions
@@ -985,7 +985,7 @@ Content-Type: application/json; charset=UTF-8
 Assign a role to a specific service account.
 
 For bulk updates consider
-[Set service account role assignments]({{< ref "#set-service-account-role-assignments" >}}).
+[Set service account role assignments](#set-service-account-role-assignments).
 
 #### Required permissions
 
@@ -1043,7 +1043,7 @@ Content-Type: application/json; charset=UTF-8
 Revoke a role from a service account.
 
 For bulk updates consider
-[Set service account role assignments]({{< ref "#set-service-account-role-assignments" >}}).
+[Set service account role assignments](#set-service-account-role-assignments).
 
 #### Required permissions
 
@@ -1095,8 +1095,8 @@ This will remove any assigned roles that aren't in the request and add
 roles that are in the set but are not already assigned to the service account.
 
 If you want to add or remove a single role, consider using
-[Add a service account role assignment]({{< ref "#add-a-service-account-role-assignment" >}}) or
-[Remove a service account role assignment]({{< ref "#remove-a-service-account-role-assignment" >}})
+[Add a service account role assignment](#add-a-service-account-role-assignment) or
+[Remove a service account role assignment](#remove-a-service-account-role-assignment)
 instead.
 
 #### Required permissions
@@ -1213,7 +1213,7 @@ Content-Type: application/json; charset=UTF-8
 
 Assign a role to a specific team.
 
-For bulk updates consider [Set team role assignments]({{< ref "#set-team-role-assignments" >}}).
+For bulk updates consider [Set team role assignments](#set-team-role-assignments).
 
 #### Required permissions
 
@@ -1268,7 +1268,7 @@ Content-Type: application/json; charset=UTF-8
 
 Revoke a role from a team.
 
-For bulk updates consider [Set team role assignments]({{< ref "#set-team-role-assignments" >}}).
+For bulk updates consider [Set team role assignments](#set-team-role-assignments).
 
 #### Required permissions
 
@@ -1314,8 +1314,8 @@ This will remove any assigned roles that aren't in the request and add
 roles that are in the set but are not already assigned to the user.
 
 If you want to add or remove a single role, consider using
-[Add a team role assignment]({{< ref "#add-a-team-role-assignment" >}}) or
-[Remove a team role assignment]({{< ref "#remove-a-team-role-assignment" >}})
+[Add a team role assignment](#add-a-team-role-assignment) or
+[Remove a team role assignment](#remove-a-team-role-assignment)
 instead.
 
 #### Required permissions

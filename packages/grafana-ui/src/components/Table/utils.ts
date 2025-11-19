@@ -1,25 +1,26 @@
 import { Property } from 'csstype';
 import { clone, sampleSize } from 'lodash';
 import memoize from 'micro-memoize';
-import { Row, HeaderGroup } from 'react-table';
+import { HeaderGroup, Row } from 'react-table';
 import tinycolor from 'tinycolor2';
 
 import {
   DataFrame,
+  DisplayValue,
+  DisplayValueAlignmentFactors,
   Field,
+  FieldConfigSource,
+  fieldReducers,
   FieldType,
   formattedValueToString,
-  getFieldDisplayName,
-  SelectableValue,
-  fieldReducers,
   getDisplayProcessor,
-  reduceField,
+  getFieldDisplayName,
   GrafanaTheme2,
   isDataFrame,
   isDataFrameWithValue,
   isTimeSeriesFrame,
-  DisplayValueAlignmentFactors,
-  DisplayValue,
+  reduceField,
+  SelectableValue,
 } from '@grafana/data';
 import {
   BarGaugeDisplayMode,
@@ -30,6 +31,7 @@ import {
 
 import { getTextColorForAlphaBackground } from '../../utils';
 
+import { ActionsCell } from './ActionsCell';
 import { BarGaugeCell } from './BarGaugeCell';
 import { DataLinksCell } from './DataLinksCell';
 import { DefaultCell } from './DefaultCell';
@@ -41,13 +43,13 @@ import { RowExpander } from './RowExpander';
 import { SparklineCell } from './SparklineCell';
 import { TableStyles } from './styles';
 import {
+  CellColors,
   CellComponent,
-  TableCellOptions,
-  TableFieldOptions,
   FooterItem,
   GrafanaTableColumn,
+  TableCellOptions,
+  TableFieldOptions,
   TableFooterCalc,
-  CellColors,
 } from './types';
 
 export const EXPANDER_WIDTH = 50;
@@ -191,6 +193,8 @@ export function getCellComponent(displayMode: TableCellDisplayMode, field: Field
       return JSONViewCell;
     case TableCellDisplayMode.DataLinks:
       return DataLinksCell;
+    case TableCellDisplayMode.Actions:
+      return ActionsCell;
   }
 
   if (field.type === FieldType.geo) {
@@ -710,19 +714,14 @@ export function guessTextBoundingBox(
  * To do this we either select a single record if there aren't many records
  * or we select records at random and sample their size.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function guessLongestField(fieldConfig: any, data: DataFrame) {
+export function guessLongestField(fieldConfig: FieldConfigSource, data: DataFrame) {
   let longestField = undefined;
   const SAMPLE_SIZE = 3;
 
   // If the default field option is set to allow text wrapping
   // we determine the field to wrap text with here and then
   // pass it to the RowsList
-  if (
-    fieldConfig !== undefined &&
-    fieldConfig.defaults.custom !== undefined &&
-    fieldConfig.defaults.custom.cellOptions.wrapText
-  ) {
+  if (fieldConfig.defaults.custom?.cellOptions?.wrapText) {
     const stringFields = data.fields.filter((field: Field) => field.type === FieldType.string);
 
     if (stringFields.length >= 1 && stringFields[0].values.length > 0) {

@@ -133,6 +133,14 @@ func (r *Receiver) Validate(decryptFn DecryptFn) error {
 	return errors.Join(errs...)
 }
 
+func (r *Receiver) GetIntegrationTypes() []string {
+	result := make([]string, 0, len(r.Integrations))
+	for _, i := range r.Integrations {
+		result = append(result, i.Config.Type)
+	}
+	return result
+}
+
 // Integration is the domain model representation of an integration.
 type Integration struct {
 	UID                   string
@@ -540,7 +548,7 @@ func ValidateIntegration(ctx context.Context, integration alertingNotify.Grafana
 		GrafanaIntegrations: alertingNotify.GrafanaIntegrations{
 			Integrations: []*alertingNotify.GrafanaIntegrationConfig{&integration},
 		},
-	}, decryptFunc)
+	}, alertingNotify.DecodeSecretsFromBase64, decryptFunc)
 	if err != nil {
 		return err
 	}

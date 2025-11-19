@@ -3,14 +3,13 @@ package user
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/registry/rest"
 
-	"github.com/grafana/authlib/claims"
+	claims "github.com/grafana/authlib/types"
 	"github.com/grafana/grafana/pkg/apimachinery/utils"
 	iamv0 "github.com/grafana/grafana/pkg/apis/iam/v0alpha1"
 	"github.com/grafana/grafana/pkg/registry/apis/iam/common"
@@ -136,9 +135,6 @@ func toUserItem(u *user.User, ns string) iamv0.User {
 	}
 	obj, _ := utils.MetaAccessor(item)
 	obj.SetUpdatedTimestamp(&u.Updated)
-	obj.SetOriginInfo(&utils.ResourceOriginInfo{
-		Name: "SQL",
-		Path: strconv.FormatInt(u.ID, 10),
-	})
+	obj.SetDeprecatedInternalID(u.ID) // nolint:staticcheck
 	return *item
 }

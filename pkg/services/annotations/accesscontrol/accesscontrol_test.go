@@ -7,15 +7,35 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/db"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
+	"github.com/grafana/grafana/pkg/services/accesscontrol/acimpl"
+	accesscontrolmock "github.com/grafana/grafana/pkg/services/accesscontrol/mock"
 	"github.com/grafana/grafana/pkg/services/annotations"
 	"github.com/grafana/grafana/pkg/services/annotations/testutil"
+	"github.com/grafana/grafana/pkg/services/apiserver/client"
 	"github.com/grafana/grafana/pkg/services/dashboards"
+	"github.com/grafana/grafana/pkg/services/dashboards/dashboardaccess"
+	"github.com/grafana/grafana/pkg/services/dashboards/database"
+	dashboardsservice "github.com/grafana/grafana/pkg/services/dashboards/service"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
+	"github.com/grafana/grafana/pkg/services/folder/folderimpl"
+	"github.com/grafana/grafana/pkg/services/guardian"
+	"github.com/grafana/grafana/pkg/services/quota/quotatest"
+	"github.com/grafana/grafana/pkg/services/search/model"
+	"github.com/grafana/grafana/pkg/services/search/sort"
+	"github.com/grafana/grafana/pkg/services/sqlstore/permissions"
+	"github.com/grafana/grafana/pkg/services/sqlstore/searchstore"
+	"github.com/grafana/grafana/pkg/services/supportbundles/supportbundlestest"
+	"github.com/grafana/grafana/pkg/services/tag/tagimpl"
 	"github.com/grafana/grafana/pkg/services/user"
+	"github.com/grafana/grafana/pkg/storage/legacysql/dualwrite"
 	"github.com/grafana/grafana/pkg/tests/testsuite"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestMain(m *testing.M) {
@@ -28,27 +48,47 @@ func TestIntegrationAuthorize(t *testing.T) {
 	}
 
 	sql, cfg := db.InitTestDBWithCfg(t)
-
-	dash1 := testutil.CreateDashboard(t, sql, cfg, featuremgmt.WithFeatures(), dashboards.SaveDashboardCommand{
-		UserID: 1,
-		OrgID:  1,
-		Dashboard: simplejson.NewFromAny(map[string]any{
-			"title": "Dashboard 1",
-		}),
-	})
-
-	dash2 := testutil.CreateDashboard(t, sql, cfg, featuremgmt.WithFeatures(), dashboards.SaveDashboardCommand{
-		UserID: 1,
-		OrgID:  1,
-		Dashboard: simplejson.NewFromAny(map[string]any{
-			"title": "Dashboard 2",
-		}),
-	})
+	origNewDashboardGuardian := guardian.New
+	defer func() { guardian.New = origNewDashboardGuardian }()
+	guardian.MockDashboardGuardian(&guardian.FakeDashboardGuardian{CanSaveValue: true})
+	folderStore := folderimpl.ProvideDashboardFolderStore(sql)
+	fStore := folderimpl.ProvideStore(sql)
+	dashStore, err := database.ProvideDashboardStore(sql, cfg, featuremgmt.WithFeatures(), tagimpl.ProvideService(sql))
+	require.NoError(t, err)
+	ac := acimpl.ProvideAccessControl(featuremgmt.WithFeatures())
+	folderSvc := folderimpl.ProvideService(
+		fStore, accesscontrolmock.New(), bus.ProvideBus(tracing.InitializeTracerForTest()), dashStore, folderStore,
+		nil, sql, featuremgmt.WithFeatures(), supportbundlestest.NewFakeBundleService(), nil, cfg, nil, tracing.InitializeTracerForTest(), nil, dualwrite.ProvideTestService(), sort.ProvideService())
+	dashSvc, err := dashboardsservice.ProvideDashboardServiceImpl(cfg, dashStore, folderStore, featuremgmt.WithFeatures(), accesscontrolmock.NewMockedPermissionsService(),
+		ac, folderSvc, fStore, nil, client.MockTestRestConfig{}, nil, quotatest.New(false, nil), nil, nil, nil, dualwrite.ProvideTestService(), sort.ProvideService())
+	require.NoError(t, err)
+	dashSvc.RegisterDashboardPermissions(accesscontrolmock.NewMockedPermissionsService())
 
 	u := &user.SignedInUser{
 		UserID: 1,
 		OrgID:  1,
 	}
+
+	dash1, err := dashSvc.SaveDashboard(context.Background(), &dashboards.SaveDashboardDTO{
+		User:  u,
+		OrgID: 1,
+		Dashboard: &dashboards.Dashboard{
+			Title: "Dashboard 1",
+			Data:  simplejson.New(),
+		},
+	}, false)
+	require.NoError(t, err)
+
+	dash2, err := dashSvc.SaveDashboard(context.Background(), &dashboards.SaveDashboardDTO{
+		User:  u,
+		OrgID: 1,
+		Dashboard: &dashboards.Dashboard{
+			Title: "Dashboard 2",
+			Data:  simplejson.New(),
+		},
+	}, false)
+	require.NoError(t, err)
+
 	role := testutil.SetupRBACRole(t, sql, u)
 
 	type testCase struct {
@@ -172,8 +212,7 @@ func TestIntegrationAuthorize(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			u.Permissions = map[int64]map[string][]string{1: tc.permissions}
 			testutil.SetupRBACPermission(t, sql, role, u)
-
-			authz := NewAuthService(sql, featuremgmt.WithFeatures(tc.featureToggle))
+			authz := NewAuthService(sql, featuremgmt.WithFeatures(tc.featureToggle), dashSvc, cfg)
 
 			query := annotations.ItemQuery{SignedInUser: u, OrgID: 1}
 			resources, err := authz.Authorize(context.Background(), query)
@@ -191,4 +230,91 @@ func TestIntegrationAuthorize(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDashboardsWithVisibleAnnotations(t *testing.T) {
+	store := db.InitTestDB(t)
+
+	user := &user.SignedInUser{
+		OrgID: 1,
+	}
+
+	// Create permission filters
+	p1 := permissions.NewAccessControlDashboardPermissionFilter(user, dashboardaccess.PERMISSION_VIEW, searchstore.TypeDashboard, featuremgmt.WithFeatures(), true, store.GetDialect())
+	p2 := searchstore.OrgFilter{OrgId: 1}
+
+	// If DashboardUID is provided, it should be added as a filter
+	p3 := searchstore.DashboardFilter{UIDs: []string{"uid1"}}
+
+	dashSvc := &dashboards.FakeDashboardService{}
+
+	// First call, without DashboardUID
+	queryNoDashboardUID := &dashboards.FindPersistedDashboardsQuery{
+		OrgId:        1,
+		SignedInUser: user,
+		Type:         "dash-db",
+		Limit:        int64(100),
+		Page:         int64(1),
+		Filters: []any{
+			p1,
+			p2,
+		},
+	}
+	dashSvc.On("SearchDashboards", mock.Anything, queryNoDashboardUID).Return(model.HitList{
+		&model.Hit{UID: "uid1", ID: 101},
+		&model.Hit{UID: "uid2", ID: 102},
+	}, nil)
+
+	// Second call, with DashboardUID filter
+	queryWithDashboardUID := &dashboards.FindPersistedDashboardsQuery{
+		OrgId:        1,
+		SignedInUser: user,
+		Type:         "dash-db",
+		Limit:        int64(100),
+		Page:         int64(1),
+		Filters: []any{
+			p1,
+			p2,
+			// This filter should be added on second call
+			p3,
+		},
+		DashboardUIDs: []string{"uid1"},
+	}
+
+	dashSvc.On("SearchDashboards", mock.Anything, queryWithDashboardUID).Return(model.HitList{
+		&model.Hit{UID: "uid1", ID: 101},
+	}, nil)
+
+	// Create auth service
+	authz := &AuthService{
+		db:                        store,
+		features:                  featuremgmt.WithFeatures(),
+		dashSvc:                   dashSvc,
+		searchDashboardsPageLimit: 100,
+	}
+
+	// First call without DashboardUID
+	result, err := authz.dashboardsWithVisibleAnnotations(context.Background(), annotations.ItemQuery{
+		SignedInUser: user,
+		OrgID:        1,
+		Page:         1,
+	})
+	assert.NoError(t, err)
+	// Should return two dashboards
+	assert.Equal(t, map[string]int64{"uid1": 101, "uid2": 102}, result)
+	// Ensure SearchDashboards was called with correct query
+	dashSvc.AssertCalled(t, "SearchDashboards", mock.Anything, queryNoDashboardUID)
+
+	// Second call with DashboardUID
+	result, err = authz.dashboardsWithVisibleAnnotations(context.Background(), annotations.ItemQuery{
+		SignedInUser: user,
+		OrgID:        1,
+		Page:         1,
+		DashboardUID: "uid1",
+	})
+	assert.NoError(t, err)
+	// Should only return one dashboard
+	assert.Equal(t, map[string]int64{"uid1": 101}, result)
+	// Ensure SearchDashboards was called with correct query (including DashboardUID filter)
+	dashSvc.AssertCalled(t, "SearchDashboards", mock.Anything, queryWithDashboardUID)
 }

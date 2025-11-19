@@ -1,9 +1,11 @@
+import { InitialEntry } from 'history/createMemoryHistory';
 import * as React from 'react';
+import { Route, Routes } from 'react-router-dom-v5-compat';
 import { Props } from 'react-virtualized-auto-sizer';
 import { render, screen, waitFor, within } from 'test/test-utils';
 import { byLabelText, byRole } from 'testing-library-selector';
 
-import { CodeEditorProps } from '@grafana/ui/src/components/Monaco/types';
+import { CodeEditor } from '@grafana/ui';
 import { AppNotificationList } from 'app/core/components/AppNotifications/AppNotificationList';
 import { setupMswServer } from 'app/features/alerting/unified/mockApi';
 import { testWithFeatureToggles } from 'app/features/alerting/unified/test/test-utils';
@@ -11,6 +13,8 @@ import { AccessControlAction } from 'app/types';
 
 import Templates from './Templates';
 import { grantUserPermissions } from './mocks';
+
+type CodeEditorProps = React.ComponentProps<typeof CodeEditor>;
 
 jest.mock('app/core/components/AppChrome/AppChromeUpdate', () => ({
   AppChromeUpdate: ({ actions }: { actions: React.ReactNode }) => <div>{actions}</div>,
@@ -41,7 +45,7 @@ jest.mock('@grafana/ui', () => ({
 const ui = {
   templateForm: byRole('form', { name: 'Template form' }),
   form: {
-    title: byLabelText(/Template name/),
+    title: byLabelText(/Template group name/),
     saveButton: byRole('button', { name: 'Save' }),
   },
 };
@@ -58,38 +62,44 @@ beforeEach(() => {
   grantUserPermissions([AccessControlAction.AlertingNotificationsRead, AccessControlAction.AlertingNotificationsWrite]);
 });
 
+const setup = (initialEntries: InitialEntry[]) => {
+  return render(
+    <>
+      <AppNotificationList />
+      <Routes>
+        <Route path="/alerting/notifications/templates/*" element={<Templates />} />
+      </Routes>
+    </>,
+    {
+      historyOptions: { initialEntries },
+    }
+  );
+};
+
 describe('Templates routes', () => {
   it('allows duplication of template with spaces in name', async () => {
-    render(<Templates />, {
-      historyOptions: { initialEntries: [navUrl.duplicate('template%20with%20spaces')] },
-    });
+    setup([navUrl.duplicate('template%20with%20spaces')]);
 
     expect(await screen.findByText('Edit payload')).toBeInTheDocument();
   });
 
   it('allows editing of template with spaces in name', async () => {
-    render(<Templates />, { historyOptions: { initialEntries: [navUrl.edit('template%20with%20spaces')] } });
+    setup([navUrl.edit('template%20with%20spaces')]);
 
     expect(await screen.findByText('Edit payload')).toBeInTheDocument();
   });
 
   it('renders empty template form', async () => {
-    render(<Templates />, { historyOptions: { initialEntries: [navUrl.new] } });
+    setup([navUrl.new]);
 
     const form = await ui.templateForm.find();
 
     expect(form).toBeInTheDocument();
-    expect(within(form).getByRole('textbox', { name: /Template name/ })).toHaveValue('');
+    expect(within(form).getByRole('textbox', { name: /Template group name/ })).toHaveValue('');
   });
 
   it('should pass name validation when editing existing template', async () => {
-    const { user } = render(
-      <>
-        <AppNotificationList />
-        <Templates />
-      </>,
-      { historyOptions: { initialEntries: [navUrl.edit('custom-email')] } }
-    );
+    const { user } = setup([navUrl.edit('custom-email')]);
 
     const titleElement = await ui.form.title.find();
     await waitFor(() => {
@@ -106,7 +116,7 @@ describe('Templates routes', () => {
   });
 
   it('should display error message when creating new template with duplicate name', async () => {
-    const { user } = render(<Templates />, { historyOptions: { initialEntries: [navUrl.new] } });
+    const { user } = setup([navUrl.new]);
 
     const titleElement = await ui.form.title.find();
     await user.type(titleElement, 'custom-email');
@@ -121,43 +131,31 @@ describe('Templates K8s API', () => {
   testWithFeatureToggles(['alertingApiServer']);
 
   it('form edit renders with correct form values', async () => {
-    render(<Templates />, {
-      historyOptions: { initialEntries: [navUrl.edit('k8s-custom-email-resource-name')] },
-    });
+    setup([navUrl.edit('k8s-custom-email-resource-name')]);
 
     const form = await ui.templateForm.find();
 
     expect(form).toBeInTheDocument();
-    expect(within(form).getByRole('textbox', { name: /Template name/ })).toHaveValue('custom-email');
+    expect(within(form).getByRole('textbox', { name: /Template group name/ })).toHaveValue('custom-email');
     expect(within(form).getAllByTestId('code-editor')[0]).toHaveValue(
       '{{ define "custom-email" }}  Custom email template {{ end }}'
     );
   });
 
   it('renders duplicate template form with correct values', async () => {
-    render(<Templates />, {
-      historyOptions: { initialEntries: [navUrl.duplicate('k8s-custom-email-resource-name')] },
-    });
+    setup([navUrl.duplicate('k8s-custom-email-resource-name')]);
 
     const form = await ui.templateForm.find();
 
     expect(form).toBeInTheDocument();
-    expect(within(form).getByRole('textbox', { name: /Template name/ })).toHaveValue('custom-email (copy)');
+    expect(within(form).getByRole('textbox', { name: /Template group name/ })).toHaveValue('custom-email (copy)');
     expect(within(form).getAllByTestId('code-editor')[0]).toHaveTextContent(
       '{{ define "custom-email_NEW" }} Custom email template {{ end }}'
     );
   });
 
   it('updates a template', async () => {
-    const { user } = render(
-      <>
-        <Templates />
-        <AppNotificationList />
-      </>,
-      {
-        historyOptions: { initialEntries: [navUrl.edit('k8s-custom-email-resource-name')] },
-      }
-    );
+    const { user } = setup([navUrl.edit('k8s-custom-email-resource-name')]);
 
     const form = await ui.templateForm.find();
 

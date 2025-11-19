@@ -15,14 +15,17 @@ import {
   TimeZonePicker,
   WeekStartPicker,
   FeatureBadge,
+  Combobox,
+  ComboboxOption,
+  TextLink,
+  WeekStart,
+  isWeekStart,
 } from '@grafana/ui';
-import { Combobox, ComboboxOption } from '@grafana/ui/src/unstable';
 import { DashboardPicker } from 'app/core/components/Select/DashboardPicker';
 import { t, Trans } from 'app/core/internationalization';
 import { LANGUAGES, PSEUDO_LOCALE } from 'app/core/internationalization/constants';
 import { PreferencesService } from 'app/core/services/PreferencesService';
 import { changeTheme } from 'app/core/services/theme';
-
 export interface Props {
   resourceUri: string;
   disabled?: boolean;
@@ -30,7 +33,9 @@ export interface Props {
   onConfirm?: () => Promise<boolean>;
 }
 
-export type State = UserPreferencesDTO;
+export type State = UserPreferencesDTO & {
+  isLoading: boolean;
+};
 
 function getLanguageOptions(): ComboboxOption[] {
   const languageOptions = LANGUAGES.map((v) => ({
@@ -68,6 +73,7 @@ export class SharedPreferences extends PureComponent<Props, State> {
 
     this.service = new PreferencesService(props.resourceUri);
     this.state = {
+      isLoading: false,
       theme: '',
       timezone: '',
       weekStart: '',
@@ -76,7 +82,21 @@ export class SharedPreferences extends PureComponent<Props, State> {
       navbar: { bookmarkUrls: [] },
     };
 
-    this.themeOptions = getBuiltInThemes(config.featureToggles.extraThemes).map((theme) => ({
+    const allowedExtraThemes = [];
+
+    if (config.featureToggles.extraThemes) {
+      allowedExtraThemes.push('debug');
+    }
+
+    if (config.featureToggles.grafanaconThemes) {
+      allowedExtraThemes.push('desertbloom');
+      allowedExtraThemes.push('gildedgrove');
+      allowedExtraThemes.push('sapphiredusk');
+      allowedExtraThemes.push('tron');
+      allowedExtraThemes.push('gloom');
+    }
+
+    this.themeOptions = getBuiltInThemes(allowedExtraThemes).map((theme) => ({
       value: theme.id,
       label: getTranslatedThemeName(theme),
     }));
@@ -86,9 +106,13 @@ export class SharedPreferences extends PureComponent<Props, State> {
   }
 
   async componentDidMount() {
+    this.setState({
+      isLoading: true,
+    });
     const prefs = await this.service.load();
 
     this.setState({
+      isLoading: false,
       homeDashboardUID: prefs.homeDashboardUID,
       theme: prefs.theme,
       timezone: prefs.timezone,
@@ -110,11 +134,12 @@ export class SharedPreferences extends PureComponent<Props, State> {
     }
   };
 
-  onThemeChanged = (value: ComboboxOption<string> | null) => {
-    if (!value) {
-      return;
-    }
+  onThemeChanged = (value: ComboboxOption<string>) => {
     this.setState({ theme: value.value });
+    reportInteraction('grafana_preferences_theme_changed', {
+      toTheme: value.value,
+      preferenceType: this.props.preferenceType,
+    });
 
     if (value.value) {
       changeTheme(value.value, true);
@@ -128,8 +153,8 @@ export class SharedPreferences extends PureComponent<Props, State> {
     this.setState({ timezone: timezone });
   };
 
-  onWeekStartChanged = (weekStart: string) => {
-    this.setState({ weekStart: weekStart });
+  onWeekStartChanged = (weekStart?: WeekStart) => {
+    this.setState({ weekStart: weekStart ?? '' });
   };
 
   onHomeDashboardChanged = (dashboardUID: string) => {
@@ -146,7 +171,7 @@ export class SharedPreferences extends PureComponent<Props, State> {
   };
 
   render() {
-    const { theme, timezone, weekStart, homeDashboardUID, language } = this.state;
+    const { theme, timezone, weekStart, homeDashboardUID, language, isLoading } = this.state;
     const { disabled } = this.props;
     const styles = getStyles();
     const languages = getLanguageOptions();
@@ -155,7 +180,25 @@ export class SharedPreferences extends PureComponent<Props, State> {
     return (
       <form onSubmit={this.onSubmitForm} className={styles.form}>
         <FieldSet label={<Trans i18nKey="shared-preferences.title">Preferences</Trans>} disabled={disabled}>
-          <Field label={t('shared-preferences.fields.theme-label', 'Interface theme')}>
+          <Field
+            loading={isLoading}
+            disabled={isLoading}
+            label={t('shared-preferences.fields.theme-label', 'Interface theme')}
+            description={
+              config.featureToggles.grafanaconThemes && config.feedbackLinksEnabled ? (
+                <Trans i18nKey="shared-preferences.fields.theme-description">
+                  Enjoying the limited edition themes? Tell us what you'd like to see{' '}
+                  <TextLink
+                    variant="bodySmall"
+                    external
+                    href="https://docs.google.com/forms/d/e/1FAIpQLSeRKAY8nUMEVIKSYJ99uOO-dimF6Y69_If1Q1jTLOZRWqK1cw/viewform?usp=dialog"
+                  >
+                    here.
+                  </TextLink>
+                </Trans>
+              ) : undefined
+            }
+          >
             <Combobox
               options={this.themeOptions}
               value={currentThemeOption.value}
@@ -165,6 +208,8 @@ export class SharedPreferences extends PureComponent<Props, State> {
           </Field>
 
           <Field
+            loading={isLoading}
+            disabled={isLoading}
             label={
               <Label htmlFor="home-dashboard-select">
                 <span className={styles.labelText}>
@@ -185,6 +230,8 @@ export class SharedPreferences extends PureComponent<Props, State> {
           </Field>
 
           <Field
+            loading={isLoading}
+            disabled={isLoading}
             label={t('shared-dashboard.fields.timezone-label', 'Timezone')}
             data-testid={selectors.components.TimeZonePicker.containerV2}
           >
@@ -197,17 +244,21 @@ export class SharedPreferences extends PureComponent<Props, State> {
           </Field>
 
           <Field
+            loading={isLoading}
+            disabled={isLoading}
             label={t('shared-preferences.fields.week-start-label', 'Week start')}
             data-testid={selectors.components.WeekStartPicker.containerV2}
           >
             <WeekStartPicker
-              value={weekStart || ''}
+              value={weekStart && isWeekStart(weekStart) ? weekStart : undefined}
               onChange={this.onWeekStartChanged}
-              inputId={'shared-preferences-week-start-picker'}
+              inputId="shared-preferences-week-start-picker"
             />
           </Field>
 
           <Field
+            loading={isLoading}
+            disabled={isLoading}
             label={
               <Label htmlFor="locale-select">
                 <span className={styles.labelText}>

@@ -3,20 +3,24 @@ package sql
 import (
 	"context"
 
-	"github.com/grafana/dskit/services"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc/health/grpc_health_v1"
+
+	"github.com/grafana/dskit/services"
 
 	infraDB "github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/modules"
+	"github.com/grafana/grafana/pkg/services/authn/grpcutils"
+	"github.com/grafana/grafana/pkg/services/authz"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/grpcserver"
 	"github.com/grafana/grafana/pkg/services/grpcserver/interceptors"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/storage/unified/resource"
 	"github.com/grafana/grafana/pkg/storage/unified/resource/grpc"
+	"github.com/grafana/grafana/pkg/storage/unified/search"
 )
 
 var (
@@ -45,7 +49,11 @@ type service struct {
 
 	authenticator interceptors.Authenticator
 
-	log log.Logger
+	log            log.Logger
+	reg            prometheus.Registerer
+	storageMetrics *resource.StorageMetrics
+
+	docBuilders resource.DocumentBuilderSupplier
 }
 
 func ProvideUnifiedStorageGrpcService(
@@ -53,6 +61,9 @@ func ProvideUnifiedStorageGrpcService(
 	features featuremgmt.FeatureToggles,
 	db infraDB.DB,
 	log log.Logger,
+	reg prometheus.Registerer,
+	docBuilders resource.DocumentBuilderSupplier,
+	storageMetrics *resource.StorageMetrics,
 ) (UnifiedStorageGrpcService, error) {
 	tracingCfg, err := tracing.ProvideTracingConfig(cfg)
 	if err != nil {
@@ -65,16 +76,26 @@ func ProvideUnifiedStorageGrpcService(
 		return nil, err
 	}
 
-	authn := &grpc.Authenticator{}
+	// reg can be nil when running unified storage in standalone mode
+	if reg == nil {
+		reg = prometheus.DefaultRegisterer
+	}
+
+	// FIXME: This is a temporary solution while we are migrating to the new authn interceptor
+	// grpcutils.NewGrpcAuthenticator should be used instead.
+	authn := grpcutils.NewAuthenticatorWithFallback(cfg, reg, tracing, &grpc.Authenticator{Tracer: tracing})
 
 	s := &service{
-		cfg:           cfg,
-		features:      features,
-		stopCh:        make(chan struct{}),
-		authenticator: authn,
-		tracing:       tracing,
-		db:            db,
-		log:           log,
+		cfg:            cfg,
+		features:       features,
+		stopCh:         make(chan struct{}),
+		authenticator:  authn,
+		tracing:        tracing,
+		db:             db,
+		log:            log,
+		reg:            reg,
+		docBuilders:    docBuilders,
+		storageMetrics: storageMetrics,
 	}
 
 	// This will be used when running as a dskit service
@@ -84,7 +105,17 @@ func ProvideUnifiedStorageGrpcService(
 }
 
 func (s *service) start(ctx context.Context) error {
-	server, err := NewResourceServer(ctx, s.db, s.cfg, s.features, s.tracing)
+	authzClient, err := authz.ProvideStandaloneAuthZClient(s.cfg, s.features, s.tracing)
+	if err != nil {
+		return err
+	}
+
+	searchOptions, err := search.NewSearchOptions(s.features, s.cfg, s.tracing, s.docBuilders, s.reg)
+	if err != nil {
+		return err
+	}
+
+	server, err := NewResourceServer(s.db, s.cfg, s.tracing, s.reg, authzClient, searchOptions, s.storageMetrics)
 	if err != nil {
 		return err
 	}
@@ -100,7 +131,10 @@ func (s *service) start(ctx context.Context) error {
 
 	srv := s.handler.GetServer()
 	resource.RegisterResourceStoreServer(srv, server)
+	resource.RegisterBulkStoreServer(srv, server)
 	resource.RegisterResourceIndexServer(srv, server)
+	resource.RegisterRepositoryIndexServer(srv, server)
+	resource.RegisterBlobStoreServer(srv, server)
 	resource.RegisterDiagnosticsServer(srv, server)
 	grpc_health_v1.RegisterHealthServer(srv, healthService)
 

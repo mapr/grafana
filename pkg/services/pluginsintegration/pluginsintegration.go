@@ -107,8 +107,6 @@ var WireSet = wire.NewSet(
 	wire.Bind(new(repo.Service), new(*repo.Manager)),
 	licensing.ProvideLicensing,
 	wire.Bind(new(plugins.Licensing), new(*licensing.Service)),
-	wire.Bind(new(sources.Registry), new(*sources.Service)),
-	sources.ProvideService,
 	pluginSettings.ProvideService,
 	wire.Bind(new(pluginsettings.Service), new(*pluginSettings.Service)),
 	filestore.ProvideService,
@@ -129,6 +127,8 @@ var WireSet = wire.NewSet(
 	wire.Bind(new(plugincontext.BasePluginContextProvider), new(*plugincontext.BaseProvider)),
 	plugininstaller.ProvideService,
 	pluginassets.ProvideService,
+	plugininstaller.ProvidePreinstall,
+	wire.Bind(new(plugininstaller.Preinstall), new(*plugininstaller.PreinstallImpl)),
 )
 
 // WireExtensionSet provides a wire.ProviderSet of plugin providers that can be
@@ -144,6 +144,8 @@ var WireExtensionSet = wire.NewSet(
 	wire.Bind(new(plugins.Client), new(*backend.MiddlewareHandler)),
 	managedplugins.NewNoop,
 	wire.Bind(new(managedplugins.Manager), new(*managedplugins.Noop)),
+	sources.ProvideService,
+	wire.Bind(new(sources.Registry), new(*sources.Service)),
 )
 
 func ProvideClientWithMiddlewares(
@@ -171,7 +173,6 @@ func NewMiddlewareHandler(
 
 func CreateMiddlewares(cfg *setting.Cfg, oAuthTokenService oauthtoken.OAuthTokenService, tracer tracing.Tracer, cachingService caching.CachingService, features featuremgmt.FeatureToggles, promRegisterer prometheus.Registerer, registry registry.Service) []backend.HandlerMiddleware {
 	middlewares := []backend.HandlerMiddleware{
-		clientmiddleware.NewPluginRequestMetaMiddleware(),
 		clientmiddleware.NewTracingMiddleware(tracer),
 		clientmiddleware.NewMetricsMiddleware(promRegisterer, registry),
 		clientmiddleware.NewContextualLoggerMiddleware(),
@@ -190,6 +191,7 @@ func CreateMiddlewares(cfg *setting.Cfg, oAuthTokenService oauthtoken.OAuthToken
 		clientmiddleware.NewCookiesMiddleware(skipCookiesNames),
 		clientmiddleware.NewCachingMiddlewareWithFeatureManager(cachingService, features),
 		clientmiddleware.NewForwardIDMiddleware(),
+		clientmiddleware.NewUseAlertHeadersMiddleware(),
 	)
 
 	if cfg.SendUserHeader {
@@ -202,9 +204,9 @@ func CreateMiddlewares(cfg *setting.Cfg, oAuthTokenService oauthtoken.OAuthToken
 
 	middlewares = append(middlewares, clientmiddleware.NewHTTPClientMiddleware())
 
-	// StatusSourceMiddleware should be at the very bottom, or any middlewares below it won't see the
-	// correct status source in their context.Context
-	middlewares = append(middlewares, clientmiddleware.NewStatusSourceMiddleware())
+	// ErrorSourceMiddleware should be at the very bottom, or any middlewares below it won't see the
+	// correct error source in their context.Context
+	middlewares = append(middlewares, backend.NewErrorSourceMiddleware())
 
 	return middlewares
 }

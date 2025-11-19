@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/grafana/authlib/claims"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
+
+	claims "github.com/grafana/authlib/types"
 )
 
 func NewResourceAuthorizer(c claims.AccessClient) authorizer.Authorizer {
@@ -22,12 +23,12 @@ func (r ResourceAuthorizer) Authorize(ctx context.Context, attr authorizer.Attri
 		return authorizer.DecisionNoOpinion, "", nil
 	}
 
-	ident, ok := claims.From(ctx)
+	ident, ok := claims.AuthInfoFrom(ctx)
 	if !ok {
 		return authorizer.DecisionDeny, "", errors.New("no identity found for request")
 	}
 
-	ok, err := r.c.HasAccess(ctx, ident, claims.AccessRequest{
+	res, err := r.c.Check(ctx, ident, claims.CheckRequest{
 		Verb:        attr.GetVerb(),
 		Group:       attr.GetAPIGroup(),
 		Resource:    attr.GetResource(),
@@ -41,7 +42,7 @@ func (r ResourceAuthorizer) Authorize(ctx context.Context, attr authorizer.Attri
 		return authorizer.DecisionDeny, "", err
 	}
 
-	if !ok {
+	if !res.Allowed {
 		return authorizer.DecisionDeny, "unauthorized request", nil
 	}
 

@@ -68,9 +68,9 @@ Administrators can also [provision the data source](#provision-the-data-source) 
 
 Once you've added the data source, you can [configure it](#configure-the-data-source) so that your Grafana instance's users can create queries in its [query editor](query-editor/) when they [build dashboards](ref:build-dashboards) and use [Explore](ref:explore).
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 To troubleshoot issues while setting up the CloudWatch data source, check the `/var/log/grafana/grafana.log` file.
-{{% /admonition %}}
+{{< /admonition >}}
 
 ## Configure the data source
 
@@ -356,6 +356,10 @@ The CloudWatch data source can query data from both CloudWatch metrics and Cloud
 
 For details, see the [query editor documentation](query-editor/).
 
+## Query caching
+
+When you enable [query and resource caching](/docs/grafana/<GRAFANA_VERSION>/administration/data-source-management/#query-and-resource-caching), Grafana temporarily stores the results of data source queries and resource requests. Query caching is available in CloudWatch Metrics in Grafana Cloud and Grafana Enterprise. It is not available in CloudWatch Logs Insights due to how query results are polled from AWS.
+
 ## Use template variables
 
 Instead of hard-coding details such as server, application, and sensor names in metric queries, you can use variables.
@@ -403,9 +407,9 @@ filter @message like /Exception/
     | sort exceptionCount desc
 ```
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 If you receive an error like `input data must be a wide series but got ...` when trying to alert on a query, make sure that your query returns valid numeric data that can be output to a Time series panel.
-{{% /admonition %}}
+{{< /admonition >}}
 
 For more information on Grafana alerts, refer to [Alerting](ref:alerting).
 
@@ -416,10 +420,10 @@ Pricing for CloudWatch Logs is based on the amount of data ingested, archived, a
 Each time you select a dimension in the query editor, Grafana issues a `ListMetrics` API request.
 Each time you change queries in the query editor, Grafana issues a new request to the `GetMetricData` API.
 
-{{% admonition type="note" %}}
-Grafana v6.5 and higher replaced all `GetMetricStatistics` API requests with calls to GetMetricData to provide better support for CloudWatch metric math, and enables the automatic generation of search expressions when using wildcards or disabling the `Match Exact` option.
+{{< admonition type="note" >}}
+Grafana replaced all `GetMetricStatistics` API requests with calls to GetMetricData to provide better support for CloudWatch metric math, and enables the automatic generation of search expressions when using wildcards or disabling the `Match Exact` option.
 The `GetMetricStatistics` API qualified for the CloudWatch API free tier, but `GetMetricData` calls don't.
-{{% /admonition %}}
+{{< /admonition >}}
 
 For more information, refer to the [CloudWatch pricing page](https://aws.amazon.com/cloudwatch/pricing/).
 
@@ -438,7 +442,7 @@ For more information, refer to the AWS documentation for [Service Quotas](https:
 
 The CloudWatch plugin enables you to monitor and troubleshoot applications across multiple regional accounts. Using cross-account observability, you can seamlessly search, visualize and analyze metrics and logs without worrying about account boundaries.
 
-To use this feature, configure in the [AWS console under Cloudwatch Settings](https://aws.amazon.com/blogs/aws/new-amazon-cloudwatch-cross-account-observability/), a monitoring and source account, and then add the necessary IAM permissions as described above.
+To use this feature, configure in the [AWS console under CloudWatch Settings](https://aws.amazon.com/blogs/aws/new-amazon-cloudwatch-cross-account-observability/), a monitoring and source account, and then add the necessary IAM permissions as described above.
 
 ## CloudWatch Logs data protection
 

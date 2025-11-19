@@ -38,6 +38,9 @@ type Calls struct {
 }
 
 type Mock struct {
+	accesscontrol.Service
+	accesscontrol.AccessControl
+
 	// Unless an override is provided, permissions will be returned by GetUserPermissions
 	permissions []accesscontrol.Permission
 	// Unless an override is provided, builtInRoles will be returned by GetUserBuiltInRoles
@@ -88,6 +91,10 @@ func (m *Mock) GetRoleByName(ctx context.Context, orgID int64, roleName string) 
 		return m.GetRoleByNameFunc(ctx, orgID, roleName)
 	}
 	return nil, nil
+}
+
+func (m *Mock) Run(ctx context.Context) error {
+	return nil
 }
 
 func (m *Mock) GetUsageStats(ctx context.Context) map[string]interface{} {
@@ -264,14 +271,6 @@ func (m *Mock) SyncUserRoles(ctx context.Context, orgID int64, cmd accesscontrol
 		return m.SyncUserRolesFunc(ctx, orgID, cmd)
 	}
 	return nil
-}
-
-func (m *Mock) Check(ctx context.Context, in accesscontrol.CheckRequest) (bool, error) {
-	return false, nil
-}
-
-func (m *Mock) ListObjects(ctx context.Context, in accesscontrol.ListObjectsRequest) ([]string, error) {
-	return nil, nil
 }
 
 // WithoutResolvers implements fullAccessControl.

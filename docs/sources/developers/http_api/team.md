@@ -26,8 +26,6 @@ Access to these API endpoints is restricted as follows:
 
 - All authenticated users are able to view details of teams they are a member of.
 - Organization Admins are able to manage all teams and team members.
-- If you enable `editors_can_admin` configuration flag, then Organization Editors can create teams and manage teams where they are Admin.
-  - If you enable `editors_can_admin` configuration flag, Editors can find out whether a team that they are not members of exists by trying to create a team with the same name.
 
 > If you are running Grafana Enterprise, for some endpoints you'll need to have specific permissions. Refer to [Role-based access control permissions](/docs/grafana/latest/administration/roles-and-permissions/access-control/custom-role-actions-scopes/) for more information.
 
@@ -41,7 +39,7 @@ or
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action     | Scope    |
 | ---------- | -------- |
@@ -107,7 +105,7 @@ The `name` parameter returns a single team if the parameter matches the `name` f
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action     | Scope    |
 | ---------- | -------- |
@@ -147,13 +145,13 @@ Status Codes:
 
 ## Add Team
 
-The Team `name` needs to be unique. `name` is required and `email`,`orgId` is optional.
+The Team `name` needs to be unique. `name` is required and `email` is optional.
 
 `POST /api/teams`
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action       | Scope |
 | ------------ | ----- |
@@ -170,7 +168,6 @@ Authorization: Bearer glsa_kcVxDhZtu5ISOZIEt
 {
   "name": "MyTestTeam",
   "email": "email@test.com",
-  "orgId": 2
 }
 ```
 
@@ -180,7 +177,7 @@ Authorization: Bearer glsa_kcVxDhZtu5ISOZIEt
 HTTP/1.1 200
 Content-Type: application/json
 
-{"message":"Team created","teamId":2}
+{"message":"Team created","teamId":2,"uid":"ceaulqadfoav4e"}
 ```
 
 Status Codes:
@@ -198,7 +195,7 @@ There are two fields that can be updated for a team: `name` and `email`.
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action      | Scope    |
 | ----------- | -------- |
@@ -241,7 +238,7 @@ Status Codes:
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action       | Scope    |
 | ------------ | -------- |
@@ -278,7 +275,7 @@ Status Codes:
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action                 | Scope    |
 | ---------------------- | -------- |
@@ -331,7 +328,7 @@ Status Codes:
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action                  | Scope    |
 | ----------------------- | -------- |
@@ -373,7 +370,7 @@ Status Codes:
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action                  | Scope    |
 | ----------------------- | -------- |
@@ -413,7 +410,7 @@ Will override all current members and administrators for the specified team.
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action                  | Scope    |
 | ----------------------- | -------- |
@@ -456,7 +453,7 @@ Status Codes:
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action     | Scope    |
 | ---------- | -------- |
@@ -490,7 +487,7 @@ Content-Type: application/json
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#team-api" >}}) for an explanation.
+See note in the [introduction](#team-api) for an explanation.
 
 | Action      | Scope    |
 | ----------- | -------- |

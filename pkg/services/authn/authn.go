@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/grafana/authlib/claims"
+	claims "github.com/grafana/authlib/types"
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/apimachinery/identity"
 	"github.com/grafana/grafana/pkg/middleware/cookies"
@@ -19,16 +19,18 @@ import (
 )
 
 const (
-	ClientAPIKey      = "auth.client.api-key" // #nosec G101
-	ClientAnonymous   = "auth.client.anonymous"
-	ClientBasic       = "auth.client.basic"
-	ClientJWT         = "auth.client.jwt"
-	ClientExtendedJWT = "auth.client.extended-jwt"
-	ClientRender      = "auth.client.render"
-	ClientSession     = "auth.client.session"
-	ClientForm        = "auth.client.form"
-	ClientProxy       = "auth.client.proxy"
-	ClientSAML        = "auth.client.saml"
+	ClientAPIKey       = "auth.client.api-key" // #nosec G101
+	ClientAnonymous    = "auth.client.anonymous"
+	ClientBasic        = "auth.client.basic"
+	ClientJWT          = "auth.client.jwt"
+	ClientExtendedJWT  = "auth.client.extended-jwt"
+	ClientRender       = "auth.client.render"
+	ClientSession      = "auth.client.session"
+	ClientForm         = "auth.client.form"
+	ClientProxy        = "auth.client.proxy"
+	ClientSAML         = "auth.client.saml"
+	ClientPasswordless = "auth.client.passwordless"
+	ClientLDAP         = "ldap"
 )
 
 const (
@@ -86,6 +88,19 @@ type Authenticator interface {
 	Authenticate(ctx context.Context, r *Request) (*Identity, error)
 }
 
+type SSOClientConfig interface {
+	// GetDisplayName returns the display name of the client
+	GetDisplayName() string
+	// IsAutoLoginEnabled returns true if the client has auto login enabled
+	IsAutoLoginEnabled() bool
+	// IsSingleLogoutEnabled returns true if the client has single logout enabled
+	IsSingleLogoutEnabled() bool
+	// IsSkipOrgRoleSyncEnabled returns true if the client has enabled skipping org role sync
+	IsSkipOrgRoleSyncEnabled() bool
+	// IsAllowAssignGrafanaAdminEnabled returns true if the client has enabled assigning grafana admin
+	IsAllowAssignGrafanaAdminEnabled() bool
+}
+
 type Service interface {
 	Authenticator
 	// RegisterPostAuthHook registers a hook with a priority that is called after a successful authentication.
@@ -120,6 +135,9 @@ type Service interface {
 	// - "saml" = "auth.client.saml"
 	// - "github" = "auth.client.github"
 	IsClientEnabled(client string) bool
+
+	// GetClientConfig returns the client configuration for the given client and a boolean indicating if the config was present.
+	GetClientConfig(client string) (SSOClientConfig, bool)
 }
 
 type IdentitySynchronizer interface {
@@ -165,7 +183,12 @@ type RedirectClient interface {
 // that should happen during logout and supports client specific redirect URL.
 type LogoutClient interface {
 	Client
-	Logout(ctx context.Context, user identity.Requester) (*Redirect, bool)
+	Logout(ctx context.Context, user identity.Requester, sessionToken *usertoken.UserToken) (*Redirect, bool)
+}
+
+type SSOSettingsAwareClient interface {
+	Client
+	GetConfig() SSOClientConfig
 }
 
 type PasswordClient interface {
@@ -260,7 +283,7 @@ func handleLogin(r *http.Request, w http.ResponseWriter, cfg *setting.Cfg, ident
 			scopedRedirectToCookie, err := r.Cookie(redirectToCookieName)
 			if err == nil {
 				redirectTo, _ := url.QueryUnescape(scopedRedirectToCookie.Value)
-				if redirectTo != "" && validator(redirectTo) == nil {
+				if redirectTo != "" && validator(cfg.AppSubURL+redirectTo) == nil {
 					redirectURL = cfg.AppSubURL + redirectTo
 				}
 				cookies.DeleteCookie(w, redirectToCookieName, cookieOptions(cfg))

@@ -2,8 +2,7 @@
 import { AnyAction, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import * as React from 'react';
-import { useLocation } from 'react-router-dom';
-import { useParams } from 'react-router-dom-v5-compat';
+import { useLocation, useParams } from 'react-router-dom-v5-compat';
 
 import {
   AppEvents,
@@ -30,6 +29,7 @@ import {
   useAddedLinksRegistry,
   useAddedComponentsRegistry,
   useExposedComponentsRegistry,
+  useAddedFunctionsRegistry,
 } from '../extensions/ExtensionRegistriesContext';
 import { getPluginSettings } from '../pluginSettings';
 import { importAppPlugin } from '../plugin_loader';
@@ -61,6 +61,7 @@ export function AppRootPage({ pluginId, pluginNavSection }: Props) {
   const addedLinksRegistry = useAddedLinksRegistry();
   const addedComponentsRegistry = useAddedComponentsRegistry();
   const exposedComponentsRegistry = useExposedComponentsRegistry();
+  const addedFunctionsRegistry = useAddedFunctionsRegistry();
   const location = useLocation();
   const [state, dispatch] = useReducer(stateSlice.reducer, initialState);
   const currentUrl = config.appSubUrl + location.pathname + location.search;
@@ -105,6 +106,7 @@ export function AppRootPage({ pluginId, pluginNavSection }: Props) {
           addedLinksRegistry: addedLinksRegistry.readOnly(),
           addedComponentsRegistry: addedComponentsRegistry.readOnly(),
           exposedComponentsRegistry: exposedComponentsRegistry.readOnly(),
+          addedFunctionsRegistry: addedFunctionsRegistry.readOnly(),
         }}
       >
         <plugin.root
@@ -133,7 +135,7 @@ export function AppRootPage({ pluginId, pluginNavSection }: Props) {
     }
 
     // Check if action exists and give access if user has the required permission.
-    if (pluginInclude?.action && config.featureToggles.accessControlOnCall) {
+    if (pluginInclude?.action) {
       return contextSrv.hasPermission(pluginInclude.action);
     }
 

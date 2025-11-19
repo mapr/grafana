@@ -48,13 +48,13 @@ This section shows you how to use `openssl` tooling to generate all necessary fi
 1. Run the following command to generate a 2048-bit RSA private key, which is used to decrypt traffic:
 
    ```bash
-   $ sudo openssl genrsa -out /etc/grafana/grafana.key 2048
+   sudo openssl genrsa -out /etc/grafana/grafana.key 2048
    ```
 
 1. Run the following command to generate a certificate, using the private key from the previous step.
 
    ```bash
-   $ sudo openssl req -new -key /etc/grafana/grafana.key -out /etc/grafana/grafana.csr
+   sudo openssl req -new -key /etc/grafana/grafana.key -out /etc/grafana/grafana.csr
    ```
 
    When prompted, answer the questions, which might include your fully-qualified domain name, email address, country code, and others. The following example is similar to the prompts you will see.
@@ -107,9 +107,9 @@ This section shows you how to use `openssl` tooling to generate all necessary fi
 
 The examples in this section use LetsEncrypt because it is free.
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 The instructions provided in this section are for a Debian-based Linux system. For other distributions and operating systems, please refer to the [certbot instructions](https://certbot.eff.org/instructions). Also, these instructions require you to have a domain name that you are in control of. Dynamic domain names like those from Amazon EC2 or DynDNS providers will not function.
-{{% /admonition %}}
+{{< /admonition >}}
 
 #### Install `snapd` and `certbot`
 
@@ -209,7 +209,7 @@ To adjust permissions, perform the following steps:
    $ sudo chgrp -R grafana /etc/letsencrypt/*
    $ sudo chmod -R g+rx /etc/letsencrypt/*
    $ sudo chgrp -R grafana /etc/grafana/grafana.crt /etc/grafana/grafana.key
-   $ sudo chmod 400 /etc/grafana/grafana.crt /etc/grafana/grafana.key
+   $ sudo chmod 440 /etc/grafana/grafana.crt /etc/grafana/grafana.key
    ```
 
 1. Run the following command to verify that the `grafana` group can read the symlinks:

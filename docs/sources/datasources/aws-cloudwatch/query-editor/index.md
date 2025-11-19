@@ -111,9 +111,9 @@ For details on the available functions, refer to [AWS Metric Math](https://docs.
 
 For example, to apply arithmetic operations to a metric, apply a unique string id to the raw metric, then use this id and apply arithmetic operations to it in the Expression field of the new metric.
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 If you use the expression field to reference another query, like `queryA * 2`, you can't create an alert rule based on that query.
-{{% /admonition %}}
+{{< /admonition >}}
 
 #### Period macro
 
@@ -131,10 +131,6 @@ The provided link is valid for any account but displays the expected metrics onl
 This feature is not available for metrics based on [metric math expressions](#metric-math-expressions).
 
 ### Create a Metric Insights query
-
-{{% admonition type="note" %}}
-This query option is available only in Grafana v8.3 and higher.
-{{% /admonition %}}
 
 The Metrics Query option in the CloudWatch data source is referred to as **Metric Insights** in the AWS console.
 It's a fast, flexible, SQL-based query engine that you can use to identify trends and patterns across millions of operational metrics in real time.
@@ -196,9 +192,9 @@ The suggestions appear after typing a space, comma, or dollar (`$`) character, o
 
 {{< figure src="/static/img/docs/cloudwatch/cloudwatch-code-editor-autocomplete-8.3.0.png" max-width="500px" class="docs-image--right" caption="Code editor autocomplete" >}}
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 Template variables in the code editor can interfere with autocompletion.
-{{% /admonition %}}
+{{< /admonition >}}
 
 To run the query, click **Run query** above the code editor.
 
@@ -230,7 +226,7 @@ The label field allows you to override the default name of the metric legend usi
 ## Query CloudWatch Logs
 
 The logs query editor helps you write CloudWatch Logs Query Language queries across defined regions and log groups.
-It supports querying Cloudwatch logs with Logs Insights Query Language, OpenSearch PPL and OpenSearch SQL.
+It supports querying CloudWatch logs with Logs Insights Query Language, OpenSearch PPL and OpenSearch SQL.
 
 ### Create a CloudWatch Logs query
 
@@ -241,7 +237,7 @@ It supports querying Cloudwatch logs with Logs Insights Query Language, OpenSear
    Region and log groups are mandatory fields when querying with Logs Insights QL and OpenSearch PPL. Log group selection is not necessary when querying with OpenSearch SQL. However, selecting log groups simplifies writing logs queries by populating syntax suggestions with discovered log group fields.
    {{< /admonition >}}
 
-1. Use the main input area to write your logs query. AWS Cloudwatch only supports a subset of OpenSearch SQL and PPL commands. To find out more about the syntax supported, consult [Amazon CloudWatch Logs documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CWL_AnalyzeLogData_Languages.html)
+1. Use the main input area to write your logs query. AWS CloudWatch only supports a subset of OpenSearch SQL and PPL commands. To find out more about the syntax supported, consult [Amazon CloudWatch Logs documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CWL_AnalyzeLogData_Languages.html)
 
    #### Querying Log groups with OpenSearch SQL
 
@@ -278,7 +274,6 @@ To enable cross-account observability, complete the following steps:
 
 Cross-account querying is available in the plugin through the **Logs**, **Metric search**, and **Metric Insights** modes.
 After you have it configured, you'll see a **Monitoring account** badge in the query editor header.
-To support cross-account query building in the **Metric Insight** builder mode, the `cloudwatchMetricInsightsCrossAccount` feature toggle should be enabled.
 
 {{< figure src="/static/img/docs/cloudwatch/cloudwatch-monitoring-badge-9.3.0.png" max-width="1200px" caption="Monitoring account badge" >}}
 

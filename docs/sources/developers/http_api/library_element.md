@@ -286,7 +286,7 @@ JSON Body schema:
 - `name`: Optional, the name of the library element.
 - `model`: The JSON model for the library element.
 - `kind`: Kind of element to create, Use `1` for library panels or `2` for library variables.
-- `uid`: Optional, the [unique identifier](/http_api/library_element/#identifier-id-vs-unique-identifier-uid).
+- `uid`: Optional, the [unique identifier](#identifier-id-vs-unique-identifier-uid).
 
 **Example Request**:
 
@@ -366,7 +366,7 @@ JSON Body schema:
 - `model`: The JSON model for the library element.
 - `kind`: Kind of element to create. Use `1` for library panels or `2` for library variables.
 - `version`: Version of the library element you are updating.
-- `uid`: Optional, the [unique identifier](/http_api/library_element/#identifier-id-vs-unique-identifier-uid).
+- `uid`: Optional, the [unique identifier](#identifier-id-vs-unique-identifier-uid).
 
 **Example Request**:
 
@@ -441,9 +441,9 @@ Status Codes:
 
 Deletes an existing library element as specified by the UID. This operation cannot be reverted.
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 You cannot delete a library element that is connected. This operation cannot be reverted.
-{{% /admonition %}}
+{{< /admonition >}}
 
 **Example Request**:
 

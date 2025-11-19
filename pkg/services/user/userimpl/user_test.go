@@ -57,6 +57,7 @@ func TestUserService(t *testing.T) {
 		require.Equal(t, "login", u.Login)
 		require.Equal(t, "name", u.Name)
 		require.Equal(t, "email", u.Email)
+		require.False(t, u.IsProvisioned)
 	})
 
 	t.Run("delete user store returns error", func(t *testing.T) {
@@ -291,7 +292,7 @@ func (f *FakeUserStore) GetByID(context.Context, int64) (*user.User, error) {
 	return f.ExpectedUser, f.ExpectedError
 }
 
-func (f *FakeUserStore) GetByUID(context.Context, int64, string) (*user.User, error) {
+func (f *FakeUserStore) GetByUID(context.Context, string) (*user.User, error) {
 	return f.ExpectedUser, f.ExpectedError
 }
 

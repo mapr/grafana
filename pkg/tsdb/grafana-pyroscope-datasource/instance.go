@@ -32,7 +32,7 @@ type ProfilingClient interface {
 	ProfileTypes(ctx context.Context, start int64, end int64) ([]*ProfileType, error)
 	LabelNames(ctx context.Context, labelSelector string, start int64, end int64) ([]string, error)
 	LabelValues(ctx context.Context, label string, labelSelector string, start int64, end int64) ([]string, error)
-	GetSeries(ctx context.Context, profileTypeID string, labelSelector string, start int64, end int64, groupBy []string, step float64) (*SeriesResponse, error)
+	GetSeries(ctx context.Context, profileTypeID string, labelSelector string, start int64, end int64, groupBy []string, limit *int64, step float64) (*SeriesResponse, error)
 	GetProfile(ctx context.Context, profileTypeID string, labelSelector string, start int64, end int64, maxNodes *int64) (*ProfileResponse, error)
 	GetSpanProfile(ctx context.Context, profileTypeID string, labelSelector string, spanSelector []string, start int64, end int64, maxNodes *int64) (*ProfileResponse, error)
 }
@@ -119,7 +119,7 @@ func (d *PyroscopeDatasource) profileTypes(ctx context.Context, req *backend.Cal
 		ctxLogger.Error("Failed to marshal response", "error", err, "function", logEntrypoint())
 		return err
 	}
-	err = sender.Send(&backend.CallResourceResponse{Body: bodyData, Headers: req.Headers, Status: 200})
+	err = sender.Send(&backend.CallResourceResponse{Body: bodyData, Status: 200})
 	if err != nil {
 		ctxLogger.Error("Failed to send response", "error", err, "function", logEntrypoint())
 		return err
@@ -167,7 +167,7 @@ func (d *PyroscopeDatasource) labelNames(ctx context.Context, req *backend.CallR
 		ctxLogger.Error("Failed to marshal response", "error", err, "function", logEntrypoint())
 		return err
 	}
-	err = sender.Send(&backend.CallResourceResponse{Body: jsonResponse, Headers: req.Headers, Status: 200})
+	err = sender.Send(&backend.CallResourceResponse{Body: jsonResponse, Status: 200})
 	if err != nil {
 		ctxLogger.Error("Failed to send response", "error", err, "function", logEntrypoint())
 		return err
@@ -207,7 +207,7 @@ func (d *PyroscopeDatasource) labelValues(ctx context.Context, req *backend.Call
 		return err
 	}
 
-	err = sender.Send(&backend.CallResourceResponse{Body: data, Headers: req.Headers, Status: 200})
+	err = sender.Send(&backend.CallResourceResponse{Body: data, Status: 200})
 	if err != nil {
 		ctxLogger.Error("Failed to send response", "error", err, "function", logEntrypoint())
 		return err

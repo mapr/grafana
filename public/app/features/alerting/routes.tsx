@@ -3,10 +3,16 @@ import { config } from 'app/core/config';
 import { GrafanaRouteComponent, RouteDescriptor } from 'app/core/navigation/types';
 import { AccessControlAction } from 'app/types';
 
+import { PERMISSIONS_CONTACT_POINTS } from './unified/components/contact-points/permissions';
 import {
-  PERMISSIONS_CONTACT_POINTS,
-  PERMISSIONS_CONTACT_POINTS_MODIFY,
-} from './unified/components/contact-points/permissions';
+  PERMISSIONS_TIME_INTERVALS_MODIFY,
+  PERMISSIONS_TIME_INTERVALS_READ,
+} from './unified/components/mute-timings/permissions';
+import {
+  PERMISSIONS_NOTIFICATION_POLICIES_MODIFY,
+  PERMISSIONS_NOTIFICATION_POLICIES_READ,
+} from './unified/components/notification-policies/permissions';
+import { PERMISSIONS_TEMPLATES } from './unified/components/templates/permissions';
 import { evaluateAccess } from './unified/utils/access-control';
 
 export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
@@ -19,7 +25,6 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
     },
     {
       path: '/alerting/home',
-      exact: false,
       component: importAlertingComponent(
         () => import(/* webpackChunkName: "AlertingHome" */ 'app/features/alerting/unified/home/Home')
       ),
@@ -36,9 +41,16 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
       roles: evaluateAccess([
         AccessControlAction.AlertingNotificationsRead,
         AccessControlAction.AlertingNotificationsExternalRead,
+        ...PERMISSIONS_NOTIFICATION_POLICIES_READ,
+        ...PERMISSIONS_NOTIFICATION_POLICIES_MODIFY,
+        ...PERMISSIONS_TIME_INTERVALS_READ,
+        ...PERMISSIONS_TIME_INTERVALS_MODIFY,
       ]),
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "AlertAmRoutes" */ 'app/features/alerting/unified/NotificationPolicies')
+        () =>
+          import(
+            /* webpackChunkName: "NotificationPoliciesPage" */ 'app/features/alerting/unified/NotificationPoliciesPage'
+          )
       ),
     },
     {
@@ -46,6 +58,7 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
       roles: evaluateAccess([
         AccessControlAction.AlertingNotificationsWrite,
         AccessControlAction.AlertingNotificationsExternalWrite,
+        ...PERMISSIONS_TIME_INTERVALS_MODIFY,
       ]),
       component: importAlertingComponent(
         () =>
@@ -59,6 +72,8 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
       roles: evaluateAccess([
         AccessControlAction.AlertingNotificationsWrite,
         AccessControlAction.AlertingNotificationsExternalWrite,
+        ...PERMISSIONS_TIME_INTERVALS_READ,
+        ...PERMISSIONS_TIME_INTERVALS_MODIFY,
       ]),
       component: importAlertingComponent(
         () =>
@@ -75,7 +90,10 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
         AccessControlAction.AlertingSilenceRead,
       ]),
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "AlertSilences" */ 'app/features/alerting/unified/Silences')
+        () =>
+          import(
+            /* webpackChunkName: "SilencesTablePage" */ 'app/features/alerting/unified/components/silences/SilencesTable'
+          )
       ),
     },
     {
@@ -87,13 +105,16 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
         AccessControlAction.AlertingSilenceUpdate,
       ]),
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "AlertSilences" */ 'app/features/alerting/unified/Silences')
+        () => import(/* webpackChunkName: "NewSilencePage" */ 'app/features/alerting/unified/NewSilencePage')
       ),
     },
     {
       path: '/alerting/silence/:id/edit',
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "AlertSilences" */ 'app/features/alerting/unified/Silences')
+        () =>
+          import(
+            /* webpackChunkName: "ExistingSilenceEditorPage" */ 'app/features/alerting/unified/components/silences/SilencesEditor'
+          )
       ),
     },
     {
@@ -102,34 +123,31 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
         AccessControlAction.AlertingNotificationsRead,
         AccessControlAction.AlertingNotificationsExternalRead,
         ...PERMISSIONS_CONTACT_POINTS,
+        ...PERMISSIONS_TEMPLATES,
       ]),
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "NotificationsListPage" */ 'app/features/alerting/unified/Receivers')
+        () =>
+          import(
+            /* webpackChunkName: "ContactPoints" */ 'app/features/alerting/unified/components/contact-points/ContactPoints'
+          )
       ),
     },
     {
-      path: '/alerting/notifications/templates/*',
+      path: '/alerting/notifications/receivers/new',
       roles: evaluateAccess([
         AccessControlAction.AlertingNotificationsRead,
         AccessControlAction.AlertingNotificationsExternalRead,
+        ...PERMISSIONS_CONTACT_POINTS,
       ]),
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "Templates" */ 'app/features/alerting/unified/Templates')
+        () =>
+          import(
+            /* webpackChunkName: "NewReceiverView" */ 'app/features/alerting/unified/components/receivers/NewReceiverView'
+          )
       ),
     },
     {
-      path: '/alerting/notifications/:type/new',
-      roles: evaluateAccess([
-        AccessControlAction.AlertingNotificationsWrite,
-        AccessControlAction.AlertingNotificationsExternalWrite,
-        ...PERMISSIONS_CONTACT_POINTS_MODIFY,
-      ]),
-      component: importAlertingComponent(
-        () => import(/* webpackChunkName: "NotificationsListPage" */ 'app/features/alerting/unified/Receivers')
-      ),
-    },
-    {
-      path: '/alerting/notifications/receivers/:id/edit',
+      path: '/alerting/notifications/receivers/:name/edit',
       roles: evaluateAccess([
         AccessControlAction.AlertingNotificationsWrite,
         AccessControlAction.AlertingNotificationsExternalWrite,
@@ -141,37 +159,34 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
         ...PERMISSIONS_CONTACT_POINTS,
       ]),
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "NotificationsListPage" */ 'app/features/alerting/unified/Receivers')
+        () =>
+          import(
+            /* webpackChunkName: "EditContactPoint" */ 'app/features/alerting/unified/components/contact-points/EditContactPoint'
+          )
       ),
     },
     {
-      path: '/alerting/notifications/:type/:id/edit',
+      path: '/alerting/notifications/templates/*',
+      roles: evaluateAccess([
+        AccessControlAction.AlertingNotificationsRead,
+        AccessControlAction.AlertingNotificationsExternalRead,
+        ...PERMISSIONS_TEMPLATES,
+      ]),
+      component: importAlertingComponent(
+        () => import(/* webpackChunkName: "Templates" */ 'app/features/alerting/unified/Templates')
+      ),
+    },
+    {
+      path: '/alerting/notifications/global-config',
       roles: evaluateAccess([
         AccessControlAction.AlertingNotificationsWrite,
         AccessControlAction.AlertingNotificationsExternalWrite,
       ]),
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "NotificationsListPage" */ 'app/features/alerting/unified/Receivers')
-      ),
-    },
-    {
-      path: '/alerting/notifications/:type/:id/duplicate',
-      roles: evaluateAccess([
-        AccessControlAction.AlertingNotificationsWrite,
-        AccessControlAction.AlertingNotificationsExternalWrite,
-      ]),
-      component: importAlertingComponent(
-        () => import(/* webpackChunkName: "NotificationsListPage" */ 'app/features/alerting/unified/Receivers')
-      ),
-    },
-    {
-      path: '/alerting/notifications/:type',
-      roles: evaluateAccess([
-        AccessControlAction.AlertingNotificationsWrite,
-        AccessControlAction.AlertingNotificationsExternalWrite,
-      ]),
-      component: importAlertingComponent(
-        () => import(/* webpackChunkName: "NotificationsListPage" */ 'app/features/alerting/unified/Receivers')
+        () =>
+          import(
+            /* webpackChunkName: "GlobalConfig" */ 'app/features/alerting/unified/components/contact-points/components/GlobalConfig'
+          )
       ),
     },
     {
@@ -199,7 +214,7 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
       pageClass: 'page-alerting',
       roles: evaluateAccess([AccessControlAction.AlertingRuleCreate, AccessControlAction.AlertingRuleExternalWrite]),
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "AlertingRuleForm"*/ 'app/features/alerting/unified/RuleEditor')
+        () => import(/* webpackChunkName: "AlertingRuleForm"*/ 'app/features/alerting/unified/rule-editor/RuleEditor')
       ),
     },
     {
@@ -207,7 +222,7 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
       pageClass: 'page-alerting',
       roles: evaluateAccess([AccessControlAction.AlertingRuleUpdate, AccessControlAction.AlertingRuleExternalWrite]),
       component: importAlertingComponent(
-        () => import(/* webpackChunkName: "AlertingRuleForm"*/ 'app/features/alerting/unified/RuleEditor')
+        () => import(/* webpackChunkName: "AlertingRuleForm"*/ 'app/features/alerting/unified/rule-editor/RuleEditor')
       ),
     },
     {
@@ -218,6 +233,17 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
         () =>
           import(
             /* webpackChunkName: "AlertingRuleForm"*/ 'app/features/alerting/unified/components/export/GrafanaModifyExport'
+          )
+      ),
+    },
+    {
+      path: '/alerting/export-new-rule',
+      pageClass: 'page-alerting',
+      roles: evaluateAccess([AccessControlAction.AlertingRuleRead]),
+      component: importAlertingComponent(
+        () =>
+          import(
+            /* webpackChunkName: "AlertingRuleForm"*/ 'app/features/alerting/unified/components/export/ExportNewGrafanaRule'
           )
       ),
     },

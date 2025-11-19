@@ -123,29 +123,24 @@ For additional information on setting up TLS encryption with Tempo, refer to [Co
 
 ## Streaming
 
-<!-- The traceQLStreaming toggle will be deprecated in Grafana 11.2 and removed in 11.3. -->
-
 Streaming enables TraceQL query results to be displayed as they become available.
 Without streaming, no results are displayed until all results have returned.
 
-{{< docs/public-preview product="TraceQL streaming results" >}}
-
 To use streaming, you need to:
 
-- Run Tempo version 2.2 or newer, or Grafana Enterprise Traces (GET) version 2.2 or newer, or use Grafana Cloud Traces.
-- For self-managed Tempo or GET instances: If your Tempo or GET instance is behind a load balancer or proxy that doesn't supporting gRPC or HTTP2, streaming may not work and should be disabled.
+- Run Tempo version 2.2 or later, or Grafana Enterprise Traces (GET) version 2.2 or later, or use Grafana Cloud Traces.
+- Tempo must have `stream_over_http_enabled: true` for streaming to work.
+
+  For more information, refer to [Tempo gRPC API](https://grafana.com/docs/tempo/<TEMPO_VERSION>/api_docs/#tempo-grpc-api).
+
+- For self-managed Tempo or GET instances: If your Tempo or GET instance is behind a load balancer or proxy that doesn't supporting gRPC or HTTP2, streaming may not work and should be deactivated.
 
 ### Activate streaming
 
-You can activate streaming by either setting the `traceQLStreaming` [feature toggle](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/feature-toggles/) to true or by activating the **Streaming** toggle in the Tempo data source.
+Streaming is available in Grafana and Grafana Cloud.
+You can activate streaming by turning the **Streaming** toggle to on in the Tempo data source.
 
 ![Streaming section in Tempo data source](/media/docs/grafana/data-sources/tempo-data-source-streaming-v11.2.png)
-
-If you are using Grafana Cloud, the `traceQLStreaming` feature toggle is already set to `true` by default.
-
-If the Tempo data source is set to allow streaming but the `traceQLStreaming` feature toggle is set to `false` in Grafana, streaming occurs.
-
-If the data source has streaming disabled and `traceQLStreaming` is set to `true`, streaming happens for that data source.
 
 When streaming is active, it's shows as **Enabled** in **Explore**.
 To check the status, select Explore in the menu, select your Tempo data source, and expand the **Options** section.
@@ -337,6 +332,10 @@ You can choose one of three options:
 | **None**     | Adds nothing to the span bar row.                                                                                                |
 | **Duration** | _(Default)_ Displays the span duration on the span bar row.                                                                      |
 | **Tag**      | Displays the span tag on the span bar row. You must also specify which tag key to use to get the tag value, such as `component`. |
+
+### Tag limit
+
+The **Tag limit** setting modifies the max number of tags and tag values to retrieve from Tempo. Default: 5000
 
 ### Private data source connect
 

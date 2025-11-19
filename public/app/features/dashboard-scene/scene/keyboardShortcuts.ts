@@ -4,6 +4,7 @@ import { sceneGraph, VizPanel } from '@grafana/scenes';
 import appEvents from 'app/core/app_events';
 import { KeybindingSet } from 'app/core/services/KeybindingSet';
 import { contextSrv } from 'app/core/services/context_srv';
+import { AccessControlAction } from 'app/types';
 
 import { shareDashboardType } from '../../dashboard/components/ShareModal/utils';
 import { ShareDrawer } from '../sharing/ShareDrawer/ShareDrawer';
@@ -42,7 +43,13 @@ export function setupKeyboardShortcuts(scene: DashboardScene) {
   keybindings.addBinding({
     key: 'v',
     onTrigger: withFocusedPanel(scene, (vizPanel: VizPanel) => {
-      if (!scene.state.viewPanelScene) {
+      if (scene.state.viewPanelScene) {
+        locationService.push(
+          locationUtil.getUrlForPartial(locationService.getLocation(), {
+            viewPanel: undefined,
+          })
+        );
+      } else {
         const url = locationUtil.stripBaseFromUrl(getViewPanelUrl(vizPanel));
         locationService.push(url);
       }
@@ -74,7 +81,11 @@ export function setupKeyboardShortcuts(scene: DashboardScene) {
       }),
     });
 
-    if (contextSrv.isSignedIn && config.snapshotEnabled && scene.canEditDashboard()) {
+    if (
+      contextSrv.isSignedIn &&
+      config.snapshotEnabled &&
+      contextSrv.hasPermission(AccessControlAction.SnapshotsCreate)
+    ) {
       keybindings.addBinding({
         key: 'p s',
         onTrigger: withFocusedPanel(scene, async (vizPanel: VizPanel) => {
@@ -100,7 +111,15 @@ export function setupKeyboardShortcuts(scene: DashboardScene) {
   keybindings.addBinding({
     key: 'i',
     onTrigger: withFocusedPanel(scene, async (vizPanel: VizPanel) => {
-      locationService.push(locationUtil.stripBaseFromUrl(getInspectUrl(vizPanel)));
+      if (scene.state.inspectPanelKey) {
+        locationService.push(
+          locationUtil.getUrlForPartial(locationService.getLocation(), {
+            inspect: undefined,
+          })
+        );
+      } else {
+        locationService.push(locationUtil.stripBaseFromUrl(getInspectUrl(vizPanel)));
+      }
     }),
   });
 
@@ -173,7 +192,13 @@ export function setupKeyboardShortcuts(scene: DashboardScene) {
         const sceneRoot = vizPanel.getRoot();
         if (sceneRoot instanceof DashboardScene) {
           const panelId = getPanelIdForVizPanel(vizPanel);
-          if (!scene.state.editPanel) {
+          if (scene.state.editPanel) {
+            locationService.push(
+              locationUtil.getUrlForPartial(locationService.getLocation(), {
+                editPanel: undefined,
+              })
+            );
+          } else {
             const url = locationUtil.stripBaseFromUrl(getEditPanelUrl(panelId));
             locationService.push(url);
           }

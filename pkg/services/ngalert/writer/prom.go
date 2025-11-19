@@ -11,10 +11,11 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/grafana/dataplane/sdata/numeric"
+	"github.com/m3db/prometheus_remote_client_golang/promremote"
+
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/ngalert/metrics"
 	"github.com/grafana/grafana/pkg/setting"
-	"github.com/m3db/prometheus_remote_client_golang/promremote"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -24,15 +25,22 @@ const backendType = "prometheus"
 
 const (
 	// Fixed error messages
-	MimirDuplicateTimestampError = "err-mimir-sample-duplicate-timestamp"
+	MimirDuplicateTimestampError     = "err-mimir-sample-duplicate-timestamp"
+	MimirInvalidLabelError           = "err-mimir-label-invalid"
+	MimirLabelValueTooLongError      = "err-mimir-label-value-too-long"
+	MimirMaxLabelNamesPerSeriesError = "err-mimir-max-label-names-per-series"
+	MimirMaxSeriesPerUserError       = "err-mimir-max-series-per-user"
 
 	// Best effort error messages
 	PrometheusDuplicateTimestampError = "duplicate sample for timestamp"
 )
 
 var (
-	ErrWriteFailure = errors.New("failed to write time series")
-	ErrBadFrame     = errors.New("failed to read dataframe")
+	// Unexpected, 500-like write errors.
+	ErrUnexpectedWriteFailure = errors.New("failed to write time series")
+	// Expected, user-level write errors like trying to write an invalid series.
+	ErrRejectedWrite = errors.New("series was rejected")
+	ErrBadFrame      = errors.New("failed to read dataframe")
 )
 
 var DuplicateTimestampErrors = [...]string{
@@ -112,7 +120,13 @@ type PrometheusWriter struct {
 	metrics *metrics.RemoteWriter
 }
 
-func NewPrometheusWriter(
+type PrometheusWriterConfig struct {
+	URL         string
+	HTTPOptions httpclient.Options
+	Timeout     time.Duration
+}
+
+func NewPrometheusWriterWithSettings(
 	settings setting.RecordingRuleSettings,
 	httpClientProvider HttpClientProvider,
 	clock clock.Clock,
@@ -128,18 +142,34 @@ func NewPrometheusWriter(
 		headers.Add(k, v)
 	}
 
-	cl, err := httpClientProvider.New(httpclient.Options{
-		BasicAuth: createAuthOpts(settings.BasicAuthUsername, settings.BasicAuthPassword),
-		Header:    headers,
-	})
+	cfg := PrometheusWriterConfig{
+		URL: settings.URL,
+		HTTPOptions: httpclient.Options{
+			BasicAuth: createAuthOpts(settings.BasicAuthUsername, settings.BasicAuthPassword),
+			Header:    headers,
+		},
+		Timeout: settings.Timeout,
+	}
+
+	return NewPrometheusWriter(cfg, httpClientProvider, clock, l, metrics)
+}
+
+func NewPrometheusWriter(
+	cfg PrometheusWriterConfig,
+	httpClientProvider HttpClientProvider,
+	clock clock.Clock,
+	l log.Logger,
+	metrics *metrics.RemoteWriter,
+) (*PrometheusWriter, error) {
+	cl, err := httpClientProvider.New(cfg.HTTPOptions)
 	if err != nil {
 		return nil, err
 	}
 
 	clientCfg := promremote.NewConfig(
 		promremote.UserAgent("grafana-recording-rule"),
-		promremote.WriteURLOption(settings.URL),
-		promremote.HTTPClientTimeoutOption(settings.Timeout),
+		promremote.WriteURLOption(cfg.URL),
+		promremote.HTTPClientTimeoutOption(cfg.Timeout),
 		promremote.HTTPClientOption(cl),
 	)
 
@@ -185,6 +215,18 @@ func createAuthOpts(username, password string) *httpclient.BasicAuthOptions {
 }
 
 // Write writes the given frames to the Prometheus remote write endpoint.
+func (w PrometheusWriter) WriteDatasource(ctx context.Context, dsUID string, name string, t time.Time, frames data.Frames, orgID int64, extraLabels map[string]string) error {
+	l := w.logger.FromContext(ctx)
+
+	if dsUID != "" {
+		l.Error("Writing to specific data sources is not enabled", "org_id", orgID, "datasource_uid", dsUID)
+		return errors.New("writing to specific data sources is not enabled")
+	}
+
+	return w.Write(ctx, name, t, frames, orgID, extraLabels)
+}
+
+// Write writes the given frames to the Prometheus remote write endpoint.
 func (w PrometheusWriter) Write(ctx context.Context, name string, t time.Time, frames data.Frames, orgID int64, extraLabels map[string]string) error {
 	l := w.logger.FromContext(ctx)
 	lvs := []string{fmt.Sprint(orgID), backendType}
@@ -213,10 +255,12 @@ func (w PrometheusWriter) Write(ctx context.Context, name string, t time.Time, f
 	lvs = append(lvs, fmt.Sprint(res.StatusCode))
 	w.metrics.WritesTotal.WithLabelValues(lvs...).Inc()
 
-	if err, ignored := checkWriteError(writeErr); err != nil {
-		return errors.Join(ErrWriteFailure, err)
-	} else if ignored {
-		l.Debug("Ignored write error", "error", err, "status_code", res.StatusCode)
+	if writeErr != nil {
+		if err, ignored := checkWriteError(writeErr); err != nil {
+			return err
+		} else if ignored {
+			l.Debug("Ignored write error", "error", err, "status_code", res.StatusCode)
+		}
 	}
 
 	return nil
@@ -242,7 +286,12 @@ func checkWriteError(writeErr promremote.WriteError) (err error, ignored bool) {
 		return nil, false
 	}
 
-	// special case for 400 status code
+	// All 500-range statuses are automatically unexpected and not the fault of the data.
+	if writeErr.StatusCode()/100 == 5 {
+		return errors.Join(ErrUnexpectedWriteFailure, writeErr), false
+	}
+
+	// Special case for 400 status code. 400s may be ignorable in the event of HA writers, or the fault of the written data.
 	if writeErr.StatusCode() == 400 {
 		msg := writeErr.Error()
 		// HA may potentially write different values for the same timestamp, so we ignore this error
@@ -252,7 +301,21 @@ func checkWriteError(writeErr promremote.WriteError) (err error, ignored bool) {
 				return nil, true
 			}
 		}
+
+		// Check for expected user errors.
+		switch {
+		case strings.Contains(msg, MimirInvalidLabelError),
+			strings.Contains(msg, MimirMaxSeriesPerUserError),
+			strings.Contains(msg, MimirMaxLabelNamesPerSeriesError),
+			strings.Contains(msg, MimirLabelValueTooLongError):
+			return errors.Join(ErrRejectedWrite, writeErr), false
+		}
+
+		// For now, all 400s that are not previously known are considered unexpected.
+		// TODO: Consider blanket-converting all 400s to be known errors. This should only be done once we are confident this is not a problem with this client.
+		return errors.Join(ErrUnexpectedWriteFailure, writeErr), false
 	}
 
-	return writeErr, false
+	// All other errors which do not fit into the above categories are also unexpected.
+	return errors.Join(ErrUnexpectedWriteFailure, writeErr), false
 }

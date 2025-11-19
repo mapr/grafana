@@ -70,7 +70,7 @@ Policies have a tree structure. Each policy can have one or more child policies 
 
 Each alert (or alert instance) is evaluated by the default policy and subsequently by each child policy. Alerts are routed to the appropriate notification policy by matching alert labels with the policy's label matchers. For further details, refer to [label matching and routing in notification policies](ref:intro-notification-policies).
 
-{{< figure src="/media/docs/alerting//get-started-notification-policy-tree-combo.png" max-width="750px" alt="A diagram displaying how the notification policy tree routes alerts" >}}
+{{< figure src="/media/docs/alerting/get-started-notification-policy-tree-combo.png" max-width="750px" alt="A diagram displaying how the notification policy tree routes alerts" >}}
 
 When an alert instance is assigned to a notification policy, the notification policy is responsible for:
 
@@ -78,9 +78,9 @@ When an alert instance is assigned to a notification policy, the notification po
 - Controlling when notifications are sent using the [timing options](ref:policy-timing-options).
 - Determining the [contact points](ref:configure-contact-points) that receive the alert notification.
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 The default notification policy and its child policies are assigned to a [specific Alertmanager](ref:alertmanager-architecture), and they cannot use contact points or mute timings from other Alertmanagers.
-{{% /admonition %}}
+{{< /admonition >}}
 
 ## Edit the default notification policy
 

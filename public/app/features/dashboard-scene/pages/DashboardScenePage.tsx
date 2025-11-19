@@ -1,18 +1,17 @@
-// Libraries
-import { useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom-v5-compat';
+import { useEffect, useRef } from 'react';
+import { Params, useParams } from 'react-router-dom-v5-compat';
 import { usePrevious } from 'react-use';
 
 import { PageLayoutType } from '@grafana/data';
+import { config, locationService } from '@grafana/runtime';
 import { UrlSyncContextProvider } from '@grafana/scenes';
-import { Alert, Box } from '@grafana/ui';
+import { Box } from '@grafana/ui';
 import { Page } from 'app/core/components/Page/Page';
 import PageLoader from 'app/core/components/PageLoader/PageLoader';
 import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
-import store from 'app/core/store';
+import { DashboardPageError } from 'app/features/dashboard/containers/DashboardPageError';
 import { DashboardPageRouteParams, DashboardPageRouteSearchParams } from 'app/features/dashboard/containers/types';
-import { DASHBOARD_FROM_LS_KEY } from 'app/features/dashboard/state/initDashboard';
-import { DashboardDTO, DashboardRoutes } from 'app/types';
+import { DashboardRoutes } from 'app/types';
 
 import { DashboardPrompt } from '../saving/DashboardPrompt';
 
@@ -21,20 +20,17 @@ import { getDashboardScenePageStateManager } from './DashboardScenePageStateMana
 export interface Props
   extends Omit<GrafanaRouteComponentProps<DashboardPageRouteParams, DashboardPageRouteSearchParams>, 'match'> {}
 
-export function DashboardScenePage({ route, queryParams, history }: Props) {
+export function DashboardScenePage({ route, queryParams, location }: Props) {
   const params = useParams();
   const { type, slug, uid } = params;
   const prevMatch = usePrevious({ params });
-  const stateManager = getDashboardScenePageStateManager();
+  const stateManager = config.featureToggles.useV2DashboardsAPI
+    ? getDashboardScenePageStateManager('v2')
+    : getDashboardScenePageStateManager();
   const { dashboard, isLoading, loadError } = stateManager.useState();
   // After scene migration is complete and we get rid of old dashboard we should refactor dashboardWatcher so this route reload is not need
-  const routeReloadCounter = (history.location.state as any)?.routeReloadCounter;
-
-  // Check if the user is coming from Explore, it's indicated byt the dashboard existence in local storage
-  const comingFromExplore = useMemo(() => {
-    return Boolean(store.getObject<DashboardDTO>(DASHBOARD_FROM_LS_KEY));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid, slug, type]);
+  const routeReloadCounter = (location.state as any)?.routeReloadCounter;
+  const prevParams = useRef<Params<string>>(params);
 
   useEffect(() => {
     if (route.routeName === DashboardRoutes.Normal && type === 'snapshot') {
@@ -46,37 +42,52 @@ export function DashboardScenePage({ route, queryParams, history }: Props) {
         uid: uid ?? '',
         route: route.routeName as DashboardRoutes,
         urlFolderUid: queryParams.folderUid,
-        keepDashboardFromExploreInLocalStorage: false,
       });
     }
 
     return () => {
       stateManager.clearState();
     };
-  }, [stateManager, uid, route.routeName, queryParams.folderUid, routeReloadCounter, slug, type]);
 
-  // Effect that handles explore->dashboards workflow
+    // removing slug and path (which has slug in it) from dependencies to prevent unmount when data links reference
+    //  the same dashboard with no slug in url
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateManager, uid, route.routeName, queryParams.folderUid, routeReloadCounter, type]);
+
   useEffect(() => {
-    // When coming from explore and adding to an existing dashboard, we should enter edit mode
-    if (dashboard && comingFromExplore) {
-      if (route.routeName !== DashboardRoutes.New) {
-        dashboard.onEnterEditMode(comingFromExplore);
+    // This use effect corrects URL without refresh when navigating to the same dashboard
+    //  using data link that has no slug in url
+    if (route.routeName === DashboardRoutes.Normal) {
+      // correct URL only when there are no new slug
+      // if slug is defined and incorrect it will be corrected in stateManager
+      if (uid === prevParams.current.uid && prevParams.current.slug && !slug) {
+        const correctedUrl = `/d/${uid}/${prevParams.current.slug}`;
+        locationService.replace({
+          ...locationService.getLocation(),
+          pathname: correctedUrl,
+        });
       }
     }
-  }, [dashboard, comingFromExplore, route.routeName]);
+
+    return () => {
+      prevParams.current = { uid, slug: !slug ? prevParams.current.slug : slug };
+    };
+  }, [route, slug, type, uid]);
 
   if (!dashboard) {
+    let errorElement;
+    if (loadError) {
+      errorElement = <DashboardPageError error={loadError} type={type} />;
+    }
+
     return (
-      <Page navId="dashboards/browse" layout={PageLayoutType.Canvas} data-testid={'dashboard-scene-page'}>
-        <Box paddingY={4} display="flex" direction="column" alignItems="center">
-          {isLoading && <PageLoader />}
-          {loadError && (
-            <Alert title="Dashboard failed to load" severity="error" data-testid="dashboard-not-found">
-              {loadError}
-            </Alert>
-          )}
-        </Box>
-      </Page>
+      errorElement || (
+        <Page navId="dashboards/browse" layout={PageLayoutType.Canvas} data-testid={'dashboard-scene-page'}>
+          <Box paddingY={4} display="flex" direction="column" alignItems="center">
+            {isLoading && <PageLoader />}
+          </Box>
+        </Page>
+      )
     );
   }
 

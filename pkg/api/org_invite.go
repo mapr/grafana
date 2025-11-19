@@ -129,7 +129,7 @@ func (hs *HTTPServer) AddOrgInvite(c *contextmodel.ReqContext) response.Response
 				"OrgName":   c.SignedInUser.GetOrgName(),
 				"Email":     c.SignedInUser.GetEmail(),
 				"LinkUrl":   setting.ToAbsUrl("invite/" + cmd.Code),
-				"InvitedBy": c.SignedInUser.GetDisplayName(),
+				"InvitedBy": c.SignedInUser.GetName(),
 			},
 		}
 
@@ -169,7 +169,7 @@ func (hs *HTTPServer) inviteExistingUserToOrg(c *contextmodel.ReqContext, user *
 			Data: map[string]any{
 				"Name":      user.NameOrFallback(),
 				"OrgName":   c.SignedInUser.GetOrgName(),
-				"InvitedBy": c.SignedInUser.GetDisplayName(),
+				"InvitedBy": c.SignedInUser.GetName(),
 			},
 		}
 
@@ -234,11 +234,22 @@ func (hs *HTTPServer) GetInviteInfoByCode(c *contextmodel.ReqContext) response.R
 		return response.Error(http.StatusNotFound, "Invite not found", nil)
 	}
 
+	orgResult, err := hs.orgService.GetByID(c.Req.Context(), &org.GetOrgByIDQuery{
+		ID: invite.OrgID,
+	})
+	if err != nil {
+		if errors.Is(err, org.ErrOrgNotFound) {
+			return response.Error(http.StatusNotFound, "org not found", nil)
+		}
+		return response.Error(http.StatusInternalServerError, "Failed to get org", err)
+	}
+
 	return response.JSON(http.StatusOK, dtos.InviteInfo{
 		Email:     invite.Email,
 		Name:      invite.Name,
 		Username:  invite.Email,
 		InvitedBy: util.StringsFallback3(invite.InvitedByName, invite.InvitedByLogin, invite.InvitedByEmail),
+		OrgName:   orgResult.Name,
 	})
 }
 

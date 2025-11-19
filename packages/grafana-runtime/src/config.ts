@@ -73,6 +73,8 @@ export class GrafanaBootConfig implements GrafanaConfig {
   externalUserMngLinkUrl = '';
   externalUserMngLinkName = '';
   externalUserMngInfo = '';
+  externalUserMngAnalytics = false;
+  externalUserMngAnalyticsParams = '';
   allowOrgCreate = false;
   feedbackLinksEnabled = true;
   disableLoginForm = false;
@@ -126,6 +128,7 @@ export class GrafanaBootConfig implements GrafanaConfig {
     enabled: false,
     customEndpoint: '',
     apiKey: '',
+    allInstrumentationsEnabled: false,
     errorInstrumentalizationEnabled: true,
     consoleInstrumentalizationEnabled: false,
     webVitalsInstrumentalizationEnabled: false,
@@ -139,7 +142,6 @@ export class GrafanaBootConfig implements GrafanaConfig {
   pluginCatalogPreinstalledPlugins: PreinstalledPlugin[] = [];
   pluginsCDNBaseURL = '';
   expressionsEnabled = false;
-  customTheme?: undefined;
   awsAllowedAuthProviders: string[] = [];
   awsAssumeRoleEnabled = false;
   azure: AzureSettings = {
@@ -182,14 +184,17 @@ export class GrafanaBootConfig implements GrafanaConfig {
   rudderstackSdkUrl: undefined;
   rudderstackConfigUrl: undefined;
   rudderstackIntegrationsUrl: undefined;
+  analyticsConsoleReporting = false;
+  dashboardPerformanceMetrics: string[] = [];
   sqlConnectionLimits = {
     maxOpenConns: 100,
     maxIdleConns: 100,
     connMaxLifetime: 14400,
   };
+  defaultDatasourceManageAlertsUiToggle = true;
 
   tokenExpirationDayLimit: undefined;
-  disableFrontendSandboxForPlugins: string[] = [];
+  enableFrontendSandboxForPlugins: string[] = [];
   sharedWithMeFolderUID: string | undefined;
   rootFolderUID: string | undefined;
   localFileSystemAvailable: boolean | undefined;
@@ -198,6 +203,7 @@ export class GrafanaBootConfig implements GrafanaConfig {
   cloudMigrationPollIntervalMs = 2000;
   reportingStaticContext?: Record<string, string>;
   exploreDefaultTimeOffset = '1h';
+  exploreHideLogsDownload: boolean | undefined;
 
   /**
    * Language used in Grafana's UI. This is after the user's preference (or deteceted locale) is resolved to one of

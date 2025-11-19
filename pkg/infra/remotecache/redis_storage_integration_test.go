@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/grafana/grafana/pkg/setting"
+	"github.com/redis/go-redis/v9"
 )
 
 func TestIntegrationRedisCacheStorage(t *testing.T) {
@@ -34,7 +34,7 @@ func TestIntegrationRedisCacheStorage(t *testing.T) {
 		b.WriteString(fmt.Sprintf(",db=%d", db))
 	}
 
-	opts := &setting.RemoteCacheOptions{Name: redisCacheType, ConnStr: b.String()}
+	opts := &setting.RemoteCacheSettings{Name: redisCacheType, ConnStr: b.String()}
 	client := createTestClient(t, opts, nil)
 	runTestsForClient(t, client)
 }

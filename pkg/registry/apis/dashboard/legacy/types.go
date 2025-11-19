@@ -3,7 +3,7 @@ package legacy
 import (
 	"context"
 
-	dashboardsV0 "github.com/grafana/grafana/pkg/apis/dashboard/v0alpha1"
+	dashboard "github.com/grafana/grafana/pkg/apis/dashboard/v0alpha1"
 	"github.com/grafana/grafana/pkg/storage/unified/resource"
 )
 
@@ -25,8 +25,14 @@ type DashboardQuery struct {
 	GetHistory bool
 	Version    int64
 
+	// Only folders
+	GetFolders bool
+
 	// The label requirements
 	Labels []*resource.Requirement
+
+	// DESC|ASC, how to order the IDs
+	Order string // asc required to use lastID, desc required for export with history
 }
 
 func (r *DashboardQuery) UseHistoryTable() bool {
@@ -46,11 +52,12 @@ type LibraryPanelQuery struct {
 type DashboardAccess interface {
 	resource.StorageBackend
 	resource.ResourceIndexServer
+	LegacyMigrator
 
-	GetDashboard(ctx context.Context, orgId int64, uid string, version int64) (*dashboardsV0.Dashboard, int64, error)
-	SaveDashboard(ctx context.Context, orgId int64, dash *dashboardsV0.Dashboard) (*dashboardsV0.Dashboard, bool, error)
-	DeleteDashboard(ctx context.Context, orgId int64, uid string) (*dashboardsV0.Dashboard, bool, error)
+	GetDashboard(ctx context.Context, orgId int64, uid string, version int64) (*dashboard.Dashboard, int64, error)
+	SaveDashboard(ctx context.Context, orgId int64, dash *dashboard.Dashboard) (*dashboard.Dashboard, bool, error)
+	DeleteDashboard(ctx context.Context, orgId int64, uid string) (*dashboard.Dashboard, bool, error)
 
 	// Get a typed list
-	GetLibraryPanels(ctx context.Context, query LibraryPanelQuery) (*dashboardsV0.LibraryPanelList, error)
+	GetLibraryPanels(ctx context.Context, query LibraryPanelQuery) (*dashboard.LibraryPanelList, error)
 }

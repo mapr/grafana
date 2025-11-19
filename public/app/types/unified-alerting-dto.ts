@@ -77,7 +77,7 @@ export enum PromApplication {
   Thanos = 'Thanos',
 }
 
-export type RulesSourceApplication = PromApplication | 'loki' | 'grafana';
+export type RulesSourceApplication = PromApplication | 'Loki' | 'grafana';
 
 export interface PromBuildInfoResponse {
   data: {
@@ -96,7 +96,7 @@ export interface PromBuildInfoResponse {
 }
 
 export interface PromApiFeatures {
-  application?: PromApplication;
+  application: RulesSourceApplication;
   features: {
     rulerApiEnabled: boolean;
   };
@@ -149,14 +149,29 @@ export interface PromRecordingRuleDTO extends PromRuleDTOBase {
 
 export type PromRuleDTO = PromAlertingRuleDTO | PromRecordingRuleDTO;
 
-export interface PromRuleGroupDTO {
+export interface PromRuleGroupDTO<TRule = PromRuleDTO> {
   name: string;
   file: string;
-  rules: PromRuleDTO[];
+  rules: TRule[];
   interval: number;
 
   evaluationTime?: number; // these 2 are not in older prometheus payloads
   lastEvaluation?: string;
+}
+
+export interface GrafanaPromAlertingRuleDTO extends PromAlertingRuleDTO {
+  uid: string;
+  folderUid: string;
+}
+
+export interface GrafanaPromRecordingRuleDTO extends PromRecordingRuleDTO {
+  uid: string;
+  folderUid: string;
+}
+export type GrafanaPromRuleDTO = GrafanaPromAlertingRuleDTO | GrafanaPromRecordingRuleDTO;
+
+export interface GrafanaPromRuleGroupDTO extends PromRuleGroupDTO<GrafanaPromRuleDTO> {
+  folderUid: string;
 }
 
 export interface PromResponse<T> {
@@ -169,6 +184,7 @@ export interface PromResponse<T> {
 
 export type PromRulesResponse = PromResponse<{
   groups: PromRuleGroupDTO[];
+  groupNextToken?: string;
   totals?: AlertGroupTotals;
 }>;
 
@@ -201,6 +217,8 @@ export interface AlertDataQuery extends DataQuery {
   maxDataPoints?: number;
   intervalMs?: number;
   expression?: string;
+  instant?: boolean;
+  range?: boolean;
 }
 
 export interface AlertQuery<T = AlertDataQuery | ExpressionQuery> {
@@ -222,6 +240,12 @@ export interface GrafanaNotificationSettings {
 
 export interface GrafanaEditorSettings {
   simplified_query_and_expressions_section: boolean;
+  simplified_notifications_section: boolean;
+}
+
+export interface UpdatedBy {
+  uid: string;
+  name: string;
 }
 export interface PostableGrafanaRuleDefinition {
   uid?: string;
@@ -239,6 +263,7 @@ export interface PostableGrafanaRuleDefinition {
     metric: string;
     from: string;
   };
+  intervalSeconds?: number;
 }
 export interface GrafanaRuleDefinition extends PostableGrafanaRuleDefinition {
   id?: string;
@@ -246,7 +271,18 @@ export interface GrafanaRuleDefinition extends PostableGrafanaRuleDefinition {
   namespace_uid: string;
   rule_group: string;
   provenance?: string;
+  // TODO: For updated_by, updated, and version, fix types so these aren't optional, and
+  // are not conflated with test fixtures
+  updated?: string;
+  updated_by?: UpdatedBy | null;
+  version?: number;
 }
+
+// types for Grafana-managed recording and alerting rules
+export type GrafanaAlertingRuleDefinition = Omit<GrafanaRuleDefinition, 'record'>;
+export type GrafanaRecordingRuleDefinition = GrafanaRuleDefinition & {
+  record: GrafanaRuleDefinition['record'];
+};
 
 export interface RulerGrafanaRuleDTO<T = GrafanaRuleDefinition> {
   grafana_alert: T;
@@ -254,6 +290,9 @@ export interface RulerGrafanaRuleDTO<T = GrafanaRuleDefinition> {
   annotations: Annotations;
   labels: Labels;
 }
+
+export type TopLevelGrafanaRuleDTOField = keyof Omit<RulerGrafanaRuleDTO, 'grafana_alert'>;
+export type GrafanaAlertRuleDTOField = keyof GrafanaRuleDefinition;
 
 export type PostableRuleGrafanaRuleDTO = RulerGrafanaRuleDTO<PostableGrafanaRuleDefinition>;
 

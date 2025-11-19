@@ -49,7 +49,7 @@ const (
 	evaluatorDefaultEvaluationTimeout       = 30 * time.Second
 	schedulerDefaultAdminConfigPollInterval = time.Minute
 	schedulerDefaultExecuteAlerts           = true
-	schedulerDefaultMaxAttempts             = 1
+	schedulerDefaultMaxAttempts             = 3
 	schedulerDefaultLegacyMinInterval       = 1
 	screenshotsDefaultCapture               = false
 	screenshotsDefaultCaptureTimeout        = 10 * time.Second
@@ -114,9 +114,10 @@ type UnifiedAlertingSettings struct {
 	RecordingRules                RecordingRuleSettings
 
 	// MaxStateSaveConcurrency controls the number of goroutines (per rule) that can save alert state in parallel.
-	MaxStateSaveConcurrency   int
-	StatePeriodicSaveInterval time.Duration
-	RulesPerRuleGroupLimit    int64
+	MaxStateSaveConcurrency    int
+	StatePeriodicSaveInterval  time.Duration
+	StatePeriodicSaveBatchSize int
+	RulesPerRuleGroupLimit     int64
 
 	// Retention period for Alertmanager notification log entries.
 	NotificationLogRetention time.Duration
@@ -131,12 +132,14 @@ type UnifiedAlertingSettings struct {
 }
 
 type RecordingRuleSettings struct {
-	Enabled           bool
-	URL               string
-	BasicAuthUsername string
-	BasicAuthPassword string
-	CustomHeaders     map[string]string
-	Timeout           time.Duration
+	Enabled               bool
+	URL                   string
+	BasicAuthUsername     string
+	BasicAuthPassword     string
+	CustomHeaders         map[string]string
+	Timeout               time.Duration
+	DefaultDatasourceUID  string
+	RemoteWritePathSuffix string
 }
 
 // RemoteAlertmanagerSettings contains the configuration needed
@@ -434,11 +437,13 @@ func (cfg *Cfg) ReadUnifiedAlertingSettings(iniFile *ini.File) error {
 
 	rr := iniFile.Section("recording_rules")
 	uaCfgRecordingRules := RecordingRuleSettings{
-		Enabled:           rr.Key("enabled").MustBool(false),
-		URL:               rr.Key("url").MustString(""),
-		BasicAuthUsername: rr.Key("basic_auth_username").MustString(""),
-		BasicAuthPassword: rr.Key("basic_auth_password").MustString(""),
-		Timeout:           rr.Key("timeout").MustDuration(defaultRecordingRequestTimeout),
+		Enabled:               rr.Key("enabled").MustBool(false),
+		URL:                   rr.Key("url").MustString(""),
+		BasicAuthUsername:     rr.Key("basic_auth_username").MustString(""),
+		BasicAuthPassword:     rr.Key("basic_auth_password").MustString(""),
+		Timeout:               rr.Key("timeout").MustDuration(defaultRecordingRequestTimeout),
+		DefaultDatasourceUID:  rr.Key("default_datasource_uid").MustString(""),
+		RemoteWritePathSuffix: rr.Key("remote_write_path_suffix").MustString("/push"),
 	}
 
 	rrHeaders := iniFile.Section("recording_rules.custom_headers")
@@ -456,6 +461,8 @@ func (cfg *Cfg) ReadUnifiedAlertingSettings(iniFile *ini.File) error {
 	if err != nil {
 		return err
 	}
+
+	uaCfg.StatePeriodicSaveBatchSize = ua.Key("state_periodic_save_batch_size").MustInt(1)
 
 	uaCfg.NotificationLogRetention, err = gtime.ParseDuration(valueAsString(ua, "notification_log_retention", (5 * 24 * time.Hour).String()))
 	if err != nil {

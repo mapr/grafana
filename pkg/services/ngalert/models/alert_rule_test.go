@@ -15,8 +15,10 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 
+	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/util"
 	"github.com/grafana/grafana/pkg/util/cmputil"
 )
@@ -262,7 +264,7 @@ func TestPatchPartialAlertRule(t *testing.T) {
 				name: "No metadata",
 				mutator: func(r *AlertRuleWithOptionals) {
 					r.Metadata = AlertRuleMetadata{}
-					r.HasMetadata = false
+					r.HasEditorSettings = false
 				},
 			},
 		}
@@ -407,7 +409,7 @@ func TestDiff(t *testing.T) {
 		rule1 := RuleGen.GenerateRef()
 		rule2 := RuleGen.GenerateRef()
 
-		diffs := rule1.Diff(rule2, "Data", "Annotations", "Labels", "NotificationSettings") // these fields will be tested separately
+		diffs := rule1.Diff(rule2, "Data", "Annotations", "Labels", "NotificationSettings", "Metadata") // these fields will be tested separately
 
 		difCnt := 0
 		if rule1.ID != rule2.ID {
@@ -417,6 +419,15 @@ func TestDiff(t *testing.T) {
 			assert.Equal(t, rule2.ID, diff[0].Right.Int())
 			difCnt++
 		}
+
+		if rule1.GUID != rule2.GUID {
+			diff := diffs.GetDiffsForField("GUID")
+			assert.Len(t, diff, 1)
+			assert.Equal(t, rule1.GUID, diff[0].Left.String())
+			assert.Equal(t, rule2.GUID, diff[0].Right.String())
+			difCnt++
+		}
+
 		if rule1.OrgID != rule2.OrgID {
 			diff := diffs.GetDiffsForField("OrgID")
 			assert.Len(t, diff, 1)
@@ -443,6 +454,11 @@ func TestDiff(t *testing.T) {
 			assert.Len(t, diff, 1)
 			assert.Equal(t, rule1.Updated, diff[0].Left.Interface())
 			assert.Equal(t, rule2.Updated, diff[0].Right.Interface())
+			difCnt++
+		}
+		if rule1.UpdatedBy != rule2.UpdatedBy {
+			diff := diffs.GetDiffsForField("UpdatedBy")
+			assert.Len(t, diff, 1)
 			difCnt++
 		}
 		if rule1.IntervalSeconds != rule2.IntervalSeconds {
@@ -834,6 +850,39 @@ func TestDiff(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("should detect changes in Metadata.EditorSettings", func(t *testing.T) {
+		rule1 := RuleGen.With(RuleGen.WithMetadata(AlertRuleMetadata{EditorSettings: EditorSettings{
+			SimplifiedQueryAndExpressionsSection: false,
+			SimplifiedNotificationsSection:       false,
+		}})).GenerateRef()
+
+		rule2 := CopyRule(rule1, RuleGen.WithMetadata(AlertRuleMetadata{EditorSettings: EditorSettings{
+			SimplifiedQueryAndExpressionsSection: true,
+			SimplifiedNotificationsSection:       true,
+		}}))
+
+		diff := rule1.Diff(rule2)
+		assert.ElementsMatch(t, []string{
+			"Metadata.EditorSettings.SimplifiedQueryAndExpressionsSection",
+			"Metadata.EditorSettings.SimplifiedNotificationsSection",
+		}, diff.Paths())
+	})
+
+	t.Run("should detect changes in Metadata.PrometheusStyleRule", func(t *testing.T) {
+		rule1 := RuleGen.With(RuleGen.WithMetadata(AlertRuleMetadata{PrometheusStyleRule: &PrometheusStyleRule{
+			OriginalRuleDefinition: "data",
+		}})).GenerateRef()
+
+		rule2 := CopyRule(rule1, RuleGen.WithMetadata(AlertRuleMetadata{PrometheusStyleRule: &PrometheusStyleRule{
+			OriginalRuleDefinition: "updated data",
+		}}))
+
+		diff := rule1.Diff(rule2)
+		assert.ElementsMatch(t, []string{
+			"Metadata.PrometheusStyleRule.OriginalRuleDefinition",
+		}, diff.Paths())
+	})
 }
 
 func TestSortByGroupIndex(t *testing.T) {
@@ -889,4 +938,246 @@ func TestTimeRangeYAML(t *testing.T) {
 	serialized, err := yaml.Marshal(rtr)
 	require.NoError(t, err)
 	require.Equal(t, yamlRaw, string(serialized))
+}
+
+func TestAlertRuleGetKey(t *testing.T) {
+	t.Run("should return correct key", func(t *testing.T) {
+		rule := RuleGen.GenerateRef()
+		expected := AlertRuleKey{
+			OrgID: rule.OrgID,
+			UID:   rule.UID,
+		}
+		require.Equal(t, expected, rule.GetKey())
+	})
+}
+
+func TestAlertRuleGetKeyWithGroup(t *testing.T) {
+	t.Run("should return correct key", func(t *testing.T) {
+		rule := RuleGen.With(
+			RuleMuts.WithUniqueGroupIndex(),
+		).GenerateRef()
+		expected := AlertRuleKeyWithGroup{
+			AlertRuleKey: rule.GetKey(),
+			RuleGroup:    rule.RuleGroup,
+		}
+		require.Equal(t, expected, rule.GetKeyWithGroup())
+	})
+}
+
+func TestAlertRuleCopy(t *testing.T) {
+	t.Run("should return a copy of the rule", func(t *testing.T) {
+		for i := 0; i < 100; i++ {
+			rule := RuleGen.GenerateRef()
+			copied := rule.Copy()
+			require.Empty(t, rule.Diff(copied))
+		}
+	})
+
+	t.Run("should create a copy of the prometheus rule definition from the metadata", func(t *testing.T) {
+		rule := RuleGen.With(RuleGen.WithMetadata(AlertRuleMetadata{PrometheusStyleRule: &PrometheusStyleRule{
+			OriginalRuleDefinition: "data",
+		}})).GenerateRef()
+		copied := rule.Copy()
+		require.NotSame(t, rule.Metadata.PrometheusStyleRule, copied.Metadata.PrometheusStyleRule)
+	})
+	t.Run("should return an exact copy of recording rule", func(t *testing.T) {
+		for i := 0; i < 100; i++ {
+			rule := RuleGen.With(RuleGen.WithAllRecordingRules()).GenerateRef()
+			copied := rule.Copy()
+			require.Empty(t, rule.Diff(copied))
+		}
+	})
+}
+
+// This test makes sure the default generator
+func TestGeneratorFillsAllFields(t *testing.T) {
+	ignoredFields := map[string]struct{}{
+		"ID":       {},
+		"IsPaused": {},
+		"Record":   {},
+	}
+
+	tpe := reflect.TypeOf(AlertRule{})
+	fields := make(map[string]struct{}, tpe.NumField())
+	for i := 0; i < tpe.NumField(); i++ {
+		if _, ok := ignoredFields[tpe.Field(i).Name]; ok {
+			continue
+		}
+		fields[tpe.Field(i).Name] = struct{}{}
+	}
+
+	for i := 0; i < 1000; i++ {
+		rule := RuleGen.Generate()
+		v := reflect.ValueOf(rule)
+
+		for j := 0; j < tpe.NumField(); j++ {
+			field := tpe.Field(j)
+			value := v.Field(j)
+			if !value.IsValid() || value.Kind() == reflect.Ptr && value.IsNil() || value.IsZero() {
+				continue
+			}
+			delete(fields, field.Name)
+			if len(fields) == 0 {
+				return
+			}
+		}
+	}
+
+	require.FailNow(t, "AlertRule generator does not populate fields", "skipped fields: %v", maps.Keys(fields))
+}
+
+func TestGeneratorFillsAllRecordingRuleFields(t *testing.T) {
+	ignoredFields := map[string]struct{}{
+		"ID":                          {},
+		"IsPaused":                    {},
+		"NoDataState":                 {},
+		"ExecErrState":                {},
+		"Condition":                   {},
+		"KeepFiringFor":               {},
+		"MissingSeriesEvalsToResolve": {},
+		"For":                         {},
+		"NotificationSettings":        {},
+	}
+
+	tpe := reflect.TypeOf(AlertRule{})
+	fields := make(map[string]struct{}, tpe.NumField())
+	for i := 0; i < tpe.NumField(); i++ {
+		if _, ok := ignoredFields[tpe.Field(i).Name]; ok {
+			continue
+		}
+		fields[tpe.Field(i).Name] = struct{}{}
+	}
+
+	for i := 0; i < 1000; i++ {
+		rule := RuleGen.With(RuleGen.WithAllRecordingRules()).Generate()
+		v := reflect.ValueOf(rule)
+
+		for j := 0; j < tpe.NumField(); j++ {
+			field := tpe.Field(j)
+			value := v.Field(j)
+			if !value.IsValid() || value.Kind() == reflect.Ptr && value.IsNil() || value.IsZero() {
+				continue
+			}
+			delete(fields, field.Name)
+			if len(fields) == 0 {
+				return
+			}
+		}
+	}
+
+	require.FailNow(t, "AlertRule generator does not populate fields", "skipped fields: %v", maps.Keys(fields))
+}
+
+func TestValidateAlertRule(t *testing.T) {
+	t.Run("ExecErrState & NoDataState", func(t *testing.T) {
+		testCases := []struct {
+			name         string
+			execErrState string
+			noDataState  string
+			error        bool
+		}{
+			{
+				name:         "invalid error state",
+				execErrState: "invalid",
+				error:        true,
+			},
+			{
+				name:        "invalid no data state",
+				noDataState: "invalid",
+				error:       true,
+			},
+			{
+				name:  "valid states",
+				error: false,
+			},
+		}
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				rule := RuleGen.With(
+					RuleMuts.WithIntervalSeconds(10),
+				).Generate()
+				if tc.execErrState != "" {
+					rule.ExecErrState = ExecutionErrorState(tc.execErrState)
+				}
+				if tc.noDataState != "" {
+					rule.NoDataState = NoDataState(tc.noDataState)
+				}
+
+				err := rule.ValidateAlertRule(setting.UnifiedAlertingSettings{BaseInterval: 10 * time.Second})
+				if tc.error {
+					require.Error(t, err)
+					require.ErrorIs(t, err, ErrAlertRuleFailedValidation)
+				} else {
+					require.NoError(t, err)
+				}
+			})
+		}
+	})
+}
+
+func TestAlertRule_PrometheusRuleDefinition(t *testing.T) {
+	tests := []struct {
+		name             string
+		rule             AlertRule
+		expectedResult   string
+		expectedErrorMsg string
+	}{
+		{
+			name: "rule with prometheus definition",
+			rule: AlertRule{
+				Metadata: AlertRuleMetadata{
+					PrometheusStyleRule: &PrometheusStyleRule{
+						OriginalRuleDefinition: "groups:\n- name: example\n  rules:\n  - alert: HighRequestLatency\n    expr: request_latency_seconds{job=\"myjob\"} > 0.5\n    for: 10m\n    labels:\n      severity: page\n    annotations:\n      summary: High request latency",
+					},
+				},
+			},
+			expectedResult:   "groups:\n- name: example\n  rules:\n  - alert: HighRequestLatency\n    expr: request_latency_seconds{job=\"myjob\"} > 0.5\n    for: 10m\n    labels:\n      severity: page\n    annotations:\n      summary: High request latency",
+			expectedErrorMsg: "",
+		},
+		{
+			name: "rule with empty prometheus definition",
+			rule: AlertRule{
+				Metadata: AlertRuleMetadata{
+					PrometheusStyleRule: &PrometheusStyleRule{
+						OriginalRuleDefinition: "",
+					},
+				},
+			},
+			expectedResult:   "",
+			expectedErrorMsg: "prometheus rule definition is missing",
+		},
+		{
+			name: "rule with nil prometheus style rule",
+			rule: AlertRule{
+				Metadata: AlertRuleMetadata{
+					PrometheusStyleRule: nil,
+				},
+			},
+			expectedResult:   "",
+			expectedErrorMsg: "prometheus rule definition is missing",
+		},
+		{
+			name:             "rule with empty metadata",
+			rule:             AlertRule{},
+			expectedResult:   "",
+			expectedErrorMsg: "prometheus rule definition is missing",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := tt.rule.PrometheusRuleDefinition()
+			isPrometheusRule := tt.rule.ImportedFromPrometheus()
+
+			if tt.expectedErrorMsg != "" {
+				require.Error(t, err)
+				require.Equal(t, tt.expectedErrorMsg, err.Error())
+				require.False(t, isPrometheusRule)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedResult, result)
+				require.True(t, isPrometheusRule)
+			}
+		})
+	}
 }

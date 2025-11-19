@@ -147,6 +147,7 @@ func validateAlertingRuleFields(in *apimodels.PostableExtendedRuleNode, newRule 
 	if in.GrafanaManagedAlert.Metadata != nil {
 		newRule.Metadata.EditorSettings = ngmodels.EditorSettings{
 			SimplifiedQueryAndExpressionsSection: in.GrafanaManagedAlert.Metadata.EditorSettings.SimplifiedQueryAndExpressionsSection,
+			SimplifiedNotificationsSection:       in.GrafanaManagedAlert.Metadata.EditorSettings.SimplifiedNotificationsSection,
 		}
 	}
 
@@ -313,7 +314,7 @@ func ValidateRuleGroup(
 			uids[rule.UID] = idx
 		}
 
-		var hasPause, isPaused, hasMetadata bool
+		var hasPause, isPaused, hasEditorSettings bool
 		original := ruleGroupConfig.Rules[idx]
 		if alert := original.GrafanaManagedAlert; alert != nil {
 			if alert.IsPaused != nil {
@@ -321,7 +322,7 @@ func ValidateRuleGroup(
 				hasPause = true
 			}
 			if alert.Metadata != nil {
-				hasMetadata = true
+				hasEditorSettings = true
 			}
 		}
 
@@ -330,7 +331,7 @@ func ValidateRuleGroup(
 		rule.RuleGroupIndex = idx + 1
 		ruleWithOptionals.AlertRule = *rule
 		ruleWithOptionals.HasPause = hasPause
-		ruleWithOptionals.HasMetadata = hasMetadata
+		ruleWithOptionals.HasEditorSettings = hasEditorSettings
 
 		result = append(result, &ruleWithOptionals)
 	}

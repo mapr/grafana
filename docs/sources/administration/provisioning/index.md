@@ -39,7 +39,7 @@ packages, then your configuration file is located at
 
 You can use environment variable interpolation in all three provisioning configuration types.
 The allowed syntax is either `$ENV_VAR_NAME` or `${ENV_VAR_NAME}`, and it can be used only for values, not for keys or larger parts
-of the configurations.
+of the configurations. If the environment variable value has a `$` (e.g. `Pa$sw0rd`), use the `$ENV_VAR_NAME` syntax to avoid double expansion.
 It's not available in the dashboard's definition files, just the dashboard provisioning
 configuration.
 
@@ -81,12 +81,8 @@ The configuration file can also list data sources to automatically delete, calle
 Grafana deletes the data sources listed in `deleteDatasources` _before_ adding or updating those in the `datasources` list.
 
 You can configure Grafana to automatically delete provisioned data sources when they're removed from the provisioning file.
-To do so, add `prune: true` to the root of your provisioning file.
+To do so, add `prune: true` to the root of your data source provisioning file.
 With this configuration, Grafana also removes the provisioned data sources if you remove the provisioning file entirely.
-
-{{< admonition type="note" >}}
-The `prune` parameter is available in Grafana v11.1 and higher.
-{{< /admonition >}}
 
 ### Running multiple Grafana instances
 
@@ -231,9 +227,9 @@ Data sources tagged with _HTTP\*_ communicate using the HTTP protocol, which inc
 | encrypt                       | string  | MSSQL                                                            | Determines SSL encryption handling. Options include: `disable` - data sent between client and server is not encrypted; `false` - data sent between client and server is not encrypted beyond the login packet; `true` - data sent between client and server is encrypted. Default is `false`. |
 | postgresVersion               | number  | PostgreSQL                                                       | Postgres version as a number (903/904/905/906/1000) meaning v9.3, v9.4, ..., v10                                                                                                                                                                                                              |
 | timescaledb                   | boolean | PostgreSQL                                                       | Enable usage of TimescaleDB extension                                                                                                                                                                                                                                                         |
-| maxOpenConns                  | number  | MySQL, PostgreSQL and MSSQL                                      | Maximum number of open connections to the database (Grafana v5.4+)                                                                                                                                                                                                                            |
-| maxIdleConns                  | number  | MySQL, PostgreSQL and MSSQL                                      | Maximum number of connections in the idle connection pool (Grafana v5.4+)                                                                                                                                                                                                                     |
-| connMaxLifetime               | number  | MySQL, PostgreSQL and MSSQL                                      | Maximum amount of time in seconds a connection may be reused (Grafana v5.4+)                                                                                                                                                                                                                  |
+| maxOpenConns                  | number  | MySQL, PostgreSQL and MSSQL                                      | Maximum number of open connections to the database                                                                                                                                                                                                                                            |
+| maxIdleConns                  | number  | MySQL, PostgreSQL and MSSQL                                      | Maximum number of connections in the idle connection pool                                                                                                                                                                                                                                     |
+| connMaxLifetime               | number  | MySQL, PostgreSQL and MSSQL                                      | Maximum amount of time in seconds a connection may be reused                                                                                                                                                                                                                                  |
 | keepCookies                   | array   | _HTTP\*_                                                         | Cookies that needs to be passed along while communicating with data sources                                                                                                                                                                                                                   |
 | prometheusVersion             | string  | Prometheus                                                       | The version of the Prometheus data source, such as `2.37.0`, `2.24.0`                                                                                                                                                                                                                         |
 | prometheusType                | string  | Prometheus                                                       | Prometheus database type. Options are `Prometheus`, `Cortex`, `Mimir` or`Thanos`.                                                                                                                                                                                                             |
@@ -483,6 +479,7 @@ The following sections detail the supported settings and secure settings for eac
 | mentionGroups  |                |
 | mentionChannel |                |
 | token          | yes            |
+| color          |                |
 
 #### Alert notification `victorops`
 
@@ -618,12 +615,22 @@ The following sections detail the supported settings and secure settings for eac
 
 #### Alert notification `webhook`
 
-| Name       | Secure setting |
-| ---------- | -------------- |
-| url        |                |
-| httpMethod |                |
-| username   |                |
-| password   | yes            |
+| Name        | Secure setting |
+| ----------- | -------------- |
+| url         |                |
+| http_method |                |
+| username    |                |
+| password    | yes            |
+| tls_config  |                |
+
+##### TLS config
+
+| Name               | Secure setting |
+| ------------------ | -------------- |
+| insecureSkipVerify |                |
+| clientCertificate  | yes            |
+| clientKey          | yes            |
+| caCertificate      | yes            |
 
 #### Alert notification `googlechat`
 

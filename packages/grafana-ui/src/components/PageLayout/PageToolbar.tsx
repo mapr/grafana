@@ -7,6 +7,7 @@ import { selectors } from '@grafana/e2e-selectors';
 import { useStyles2 } from '../../themes/ThemeContext';
 import { getFocusStyles } from '../../themes/mixins';
 import { IconName } from '../../types';
+import { t } from '../../utils/i18n';
 import { Icon } from '../Icon/Icon';
 import { IconButton } from '../IconButton/IconButton';
 import { Link } from '../Link/Link';
@@ -73,9 +74,23 @@ export const PageToolbar = memo(
     const titleEl = (
       <>
         <span className={styles.truncateText}>{title}</span>
-        {section && <span className={styles.pre}> / {section}</span>}
+        {section && (
+          <span className={styles.pre}>
+            {' / '}
+            {section}
+          </span>
+        )}
       </>
     );
+
+    const goBackLabel = t('grafana-ui.page-toolbar.go-back', 'Go back (Esc)');
+    const searchParentFolderLabel = t(
+      'grafana-ui.page-toolbar.search-parent-folder',
+      'Search dashboard in the {{parent}} folder',
+      { parent }
+    );
+    const searchDashboardNameLabel = t('grafana-ui.page-toolbar.search-dashboard-name', 'Search dashboard by name');
+    const searchLinksLabel = t('grafana-ui.page-toolbar.search-links', 'Search links');
 
     return (
       <nav className={mainStyle} aria-label={ariaLabel}>
@@ -89,7 +104,7 @@ export const PageToolbar = memo(
             <div className={styles.pageIcon}>
               <IconButton
                 name="arrow-left"
-                tooltip="Go back (Esc)"
+                tooltip={goBackLabel}
                 tooltipPlacement="bottom"
                 size="xxl"
                 data-testid={selectors.components.BackButton.backArrow}
@@ -97,11 +112,11 @@ export const PageToolbar = memo(
               />
             </div>
           )}
-          <nav aria-label="Search links" className={styles.navElement}>
+          <nav aria-label={searchLinksLabel} className={styles.navElement}>
             {parent && parentHref && (
               <>
                 <Link
-                  aria-label={`Search dashboard in the ${parent} folder`}
+                  aria-label={searchParentFolderLabel}
                   className={cx(styles.titleText, styles.parentLink, styles.titleLink, styles.truncateText)}
                   href={parentHref}
                 >
@@ -109,7 +124,7 @@ export const PageToolbar = memo(
                 </Link>
                 {titleHref && (
                   <span className={cx(styles.titleText, styles.titleDivider)} aria-hidden>
-                    /
+                    {'/'}
                   </span>
                 )}
               </>
@@ -121,7 +136,7 @@ export const PageToolbar = memo(
                   <h1 className={styles.h1Styles}>
                     {titleHref ? (
                       <Link
-                        aria-label="Search dashboard by name"
+                        aria-label={searchDashboardNameLabel}
                         className={cx(styles.titleText, styles.titleLink)}
                         href={titleHref}
                       >

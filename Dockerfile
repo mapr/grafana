@@ -3,14 +3,21 @@
 # to maintain formatting of multiline commands in vscode, add the following to settings.json:
 # "docker.languageserver.formatter.ignoreMultilineInstructions": true
 
-ARG BASE_IMAGE=alpine:3.21
-ARG JS_IMAGE=node:20-alpine
+ARG BASE_IMAGE=alpine-base
+ARG GO_IMAGE=go-builder-base
+ARG JS_IMAGE=js-builder-base
 ARG JS_PLATFORM=linux/amd64
-ARG GO_IMAGE=golang:1.23.7-alpine
 
 # Default to building locally
 ARG GO_SRC=go-builder
 ARG JS_SRC=js-builder
+
+# Dependabot cannot update dependencies listed in ARGs
+# By using FROM instructions we can delegate dependency updates to dependabot
+FROM alpine:3.21.3 AS alpine-base
+FROM ubuntu:22.04 AS ubuntu-base
+FROM golang:1.25.3-alpine AS go-builder-base
+FROM --platform=${JS_PLATFORM} node:22-alpine AS js-builder-base
 
 # Javascript build stage
 FROM --platform=${JS_PLATFORM} ${JS_IMAGE} AS js-builder
@@ -22,20 +29,20 @@ WORKDIR /tmp/grafana
 COPY package.json project.json nx.json yarn.lock .yarnrc.yml ./
 COPY .yarn .yarn
 COPY packages packages
-COPY plugins-bundled plugins-bundled
 COPY public public
 COPY LICENSE ./
 COPY conf/defaults.ini ./conf/defaults.ini
+COPY e2e e2e
 
 RUN apk add --no-cache make build-base python3
 
 RUN yarn install --immutable
 
-COPY tsconfig.json .eslintrc .editorconfig .browserslistrc .prettierrc.js ./
+COPY tsconfig.json eslint.config.js .editorconfig .browserslistrc .prettierrc.js ./
 COPY scripts scripts
 COPY emails emails
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 RUN yarn build
 
 # Golang build stage
@@ -60,19 +67,27 @@ WORKDIR /tmp/grafana
 
 COPY go.* ./
 COPY .bingo .bingo
+COPY .citools .citools
 
 # Include vendored dependencies
-COPY pkg/util/xorm/go.* pkg/util/xorm/
-COPY pkg/apiserver/go.* pkg/apiserver/
-COPY pkg/apimachinery/go.* pkg/apimachinery/
-COPY pkg/build/go.* pkg/build/
-COPY pkg/build/wire/go.* pkg/build/wire/
-COPY pkg/promlib/go.* pkg/promlib/
-COPY pkg/storage/unified/resource/go.* pkg/storage/unified/resource/
-COPY pkg/storage/unified/apistore/go.* pkg/storage/unified/apistore/
-COPY pkg/semconv/go.* pkg/semconv/
-COPY pkg/aggregator/go.* pkg/aggregator/
-COPY apps/playlist/go.* apps/playlist/
+COPY pkg/util/xorm pkg/util/xorm
+COPY pkg/apiserver pkg/apiserver
+COPY pkg/apimachinery pkg/apimachinery
+COPY pkg/build pkg/build
+COPY pkg/build/wire pkg/build/wire
+COPY pkg/promlib pkg/promlib
+COPY pkg/storage/unified/resource pkg/storage/unified/resource
+COPY pkg/storage/unified/apistore pkg/storage/unified/apistore
+COPY pkg/semconv pkg/semconv
+COPY pkg/aggregator pkg/aggregator
+COPY apps/playlist apps/playlist
+COPY apps/investigations apps/investigations
+COPY apps/advisor apps/advisor
+COPY apps apps
+COPY kindsv2 kindsv2
+COPY apps/alerting/notifications apps/alerting/notifications
+COPY pkg/codegen pkg/codegen
+COPY pkg/plugins/codegen pkg/plugins/codegen
 
 RUN go mod download
 RUN if [[ "$BINGO" = "true" ]]; then \
@@ -117,6 +132,7 @@ FROM ${JS_SRC} AS js-src
 FROM ${BASE_IMAGE}
 
 LABEL maintainer="Grafana Labs <hello@grafana.com>"
+LABEL org.opencontainers.image.source="https://github.com/grafana/grafana"
 
 ARG GF_UID="472"
 ARG GF_GID="0"

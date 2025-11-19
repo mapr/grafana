@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-openapi/strfmt"
+	"github.com/google/uuid"
 	alertingNotify "github.com/grafana/alerting/notify"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	amv2 "github.com/prometheus/alertmanager/api/v2/models"
@@ -96,13 +97,20 @@ func (g *AlertRuleGenerator) Generate() AlertRule {
 		ns = append(ns, NotificationSettingsGen()())
 	}
 
+	var updatedBy *UserUID
+	if rand.Int63()%2 == 0 {
+		updatedBy = util.Pointer(UserUID(util.GenerateShortUID()))
+	}
+
 	rule := AlertRule{
 		ID:                   0,
+		GUID:                 uuid.NewString(),
 		OrgID:                rand.Int63n(1500) + 1, // Prevent OrgID=0 as this does not pass alert rule validation.
 		Title:                fmt.Sprintf("title-%s", util.GenerateShortUID()),
 		Condition:            "A",
 		Data:                 []AlertQuery{g.GenerateQuery()},
 		Updated:              time.Now().Add(-time.Duration(rand.Intn(100) + 1)),
+		UpdatedBy:            updatedBy,
 		IntervalSeconds:      rand.Int63n(60) + 1,
 		Version:              rand.Int63n(1500), // Don't generate a rule ID too big for postgres
 		UID:                  util.GenerateShortUID(),
@@ -117,6 +125,7 @@ func (g *AlertRuleGenerator) Generate() AlertRule {
 		Annotations:          annotations,
 		Labels:               labels,
 		NotificationSettings: ns,
+		Metadata:             GenerateMetadata(),
 	}
 
 	for _, mutator := range g.mutators {
@@ -197,9 +206,23 @@ func (a *AlertRuleMutators) WithUniqueID() AlertRuleMutator {
 	}
 }
 
-func (a *AlertRuleMutators) WithEditorSettingsSimplifiedQueryAndExpressionsSection(mode bool) AlertRuleMutator {
+func (a *AlertRuleMutators) WithEditorSettingsSimplifiedQueryAndExpressionsSection(enabled bool) AlertRuleMutator {
 	return func(rule *AlertRule) {
-		rule.Metadata.EditorSettings.SimplifiedQueryAndExpressionsSection = mode
+		rule.Metadata.EditorSettings.SimplifiedQueryAndExpressionsSection = enabled
+	}
+}
+
+func (a *AlertRuleMutators) WithEditorSettingsSimplifiedNotificationsSection(enabled bool) AlertRuleMutator {
+	return func(rule *AlertRule) {
+		rule.Metadata.EditorSettings.SimplifiedNotificationsSection = enabled
+	}
+}
+
+func (a *AlertRuleMutators) WithPrometheusOriginalRuleDefinition(definition string) AlertRuleMutator {
+	return func(rule *AlertRule) {
+		rule.Metadata.PrometheusStyleRule = &PrometheusStyleRule{
+			OriginalRuleDefinition: definition,
+		}
 	}
 }
 
@@ -514,6 +537,14 @@ func (a *AlertRuleMutators) WithAllRecordingRules() AlertRuleMutator {
 	}
 }
 
+func (a *AlertRuleMutators) WithoutTargetDataSource() AlertRuleMutator {
+	return func(rule *AlertRule) {
+		if rule.Record != nil {
+			rule.Record.TargetDatasourceUID = ""
+		}
+	}
+}
+
 func (a *AlertRuleMutators) WithMetric(metric string) AlertRuleMutator {
 	return func(rule *AlertRule) {
 		if rule.Record == nil {
@@ -529,6 +560,43 @@ func (a *AlertRuleMutators) WithRecordFrom(from string) AlertRuleMutator {
 			rule.Record = &Record{}
 		}
 		rule.Record.From = from
+	}
+}
+
+func (a *AlertRuleMutators) WithUpdatedBy(uid *UserUID) AlertRuleMutator {
+	return func(r *AlertRule) {
+		r.UpdatedBy = uid
+	}
+}
+
+func (a *AlertRuleMutators) WithUID(uid string) AlertRuleMutator {
+	return func(r *AlertRule) {
+		r.UID = uid
+	}
+}
+
+func (a *AlertRuleMutators) WithKey(key AlertRuleKey) AlertRuleMutator {
+	return func(r *AlertRule) {
+		r.UID = key.UID
+		r.OrgID = key.OrgID
+	}
+}
+
+func (a *AlertRuleMutators) WithVersion(version int64) AlertRuleMutator {
+	return func(r *AlertRule) {
+		r.Version = version
+	}
+}
+
+func (a *AlertRuleMutators) WithMetadata(meta AlertRuleMetadata) AlertRuleMutator {
+	return func(r *AlertRule) {
+		r.Metadata = meta
+	}
+}
+
+func (a AlertRuleMutators) WithGUID(guid string) AlertRuleMutator {
+	return func(r *AlertRule) {
+		r.GUID = guid
 	}
 }
 
@@ -587,6 +655,14 @@ func GenerateRuleKey(orgID int64) AlertRuleKey {
 	}
 }
 
+// GenerateRuleKeyWithGroup generates a random alert rule key with group
+func GenerateRuleKeyWithGroup(orgID int64) AlertRuleKeyWithGroup {
+	return AlertRuleKeyWithGroup{
+		AlertRuleKey: GenerateRuleKey(orgID),
+		RuleGroup:    util.GenerateShortUID(),
+	}
+}
+
 // GenerateGroupKey generates a random group key
 func GenerateGroupKey(orgID int64) AlertRuleGroupKey {
 	return AlertRuleGroupKey{
@@ -598,78 +674,13 @@ func GenerateGroupKey(orgID int64) AlertRuleGroupKey {
 
 // CopyRule creates a deep copy of AlertRule
 func CopyRule(r *AlertRule, mutators ...AlertRuleMutator) *AlertRule {
-	result := AlertRule{
-		ID:              r.ID,
-		OrgID:           r.OrgID,
-		Title:           r.Title,
-		Condition:       r.Condition,
-		Updated:         r.Updated,
-		IntervalSeconds: r.IntervalSeconds,
-		Version:         r.Version,
-		UID:             r.UID,
-		NamespaceUID:    r.NamespaceUID,
-		RuleGroup:       r.RuleGroup,
-		RuleGroupIndex:  r.RuleGroupIndex,
-		NoDataState:     r.NoDataState,
-		ExecErrState:    r.ExecErrState,
-		For:             r.For,
-		Record:          r.Record,
-		IsPaused:        r.IsPaused,
-	}
-
-	if r.DashboardUID != nil {
-		dash := *r.DashboardUID
-		result.DashboardUID = &dash
-	}
-	if r.PanelID != nil {
-		p := *r.PanelID
-		result.PanelID = &p
-	}
-
-	for _, d := range r.Data {
-		q := AlertQuery{
-			RefID:             d.RefID,
-			QueryType:         d.QueryType,
-			RelativeTimeRange: d.RelativeTimeRange,
-			DatasourceUID:     d.DatasourceUID,
-		}
-		q.Model = make([]byte, 0, cap(d.Model))
-		q.Model = append(q.Model, d.Model...)
-		result.Data = append(result.Data, q)
-	}
-
-	if r.Annotations != nil {
-		result.Annotations = make(map[string]string, len(r.Annotations))
-		for s, s2 := range r.Annotations {
-			result.Annotations[s] = s2
-		}
-	}
-
-	if r.Labels != nil {
-		result.Labels = make(map[string]string, len(r.Labels))
-		for s, s2 := range r.Labels {
-			result.Labels[s] = s2
-		}
-	}
-
-	if r.Record != nil {
-		result.Record = &Record{
-			From:   r.Record.From,
-			Metric: r.Record.Metric,
-		}
-	}
-
-	for _, s := range r.NotificationSettings {
-		result.NotificationSettings = append(result.NotificationSettings, CopyNotificationSettings(s))
-	}
-
+	result := r.Copy()
 	if len(mutators) > 0 {
 		for _, mutator := range mutators {
-			mutator(&result)
+			mutator(result)
 		}
 	}
-
-	return &result
+	return result
 }
 
 func CreateClassicConditionExpression(refID string, inputRefID string, reducer string, operation string, threshold int) AlertQuery {
@@ -814,6 +825,15 @@ func CreateHysteresisExpression(t *testing.T, refID string, inputRefID string, t
 	require.NoError(t, err)
 	require.Truef(t, h, "test model is expected to be a hysteresis expression")
 	return q
+}
+
+func GenerateMetadata() AlertRuleMetadata {
+	return AlertRuleMetadata{
+		EditorSettings: EditorSettings{
+			SimplifiedQueryAndExpressionsSection: rand.Int()%2 == 0,
+			SimplifiedNotificationsSection:       rand.Int()%2 == 0,
+		},
+	}
 }
 
 type AlertInstanceMutator func(*AlertInstance)
@@ -1325,6 +1345,9 @@ func ConvertToRecordingRule(rule *AlertRule) {
 	}
 	if rule.Record.Metric == "" {
 		rule.Record.Metric = fmt.Sprintf("some_metric_%s", util.GenerateShortUID())
+	}
+	if rule.Record.TargetDatasourceUID == "" {
+		rule.Record.TargetDatasourceUID = util.GenerateShortUID()
 	}
 	rule.Condition = ""
 	rule.NoDataState = ""

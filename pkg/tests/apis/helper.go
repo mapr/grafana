@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	goerrors "errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
-
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -33,7 +35,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/accesscontrol/ossaccesscontrol"
 	"github.com/grafana/grafana/pkg/services/accesscontrol/resourcepermissions"
 	"github.com/grafana/grafana/pkg/services/apiserver/endpoints/request"
-	"github.com/grafana/grafana/pkg/services/auth/idtest"
+	"github.com/grafana/grafana/pkg/services/apiserver/options"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/org"
@@ -48,7 +50,10 @@ import (
 	"github.com/grafana/grafana/pkg/tests/testinfra"
 )
 
-const Org1 = "Org1"
+const (
+	Org1 = "Org1"
+	Org2 = "OrgB"
+)
 
 type K8sTestHelper struct {
 	t          *testing.T
@@ -60,10 +65,25 @@ type K8sTestHelper struct {
 
 	// // Registered groups
 	groups []metav1.APIGroup
+
+	orgSvc  org.Service
+	teamSvc team.Service
+	userSvc user.Service
 }
 
 func NewK8sTestHelper(t *testing.T, opts testinfra.GrafanaOpts) *K8sTestHelper {
 	t.Helper()
+
+	// Use GRPC server when not configured
+	if opts.APIServerStorageType == "" && opts.GRPCServerAddress == "" {
+		// TODO, this really should be gRPC, but sometimes fails in drone
+		// the two *should* be identical, but we have seen issues when using real gRPC vs channel
+		opts.APIServerStorageType = options.StorageTypeUnified // TODO, should be GRPC
+	}
+
+	// Always enable `FlagAppPlatformGrpcClientAuth` for k8s integration tests, as this is the desired behavior.
+	// The flag only exists to support the transition from the old to the new behavior in dev/ops/prod.
+	opts.EnableFeatureToggles = append(opts.EnableFeatureToggles, featuremgmt.FlagAppPlatformGrpcClientAuth)
 	dir, path := testinfra.CreateGrafDir(t, opts)
 	_, env := testinfra.StartGrafanaEnv(t, dir, path)
 
@@ -73,8 +93,27 @@ func NewK8sTestHelper(t *testing.T, opts testinfra.GrafanaOpts) *K8sTestHelper {
 		Namespacer: request.GetNamespaceMapper(nil),
 	}
 
+	quotaService := quotaimpl.ProvideService(c.env.SQLStore, c.env.Cfg)
+	orgSvc, err := orgimpl.ProvideService(c.env.SQLStore, c.env.Cfg, quotaService)
+	require.NoError(c.t, err)
+	c.orgSvc = orgSvc
+
+	teamSvc, err := teamimpl.ProvideService(c.env.SQLStore, c.env.Cfg, tracing.NewNoopTracerService())
+	require.NoError(c.t, err)
+	c.teamSvc = teamSvc
+
+	userSvc, err := userimpl.ProvideService(
+		c.env.SQLStore, orgSvc, c.env.Cfg, teamSvc,
+		localcache.ProvideService(), tracing.NewNoopTracerService(), quotaService,
+		supportbundlestest.NewFakeBundleService())
+	require.NoError(c.t, err)
+	c.userSvc = userSvc
+
+	_ = c.CreateOrg(Org1)
+	_ = c.CreateOrg(Org2)
+
 	c.Org1 = c.createTestUsers(Org1)
-	c.OrgB = c.createTestUsers("OrgB")
+	c.OrgB = c.createTestUsers(Org2)
 
 	c.loadAPIGroups()
 
@@ -190,7 +229,6 @@ func (c *K8sResourceClient) SanitizeJSON(v *unstructured.Unstructured, replaceMe
 	copy := c.sanitizeObject(v, replaceMeta...)
 
 	out, err := json.MarshalIndent(copy, "", "  ")
-	// fmt.Printf("%s", out)
 	require.NoError(c.t, err)
 	return string(out)
 }
@@ -206,8 +244,16 @@ func (c *K8sResourceClient) sanitizeObject(v *unstructured.Unstructured, replace
 	meta, ok := copy["metadata"].(map[string]any)
 	require.True(c.t, ok)
 
+	// remove generation
+	delete(meta, "generation")
+
 	replaceMeta = append(replaceMeta, "creationTimestamp", "resourceVersion", "uid")
 	for _, key := range replaceMeta {
+		if key == "labels" {
+			delete(meta, key)
+			continue
+		}
+
 		old, ok := meta[key]
 		if ok {
 			require.NotEmpty(c.t, old)
@@ -366,7 +412,12 @@ func DoRequest[T any](c *K8sTestHelper, params RequestParams, result *T) K8sResp
 	if params.Accept != "" {
 		req.Header.Set("Accept", params.Accept)
 	}
-	rsp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	rsp, err := client.Do(req)
 	require.NoError(c.t, err)
 
 	r := K8sResponse[T]{
@@ -393,12 +444,18 @@ func DoRequest[T any](c *K8sTestHelper, params RequestParams, result *T) K8sResp
 // Read local JSON or YAML file into a resource
 func (c *K8sTestHelper) LoadYAMLOrJSONFile(fpath string) *unstructured.Unstructured {
 	c.t.Helper()
+	return c.LoadYAMLOrJSON(string(c.LoadFile(fpath)))
+}
+
+// Read local file into a byte slice. Does not need to be a resource.
+func (c *K8sTestHelper) LoadFile(fpath string) []byte {
+	c.t.Helper()
 
 	//nolint:gosec
 	raw, err := os.ReadFile(fpath)
 	require.NoError(c.t, err)
 	require.NotEmpty(c.t, raw)
-	return c.LoadYAMLOrJSON(string(raw))
+	return raw
 }
 
 // Read local JSON or YAML file into a resource
@@ -425,6 +482,7 @@ func (c *K8sTestHelper) createTestUsers(orgName string) OrgUsers {
 		Editor: c.CreateUser("editor", orgName, org.RoleEditor, nil),
 		Viewer: c.CreateUser("viewer", orgName, org.RoleViewer, nil),
 	}
+
 	users.Staff = c.CreateTeam("staff", "staff@"+orgName, users.Admin.Identity.GetOrgID())
 
 	// Add Admin and Editor to Staff team as Admin and Member, respectively.
@@ -434,61 +492,67 @@ func (c *K8sTestHelper) createTestUsers(orgName string) OrgUsers {
 	return users
 }
 
+func (c *K8sTestHelper) CreateOrg(name string) int64 {
+	if name == Org1 {
+		return 1
+	}
+
+	oldAssing := c.env.Cfg.AutoAssignOrg
+	defer func() {
+		c.env.Cfg.AutoAssignOrg = oldAssing
+	}()
+
+	c.env.Cfg.AutoAssignOrg = false
+	o, err := c.orgSvc.GetByName(context.Background(), &org.GetOrgByNameQuery{
+		Name: name,
+	})
+	if goerrors.Is(err, org.ErrOrgNotFound) {
+		id, err := c.orgSvc.GetOrCreate(context.Background(), name)
+		require.NoError(c.t, err)
+		return id
+	}
+
+	require.NoError(c.t, err)
+	return o.ID
+}
+
 func (c *K8sTestHelper) CreateUser(name string, orgName string, basicRole org.RoleType, permissions []resourcepermissions.SetResourcePermissionCommand) User {
 	c.t.Helper()
 
-	store := c.env.SQLStore
-	defer func() {
-		c.env.Cfg.AutoAssignOrg = false
-		c.env.Cfg.AutoAssignOrgId = 1 // the default
-	}()
-
-	quotaService := quotaimpl.ProvideService(store, c.env.Cfg)
-
-	orgService, err := orgimpl.ProvideService(store, c.env.Cfg, quotaService)
-	require.NoError(c.t, err)
-
-	orgId := int64(1)
-	if orgName != Org1 {
-		o, err := orgService.GetByName(context.Background(), &org.GetOrgByNameQuery{Name: orgName})
-		if err != nil {
-			if !org.ErrOrgNotFound.Is(err) {
-				require.NoError(c.t, err)
-			}
-			orgId, err = orgService.GetOrCreate(context.Background(), orgName)
-			require.NoError(c.t, err)
-		} else {
-			orgId = o.ID
-		}
-	}
-	c.env.Cfg.AutoAssignOrg = true
-	c.env.Cfg.AutoAssignOrgId = int(orgId)
-
-	teamSvc, err := teamimpl.ProvideService(store, c.env.Cfg, tracing.InitializeTracerForTest())
-	require.NoError(c.t, err)
-
-	cache := localcache.ProvideService()
-	userSvc, err := userimpl.ProvideService(
-		store, orgService, c.env.Cfg, teamSvc,
-		cache, tracing.InitializeTracerForTest(), quotaService,
-		supportbundlestest.NewFakeBundleService())
-	require.NoError(c.t, err)
+	orgId := c.CreateOrg(orgName)
 
 	baseUrl := fmt.Sprintf("http://%s", c.env.Server.HTTPServer.Listener.Addr())
 
-	u, err := userSvc.Create(context.Background(), &user.CreateUserCommand{
+	// make org1 admins grafana admins
+	isGrafanaAdmin := basicRole == identity.RoleAdmin && orgId == 1
+
+	u, err := c.userSvc.Create(context.Background(), &user.CreateUserCommand{
 		DefaultOrgRole: string(basicRole),
 		Password:       user.Password(name),
 		Login:          fmt.Sprintf("%s-%d", name, orgId),
 		OrgID:          orgId,
-		IsAdmin:        basicRole == identity.RoleAdmin && orgId == 1, // make org1 admins grafana admins
+		IsAdmin:        isGrafanaAdmin,
 	})
+
+	// for tests to work we need to add grafana admins to every org
+	if isGrafanaAdmin {
+		orgs, err := c.orgSvc.Search(context.Background(), &org.SearchOrgsQuery{})
+		require.NoError(c.t, err)
+		for _, o := range orgs {
+			_ = c.orgSvc.AddOrgUser(context.Background(), &org.AddOrgUserCommand{
+				Role:   identity.RoleAdmin,
+				OrgID:  o.ID,
+				UserID: u.ID,
+			})
+		}
+	}
+
 	require.NoError(c.t, err)
 	require.Equal(c.t, orgId, u.OrgID)
 	require.True(c.t, u.ID > 0)
 
 	// should this always return a user with ID token?
-	s, err := userSvc.GetSignedInUser(context.Background(), &user.GetSignedInUserQuery{
+	s, err := c.userSvc.GetSignedInUser(context.Background(), &user.GetSignedInUserQuery{
 		UserID: u.ID,
 		Login:  u.Login,
 		Email:  u.Email,
@@ -498,7 +562,7 @@ func (c *K8sTestHelper) CreateUser(name string, orgName string, basicRole org.Ro
 	require.Equal(c.t, orgId, s.OrgID)
 	require.Equal(c.t, basicRole, s.OrgRole) // make sure the role was set properly
 
-	idToken, idClaims, err := idtest.CreateInternalToken(s, []byte("secret"))
+	idToken, idClaims, err := c.env.IDService.SignIdentity(context.Background(), s)
 	require.NoError(c.t, err)
 	s.IDToken = idToken
 	s.IDTokenClaims = idClaims
@@ -533,19 +597,6 @@ func (c *K8sTestHelper) SetPermissions(user User, permissions []resourcepermissi
 }
 
 func (c *K8sTestHelper) AddOrUpdateTeamMember(user User, teamID int64, permission team.PermissionType) {
-	teamSvc, err := teamimpl.ProvideService(c.env.SQLStore, c.env.Cfg, tracing.InitializeTracerForTest())
-	require.NoError(c.t, err)
-
-	orgService, err := orgimpl.ProvideService(c.env.SQLStore, c.env.Cfg, c.env.Server.HTTPServer.QuotaService)
-	require.NoError(c.t, err)
-
-	cache := localcache.ProvideService()
-	userSvc, err := userimpl.ProvideService(
-		c.env.SQLStore, orgService, c.env.Cfg, teamSvc,
-		cache, tracing.InitializeTracerForTest(), c.env.Server.HTTPServer.QuotaService,
-		supportbundlestest.NewFakeBundleService())
-	require.NoError(c.t, err)
-
 	teampermissionSvc, err := ossaccesscontrol.ProvideTeamPermissions(
 		c.env.Cfg,
 		c.env.FeatureToggles,
@@ -554,8 +605,8 @@ func (c *K8sTestHelper) AddOrUpdateTeamMember(user User, teamID int64, permissio
 		c.env.Server.HTTPServer.AccessControl,
 		c.env.Server.HTTPServer.License,
 		c.env.Server.HTTPServer.AlertNG.AccesscontrolService,
-		teamSvc,
-		userSvc,
+		c.teamSvc,
+		c.userSvc,
 		resourcepermissions.NewActionSetService(c.env.FeatureToggles),
 	)
 	require.NoError(c.t, err)
@@ -632,7 +683,54 @@ func (c *K8sTestHelper) CreateDS(cmd *datasources.AddDataSourceCommand) *datasou
 func (c *K8sTestHelper) CreateTeam(name, email string, orgID int64) team.Team {
 	c.t.Helper()
 
-	team, err := c.env.Server.HTTPServer.TeamService.CreateTeam(context.Background(), name, email, orgID)
+	team, err := c.teamSvc.CreateTeam(context.Background(), name, email, orgID)
 	require.NoError(c.t, err)
 	return team
+}
+
+// Compare the OpenAPI schema from one api against a cached snapshot
+func VerifyOpenAPISnapshots(t *testing.T, dir string, gv schema.GroupVersion, h *K8sTestHelper) {
+	if gv.Group == "" {
+		return // skip invalid groups
+	}
+	path := fmt.Sprintf("/openapi/v3/apis/%s/%s", gv.Group, gv.Version)
+	t.Run(path, func(t *testing.T) {
+		rsp := DoRequest(h, RequestParams{
+			Method: http.MethodGet,
+			Path:   path,
+			User:   h.Org1.Admin,
+		}, &AnyResource{})
+
+		require.NotNil(t, rsp.Response)
+		require.Equal(t, 200, rsp.Response.StatusCode, path)
+
+		var prettyJSON bytes.Buffer
+		err := json.Indent(&prettyJSON, rsp.Body, "", "  ")
+		require.NoError(t, err)
+		pretty := prettyJSON.String()
+
+		write := false
+		fpath := filepath.Join(dir, fmt.Sprintf("%s-%s.json", gv.Group, gv.Version))
+
+		// nolint:gosec
+		// We can ignore the gosec G304 warning since this is a test and the function is only called with explicit paths
+		body, err := os.ReadFile(fpath)
+		if err == nil {
+			if !assert.JSONEq(t, string(body), pretty) {
+				t.Logf("openapi spec has changed: %s", path)
+				t.Fail()
+				write = true
+			}
+		} else {
+			t.Errorf("missing openapi spec for: %s", path)
+			write = true
+		}
+
+		if write {
+			e2 := os.WriteFile(fpath, []byte(pretty), 0644)
+			if e2 != nil {
+				t.Errorf("error writing file: %s", e2.Error())
+			}
+		}
+	})
 }

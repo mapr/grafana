@@ -3,14 +3,13 @@ package serviceaccount
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/registry/rest"
 
-	"github.com/grafana/authlib/claims"
+	claims "github.com/grafana/authlib/types"
 	"github.com/grafana/grafana/pkg/apimachinery/utils"
 	iamv0 "github.com/grafana/grafana/pkg/apis/iam/v0alpha1"
 	"github.com/grafana/grafana/pkg/registry/apis/iam/common"
@@ -109,10 +108,7 @@ func toSAItem(sa legacy.ServiceAccount, ns string) iamv0.ServiceAccount {
 	}
 	obj, _ := utils.MetaAccessor(&item)
 	obj.SetUpdatedTimestamp(&sa.Updated)
-	obj.SetOriginInfo(&utils.ResourceOriginInfo{
-		Name: "SQL",
-		Path: strconv.FormatInt(sa.ID, 10),
-	})
+	obj.SetDeprecatedInternalID(sa.ID) // nolint:staticcheck
 	return item
 }
 

@@ -4,9 +4,7 @@ import 'regenerator-runtime/runtime';
 import 'whatwg-fetch'; // fetch polyfill needed for PhantomJs rendering
 import 'file-saver';
 import 'jquery';
-import 'vendor/bootstrap/bootstrap';
 
-import _ from 'lodash'; // eslint-disable-line lodash/import-scope
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -40,12 +38,14 @@ import {
   setCurrentUser,
   setChromeHeaderHeightHook,
   setPluginLinksHook,
+  setFolderPicker,
+  setCorrelationsService,
+  setPluginFunctionsHook,
 } from '@grafana/runtime';
 import { setPanelDataErrorView } from '@grafana/runtime/src/components/PanelDataErrorView';
 import { setPanelRenderer } from '@grafana/runtime/src/components/PanelRenderer';
 import { setPluginPage } from '@grafana/runtime/src/components/PluginPage';
 import config, { updateConfig } from 'app/core/config';
-import { arrayMove } from 'app/core/utils/arrayMove';
 import { getStandardTransformers } from 'app/features/transformers/standardTransformers';
 
 import getDefaultMonacoLanguages from '../lib/monaco-languages';
@@ -53,24 +53,20 @@ import getDefaultMonacoLanguages from '../lib/monaco-languages';
 import { AppWrapper } from './AppWrapper';
 import appEvents from './core/app_events';
 import { AppChromeService } from './core/components/AppChrome/AppChromeService';
+import { LazyFolderPicker } from './core/components/NestedFolderPicker/LazyFolderPicker';
 import { getAllOptionEditors, getAllStandardFieldConfigs } from './core/components/OptionsUI/registry';
 import { PluginPage } from './core/components/Page/PluginPage';
 import { GrafanaContextType, useChromeHeaderHeight, useReturnToPreviousInternal } from './core/context/GrafanaContext';
-import { initIconCache } from './core/icons/iconBundle';
+import { initializeCrashDetection } from './core/crash';
 import { initializeI18n } from './core/internationalization';
 import { setMonacoEnv } from './core/monacoEnv';
 import { interceptLinkClicks } from './core/navigation/patch/interceptLinkClicks';
+import { CorrelationsService } from './core/services/CorrelationsService';
 import { NewFrontendAssetsChecker } from './core/services/NewFrontendAssetsChecker';
 import { backendSrv } from './core/services/backend_srv';
 import { contextSrv, RedirectToUrlKey } from './core/services/context_srv';
 import { Echo } from './core/services/echo/Echo';
 import { reportPerformance } from './core/services/echo/EchoSrv';
-import { PerformanceBackend } from './core/services/echo/backends/PerformanceBackend';
-import { ApplicationInsightsBackend } from './core/services/echo/backends/analytics/ApplicationInsightsBackend';
-import { GA4EchoBackend } from './core/services/echo/backends/analytics/GA4Backend';
-import { GAEchoBackend } from './core/services/echo/backends/analytics/GABackend';
-import { RudderstackBackend } from './core/services/echo/backends/analytics/RudderstackBackend';
-import { GrafanaJavascriptAgentBackend } from './core/services/echo/backends/grafana-javascript-agent/GrafanaJavascriptAgentBackend';
 import { KeybindingSrv } from './core/services/keybindingSrv';
 import { startMeasure, stopMeasure } from './core/utils/metrics';
 import { initDevFeatures } from './dev';
@@ -83,12 +79,13 @@ import { PanelDataErrorView } from './features/panel/components/PanelDataErrorVi
 import { PanelRenderer } from './features/panel/components/PanelRenderer';
 import { DatasourceSrv } from './features/plugins/datasource_srv';
 import { createPluginExtensionsGetter } from './features/plugins/extensions/getPluginExtensions';
-import { setupPluginExtensionRegistries } from './features/plugins/extensions/registry/setup';
-import { PluginExtensionRegistries } from './features/plugins/extensions/registry/types';
+import { pluginExtensionRegistries } from './features/plugins/extensions/registry/setup';
 import { usePluginComponent } from './features/plugins/extensions/usePluginComponent';
 import { usePluginComponents } from './features/plugins/extensions/usePluginComponents';
 import { createUsePluginExtensions } from './features/plugins/extensions/usePluginExtensions';
+import { usePluginFunctions } from './features/plugins/extensions/usePluginFunctions';
 import { usePluginLinks } from './features/plugins/extensions/usePluginLinks';
+import { getAppPluginsToAwait, getAppPluginsToPreload } from './features/plugins/extensions/utils';
 import { importPanelPlugin, syncGetPanelPlugin } from './features/plugins/importPanelPlugin';
 import { preloadPlugins } from './features/plugins/pluginPreloader';
 import { QueryRunner } from './features/query/state/QueryRunner';
@@ -109,10 +106,6 @@ import { createSystemVariableAdapter } from './features/variables/system/adapter
 import { createTextBoxVariableAdapter } from './features/variables/textbox/adapter';
 import { configureStore } from './store/configureStore';
 
-// add move to lodash for backward compatabilty with plugins
-// @ts-ignore
-_.move = arrayMove;
-
 // import symlinked extensions
 const extensionsIndex = require.context('.', true, /extensions\/index.ts/);
 const extensionsExports = extensionsIndex.keys().map((key) => {
@@ -125,7 +118,6 @@ if (process.env.NODE_ENV === 'development') {
 
 export class GrafanaApp {
   context!: GrafanaContextType;
-  pluginExtensionsRegistries!: PluginExtensionRegistries;
 
   async init() {
     try {
@@ -136,8 +128,7 @@ export class GrafanaApp {
       initI18nPromise.then(({ language }) => updateConfig({ language }));
 
       setBackendSrv(backendSrv);
-      initEchoSrv();
-      initIconCache();
+      await initEchoSrv();
       // This needs to be done after the `initEchoSrv` since it is being used under the hood.
       startMeasure('frontend_app_init');
 
@@ -145,8 +136,10 @@ export class GrafanaApp {
       setWeekStart(config.bootData.user.weekStart);
       setPanelRenderer(PanelRenderer);
       setPluginPage(PluginPage);
+      setFolderPicker(LazyFolderPicker);
       setPanelDataErrorView(PanelDataErrorView);
       setLocationSrv(locationService);
+      setCorrelationsService(new CorrelationsService());
       setEmbeddedDashboard(EmbeddedDashboardLazy);
       setTimeZoneResolver(() => config.bootData.user.timezone);
       initGrafanaLive();
@@ -215,25 +208,23 @@ export class GrafanaApp {
       setDataSourceSrv(dataSourceSrv);
       initWindowRuntime();
 
-      // Initialize plugin extensions
-      this.pluginExtensionsRegistries = setupPluginExtensionRegistries();
+      // Do not pre-load apps if rendererDisableAppPluginsPreload is true and the request comes from the image renderer
+      const skipAppPluginsPreload =
+        config.featureToggles.rendererDisableAppPluginsPreload && contextSrv.user.authenticatedBy === 'render';
+      if (contextSrv.user.orgRole !== '' && !skipAppPluginsPreload) {
+        const appPluginsToAwait = getAppPluginsToAwait();
+        const appPluginsToPreload = getAppPluginsToPreload();
 
-      if (contextSrv.user.orgRole !== '') {
-        // The "cloud-home-app" is registering banners once it's loaded, and this can cause a rerender in the AppChrome if it's loaded after the Grafana app init.
-        // TODO: remove the following exception once the issue mentioned above is fixed.
-        const awaitedAppPluginIds = ['cloud-home-app'];
-        const awaitedAppPlugins = Object.values(config.apps).filter((app) => awaitedAppPluginIds.includes(app.id));
-        const appPlugins = Object.values(config.apps).filter((app) => !awaitedAppPluginIds.includes(app.id));
-
-        preloadPlugins(appPlugins, this.pluginExtensionsRegistries);
-        await preloadPlugins(awaitedAppPlugins, this.pluginExtensionsRegistries, 'frontend_awaited_plugins_preload');
+        preloadPlugins(appPluginsToPreload);
+        await preloadPlugins(appPluginsToAwait);
       }
 
-      setPluginExtensionGetter(createPluginExtensionsGetter(this.pluginExtensionsRegistries));
-      setPluginExtensionsHook(createUsePluginExtensions(this.pluginExtensionsRegistries));
+      setPluginExtensionGetter(createPluginExtensionsGetter(pluginExtensionRegistries));
+      setPluginExtensionsHook(createUsePluginExtensions(pluginExtensionRegistries));
       setPluginLinksHook(usePluginLinks);
       setPluginComponentHook(usePluginComponent);
       setPluginComponentsHook(usePluginComponents);
+      setPluginFunctionsHook(usePluginFunctions);
 
       // initialize chrome service
       const queryParams = locationService.getSearchObject();
@@ -266,6 +257,10 @@ export class GrafanaApp {
 
       initializeScopes();
 
+      if (config.featureToggles.crashDetection) {
+        initializeCrashDetection();
+      }
+
       const root = createRoot(document.getElementById('reactRoot')!);
       root.render(
         createElement(AppWrapper, {
@@ -293,7 +288,7 @@ function initExtensions() {
   }
 }
 
-function initEchoSrv() {
+async function initEchoSrv() {
   setEchoSrv(new Echo({ debug: process.env.NODE_ENV === 'development' }));
 
   window.addEventListener('load', (e) => {
@@ -313,10 +308,24 @@ function initEchoSrv() {
   });
 
   if (contextSrv.user.orgRole !== '') {
+    const { PerformanceBackend } = await import('./core/services/echo/backends/PerformanceBackend');
     registerEchoBackend(new PerformanceBackend({}));
   }
 
   if (config.grafanaJavascriptAgent.enabled) {
+    // Ignore Rudderstack URLs
+    const rudderstackUrls = [
+      config.rudderstackConfigUrl,
+      config.rudderstackDataPlaneUrl,
+      config.rudderstackIntegrationsUrl,
+    ]
+      .filter(Boolean)
+      .map((url) => new RegExp(`${url}.*.`));
+
+    const { GrafanaJavascriptAgentBackend } = await import(
+      './core/services/echo/backends/grafana-javascript-agent/GrafanaJavascriptAgentBackend'
+    );
+
     registerEchoBackend(
       new GrafanaJavascriptAgentBackend({
         ...config.grafanaJavascriptAgent,
@@ -329,11 +338,13 @@ function initEchoSrv() {
           id: String(config.bootData.user?.id),
           email: config.bootData.user?.email,
         },
+        ignoreUrls: rudderstackUrls,
       })
     );
   }
 
   if (config.googleAnalyticsId) {
+    const { GAEchoBackend } = await import('./core/services/echo/backends/analytics/GABackend');
     registerEchoBackend(
       new GAEchoBackend({
         googleAnalyticsId: config.googleAnalyticsId,
@@ -342,6 +353,7 @@ function initEchoSrv() {
   }
 
   if (config.googleAnalytics4Id) {
+    const { GA4EchoBackend } = await import('./core/services/echo/backends/analytics/GA4Backend');
     registerEchoBackend(
       new GA4EchoBackend({
         googleAnalyticsId: config.googleAnalytics4Id,
@@ -351,6 +363,7 @@ function initEchoSrv() {
   }
 
   if (config.rudderstackWriteKey && config.rudderstackDataPlaneUrl) {
+    const { RudderstackBackend } = await import('./core/services/echo/backends/analytics/RudderstackBackend');
     registerEchoBackend(
       new RudderstackBackend({
         writeKey: config.rudderstackWriteKey,
@@ -365,12 +378,20 @@ function initEchoSrv() {
   }
 
   if (config.applicationInsightsConnectionString) {
+    const { ApplicationInsightsBackend } = await import(
+      './core/services/echo/backends/analytics/ApplicationInsightsBackend'
+    );
     registerEchoBackend(
       new ApplicationInsightsBackend({
         connectionString: config.applicationInsightsConnectionString,
         endpointUrl: config.applicationInsightsEndpointUrl,
       })
     );
+  }
+
+  if (config.analyticsConsoleReporting) {
+    const { BrowserConsoleBackend } = await import('./core/services/echo/backends/analytics/BrowseConsoleBackend');
+    registerEchoBackend(new BrowserConsoleBackend());
   }
 }
 
@@ -379,7 +400,7 @@ function initEchoSrv() {
  * like PerformanceMark or PerformancePaintTiming (e.g. created with performance.mark, or first-contentful-paint)
  */
 function reportMetricPerformanceMark(metricName: string, prefix = '', suffix = ''): void {
-  const metric = _.first(performance.getEntriesByName(metricName));
+  const metric = performance.getEntriesByName(metricName).at(0);
   if (metric) {
     const metricName = metric.name.replace(/-/g, '_');
     reportPerformance(`${prefix}${metricName}${suffix}`, Math.round(metric.startTime) / 1000);
@@ -414,13 +435,16 @@ function handleRedirectTo(): void {
   }
 
   window.sessionStorage.removeItem(RedirectToUrlKey);
-  const decodedRedirectTo = decodeURIComponent(redirectTo);
+  let decodedRedirectTo = decodeURIComponent(redirectTo);
   if (decodedRedirectTo.startsWith('/goto/')) {
     // In this case there should be a request to the backend
-    window.location.replace(decodedRedirectTo);
-  } else {
-    locationService.replace(decodedRedirectTo);
+    const urlToRedirectTo = locationUtil.assureBaseUrl(decodedRedirectTo);
+    window.location.replace(urlToRedirectTo);
+    return;
   }
+  // Ensure that the appsuburl is stripped from the redirect to in case of a frontend redirect
+  const stripped = locationUtil.stripBaseFromUrl(decodedRedirectTo);
+  locationService.replace(stripped);
 }
 
 export default new GrafanaApp();

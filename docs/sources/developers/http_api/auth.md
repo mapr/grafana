@@ -21,24 +21,24 @@ title: 'Authentication HTTP API '
 
 The Authentication HTTP API is used to manage API keys.
 
-{{% admonition type="note" %}}
-If you use Grafana v9.1 or newer, use service accounts instead of API keys. For more information, refer to [Grafana service account API reference](../serviceaccount/).
-{{% /admonition %}}
+{{< admonition type="note" >}}
+Grafana recommends using service accounts instead of API keys. For more information, refer to [Grafana service account API reference](../serviceaccount/).
+{{< /admonition >}}
 
 > If you are running Grafana Enterprise, for some endpoints you would need to have relevant permissions. Refer to [Role-based access control permissions](../../../administration/roles-and-permissions/access-control/custom-role-actions-scopes/) for more information.
 
 ## List API keys
 
-{{% admonition type="warning" %}}
+{{< admonition type="warning" >}}
 This endpoint is deprecated.
 
-{{% /admonition %}}
+{{< /admonition >}}
 
 `GET /api/auth/keys`
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#authentication-api" >}}) for an explanation.
+See note in the [introduction](#authentication-api) for an explanation.
 
 | Action         | Scope       |
 | -------------- | ----------- |
@@ -80,10 +80,10 @@ Content-Type: application/json
 
 ## Create API Key
 
-{{% admonition type="warning" %}}
+{{< admonition type="warning" >}}
 This endpoint has been made obsolete in Grafana 11.3.0.
 
-{{% /admonition %}}
+{{< /admonition >}}
 
 Endpoint is obsolete and has been moved to [Grafana service account API](../serviceaccount/). For more information, refer to [Migrate to Grafana service account API](/docs/grafana/<GRAFANA_VERSION>/administration/service-accounts/migrate-api-keys/).
 
@@ -100,17 +100,17 @@ Content-Type: application/json
 
 ## Delete API Key
 
-{{% admonition type="warning" %}}
+{{< admonition type="warning" >}}
 
 ### DEPRECATED
 
-{{% /admonition %}}
+{{< /admonition >}}
 
 `DELETE /api/auth/keys/:id`
 
 **Required permissions**
 
-See note in the [introduction]({{< ref "#authentication-api" >}}) for an explanation.
+See note in the [introduction](#authentication-api) for an explanation.
 
 | Action           | Scope      |
 | ---------------- | ---------- |

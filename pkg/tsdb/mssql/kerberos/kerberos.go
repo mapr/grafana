@@ -2,6 +2,7 @@ package kerberos
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,8 +39,21 @@ func GetKerberosSettings(settings backend.DataSourceInstanceSettings) (kerberosA
 	}
 
 	err = json.Unmarshal(settings.JSONData, &kerberosAuth)
-	if err != nil {
-		return kerberosAuth, err
+	var unmarshalErr *json.UnmarshalTypeError
+	if err != nil && errors.As(err, &unmarshalErr) {
+		stringMap := map[string]any{}
+		err = json.Unmarshal(settings.JSONData, &stringMap)
+		if err != nil {
+			return kerberosAuth, err
+		}
+
+		if stringMap["UDPConnectionLimit"] != "" {
+			udpConnLimit, err := strconv.Atoi(stringMap["UDPConnectionLimit"].(string))
+			if err != nil {
+				return kerberosAuth, err
+			}
+			kerberosAuth.UDPConnectionLimit = udpConnLimit
+		}
 	}
 
 	// Environment variables take precedence over JSON settings
@@ -66,7 +80,7 @@ func GetKerberosSettings(settings backend.DataSourceInstanceSettings) (kerberosA
 		kerberosAuth.ConfigFilePath = envVal
 	}
 
-	return kerberosAuth, nil
+	return kerberosAuth, err
 }
 
 func Krb5ParseAuthCredentials(host string, port string, db string, user string, pass string, kerberosAuth KerberosAuth) string {
@@ -110,8 +124,6 @@ func Krb5ParseAuthCredentials(host string, port string, db string, user string, 
 	if kerberosAuth.EnableDNSLookupKDC != "" {
 		krb5DriverParams += "krb5-dnslookupkdc=" + kerberosAuth.EnableDNSLookupKDC + ";"
 	}
-
-	logger.Info(fmt.Sprintf("final krb connstr: %s", krb5DriverParams))
 
 	return krb5DriverParams
 }

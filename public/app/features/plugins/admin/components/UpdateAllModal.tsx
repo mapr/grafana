@@ -5,7 +5,7 @@ import { ConfirmModal } from '@grafana/ui';
 import { t } from 'app/core/internationalization';
 
 import { useInstall, useInstallStatus } from '../state/hooks';
-import { CatalogPlugin } from '../types';
+import { CatalogPlugin, PluginStatus } from '../types';
 
 import { UpdateModalBody } from './UpdateAllModalBody';
 const PLUGINS_UPDATE_ALL_INTERACTION_EVENT_NAME = 'plugins_update_all_clicked';
@@ -87,21 +87,26 @@ export const UpdateAllModal = ({ isOpen, onDismiss, isLoading, plugins }: Props)
 
   const onConfirm = async () => {
     if (!inProgress) {
-      reportInteraction(PLUGINS_UPDATE_ALL_INTERACTION_EVENT_NAME);
+      reportInteraction(PLUGINS_UPDATE_ALL_INTERACTION_EVENT_NAME, {
+        path: location.pathname,
+        count: selectedPlugins?.size,
+        creator_team: 'grafana_plugins_catalog',
+        schema_version: '1.0.0',
+      });
 
       setInProgress(true);
 
       // in cloud the requests need to be sync
-      if (config.pluginAdminExternalManageEnabled && config.featureToggles.managedPluginsInstall) {
+      if (config.pluginAdminExternalManageEnabled) {
         for (let plugin of plugins) {
           if (selectedPlugins?.has(plugin.id)) {
-            await install(plugin.id, plugin.latestVersion, true);
+            await install(plugin.id, plugin.latestVersion, PluginStatus.UPDATE);
           }
         }
       } else {
         plugins.forEach((plugin) => {
           if (selectedPlugins?.has(plugin.id)) {
-            install(plugin.id, plugin.latestVersion, true);
+            install(plugin.id, plugin.latestVersion, PluginStatus.UPDATE);
           }
         });
       }

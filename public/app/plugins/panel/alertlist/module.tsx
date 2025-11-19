@@ -4,7 +4,10 @@ import { OldFolderPicker } from 'app/core/components/Select/OldFolderPicker';
 import { DataSourcePicker } from 'app/features/datasources/components/picker/DataSourcePicker';
 import { PermissionLevelString } from 'app/types';
 
-import { GRAFANA_DATASOURCE_NAME } from '../../../features/alerting/unified/utils/datasource';
+import {
+  GRAFANA_DATASOURCE_NAME,
+  SUPPORTED_RULE_SOURCE_TYPES,
+} from '../../../features/alerting/unified/utils/datasource';
 
 import { GroupBy } from './GroupByWithLoading';
 import { UnifiedAlertListPanel } from './UnifiedAlertList';
@@ -112,7 +115,7 @@ const unifiedAlertList = new PanelPlugin<UnifiedAlertListOptions>(UnifiedAlertLi
           <Stack gap={1}>
             <DataSourcePicker
               {...props}
-              type={['prometheus', 'loki', 'grafana']}
+              type={SUPPORTED_RULE_SOURCE_TYPES}
               noDefault
               current={props.value}
               onChange={(ds: DataSourceInstanceSettings) => props.onChange(ds.name)}
@@ -129,7 +132,7 @@ const unifiedAlertList = new PanelPlugin<UnifiedAlertListOptions>(UnifiedAlertLi
       showIf: (options) => options.datasource === GRAFANA_DATASOURCE_NAME || !Boolean(options.datasource),
       path: 'folder',
       name: 'Folder',
-      description: 'Filter for alerts in the selected folder (only for Grafana alerts)',
+      description: 'Filter for alerts in the selected folder (for Grafana-managed alert rules only)',
       id: 'folder',
       defaultValue: null,
       editor: function RenderFolderPicker(props) {
@@ -146,6 +149,14 @@ const unifiedAlertList = new PanelPlugin<UnifiedAlertListOptions>(UnifiedAlertLi
           />
         );
       },
+      category: ['Filter'],
+    })
+    .addBooleanSwitch({
+      path: 'showInactiveAlerts',
+      name: 'Show alerts with 0 instances',
+      description:
+        'Include alert rules which have 0 (zero) instances. Because these rules have no instances, they remain hidden if the Alert instance label filter is configured.',
+      defaultValue: false,
       category: ['Filter'],
     })
     .addBooleanSwitch({

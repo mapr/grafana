@@ -1,8 +1,9 @@
 import { SceneGridItemLike, SceneGridLayout, SceneGridRow, SceneQueryRunner, VizPanel } from '@grafana/scenes';
 
 import { findVizPanelByKey } from '../../utils/utils';
-import { DashboardGridItem } from '../DashboardGridItem';
+import { DashboardScene } from '../DashboardScene';
 
+import { DashboardGridItem } from './DashboardGridItem';
 import { DefaultGridLayoutManager } from './DefaultGridLayoutManager';
 
 describe('DefaultGridLayoutManager', () => {
@@ -25,36 +26,19 @@ describe('DefaultGridLayoutManager', () => {
     });
   });
 
-  describe('getNextPanelId', () => {
-    it('should get next panel id in a simple 3 panel layout', () => {
-      const { manager } = setup();
-      const id = manager.getNextPanelId();
-
-      expect(id).toBe(4);
-    });
-
-    it('should return 1 if no panels are found', () => {
-      const { manager } = setup({ gridItems: [] });
-      const id = manager.getNextPanelId();
-
-      expect(id).toBe(1);
-    });
-  });
-
   describe('addPanel', () => {
     it('Should add a new panel', () => {
       const { manager } = setup();
 
       const vizPanel = new VizPanel({
         title: 'Panel Title',
-        key: 'panel-55',
         pluginId: 'timeseries',
         $data: new SceneQueryRunner({ key: 'data-query-runner', queries: [{ refId: 'A' }] }),
       });
 
       manager.addPanel(vizPanel);
 
-      const panel = findVizPanelByKey(manager, 'panel-55')!;
+      const panel = findVizPanelByKey(manager, vizPanel.state.key)!;
       const gridItem = panel.parent as DashboardGridItem;
 
       expect(panel).toBeDefined();
@@ -198,6 +182,7 @@ describe('DefaultGridLayoutManager', () => {
       const newGridItem = grid.state.children[grid.state.children.length - 1] as DashboardGridItem;
 
       expect(newGridItem.state.height).toBe(1);
+      expect(newGridItem.state.itemHeight).toBe(1);
     });
 
     it('Should duplicate a repeated panel', () => {
@@ -224,6 +209,22 @@ describe('DefaultGridLayoutManager', () => {
       manager.duplicatePanel(vizPanel);
 
       expect(gridRow.state.children.length).toBe(3);
+    });
+
+    it('Should clone the layout correctly', () => {
+      const { manager } = setup();
+      const clone = manager.cloneLayout('foo', true) as DefaultGridLayoutManager;
+      const panelA = findVizPanelByKey(clone, 'foo/grid-item-0/panel-0');
+      expect(panelA?.state.title).toBe('Panel A');
+
+      const panelB = findVizPanelByKey(clone, 'foo/grid-item-1/panel-1');
+      expect(panelB?.state.title).toBe('Panel B');
+
+      const panelC = findVizPanelByKey(clone, 'foo/panel-2/grid-item-3/panel-3');
+      expect(panelC?.state.title).toBe('Panel C');
+
+      const panelD = findVizPanelByKey(clone, 'foo/panel-2/grid-item-4/panel-4');
+      expect(panelD?.state.title).toBe('Panel D');
     });
   });
 });
@@ -276,6 +277,8 @@ function setup(options?: TestOptions) {
 
   const grid = new SceneGridLayout({ children: gridItems });
   const manager = new DefaultGridLayoutManager({ grid: grid });
+
+  new DashboardScene({ body: manager });
 
   return { manager, grid };
 }

@@ -68,6 +68,7 @@ func TestBuilder_EqualResults_Basic(t *testing.T) {
 		{
 			ID:    dashIds[0],
 			Title: "A",
+			OrgID: 1,
 			Slug:  "a",
 			Term:  "templated",
 		},
@@ -333,6 +334,7 @@ func TestBuilder_RBAC(t *testing.T) {
 						"",
 						tc.features,
 						recursiveQueriesAreSupported,
+						store.GetDialect(),
 					),
 				},
 				Dialect:  store.GetDialect(),

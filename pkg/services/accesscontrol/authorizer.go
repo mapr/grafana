@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/grafana/authlib/claims"
+	claims "github.com/grafana/authlib/types"
 	"github.com/grafana/grafana/pkg/apimachinery/identity"
 	"github.com/grafana/grafana/pkg/apimachinery/utils"
 )
@@ -59,6 +59,8 @@ func NewLegacyAccessClient(ac AccessControl, opts ...ResourceAuthorizerOptions) 
 			utils.VerbPatch:            fmt.Sprintf("%s:write", r),
 			utils.VerbDelete:           fmt.Sprintf("%s:delete", r),
 			utils.VerbDeleteCollection: fmt.Sprintf("%s:delete", r),
+			utils.VerbGetPermissions:   fmt.Sprintf("%s.permissions:read", r),
+			utils.VerbSetPermissions:   fmt.Sprintf("%s.permissions:write", r),
 		}
 	}
 
@@ -82,35 +84,34 @@ type LegacyAccessClient struct {
 	opts map[string]ResourceAuthorizerOptions
 }
 
-// HasAccess implements claims.AccessClient.
-func (c *LegacyAccessClient) HasAccess(ctx context.Context, id claims.AuthInfo, req claims.AccessRequest) (bool, error) {
+func (c *LegacyAccessClient) Check(ctx context.Context, id claims.AuthInfo, req claims.CheckRequest) (claims.CheckResponse, error) {
 	ident, ok := id.(identity.Requester)
 	if !ok {
-		return false, errors.New("expected identity.Requester for legacy access control")
+		return claims.CheckResponse{}, errors.New("expected identity.Requester for legacy access control")
 	}
 
 	opts, ok := c.opts[req.Resource]
 	if !ok {
 		// For now we fallback to grafana admin if no options are found for resource.
 		if ident.GetIsGrafanaAdmin() {
-			return true, nil
+			return claims.CheckResponse{Allowed: true}, nil
 		}
-		return false, nil
+		return claims.CheckResponse{}, nil
 	}
 
 	skip := opts.Unchecked[req.Verb]
 	if skip {
-		return true, nil
+		return claims.CheckResponse{Allowed: true}, nil
 	}
 
 	action, ok := opts.Mapping[req.Verb]
 	if !ok {
-		return false, fmt.Errorf("missing action for %s %s", req.Verb, req.Resource)
+		return claims.CheckResponse{}, fmt.Errorf("missing action for %s %s", req.Verb, req.Resource)
 	}
 
 	ns, err := claims.ParseNamespace(req.Namespace)
 	if err != nil {
-		return false, err
+		return claims.CheckResponse{}, err
 	}
 
 	var eval Evaluator
@@ -118,7 +119,7 @@ func (c *LegacyAccessClient) HasAccess(ctx context.Context, id claims.AuthInfo, 
 		if opts.Resolver != nil {
 			scopes, err := opts.Resolver.Resolve(ctx, ns, req.Name)
 			if err != nil {
-				return false, err
+				return claims.CheckResponse{}, err
 			}
 			eval = EvalPermission(action, scopes...)
 		} else {
@@ -129,14 +130,18 @@ func (c *LegacyAccessClient) HasAccess(ctx context.Context, id claims.AuthInfo, 
 		eval = EvalPermission(action)
 	} else {
 		// Assuming that all non list request should have a valid name
-		return false, fmt.Errorf("unhandled authorization: %s %s", req.Group, req.Verb)
+		return claims.CheckResponse{}, fmt.Errorf("unhandled authorization: %s %s", req.Group, req.Verb)
 	}
 
-	return c.ac.Evaluate(ctx, ident, eval)
+	allowed, err := c.ac.Evaluate(ctx, ident, eval)
+	if err != nil {
+		return claims.CheckResponse{}, err
+	}
+
+	return claims.CheckResponse{Allowed: allowed}, nil
 }
 
-// Compile implements claims.AccessClient.
-func (c *LegacyAccessClient) Compile(ctx context.Context, id claims.AuthInfo, req claims.AccessRequest) (claims.AccessChecker, error) {
+func (c *LegacyAccessClient) Compile(ctx context.Context, id claims.AuthInfo, req claims.ListRequest) (claims.ItemChecker, error) {
 	ident, ok := id.(identity.Requester)
 	if !ok {
 		return nil, errors.New("expected identity.Requester for legacy access control")
@@ -147,13 +152,13 @@ func (c *LegacyAccessClient) Compile(ctx context.Context, id claims.AuthInfo, re
 		return nil, fmt.Errorf("unsupported resource: %s", req.Resource)
 	}
 
-	action, ok := opts.Mapping[req.Verb]
+	action, ok := opts.Mapping[utils.VerbList]
 	if !ok {
-		return nil, fmt.Errorf("missing action for %s %s", req.Verb, req.Resource)
+		return nil, fmt.Errorf("missing action for %s %s", utils.VerbList, req.Resource)
 	}
 
 	check := Checker(ident, action)
-	return func(_, name string) bool {
+	return func(name, _ string) bool {
 		return check(fmt.Sprintf("%s:%s:%s", opts.Resource, opts.Attr, name))
 	}, nil
 }

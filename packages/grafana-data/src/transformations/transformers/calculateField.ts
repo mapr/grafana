@@ -128,19 +128,23 @@ export const calculateFieldTransformer: DataTransformerInfo<CalculateFieldTransf
     },
   },
   operator: (options, ctx) => (outerSource) => {
-    const operator =
-      options && options.timeSeries !== false
-        ? ensureColumnsTransformer.operator(null, ctx)
-        : noopTransformer.operator({}, ctx);
+    const mode = options.mode ?? CalculateFieldMode.ReduceRow;
 
-    if (options.alias != null) {
-      options.alias = ctx.interpolate(options.alias);
-    }
+    const asTimeSeries = options.timeSeries !== false;
+
+    const right = options.binary?.right;
+    const rightVal = typeof right === 'string' ? right : typeof right === 'object' ? right.fixed : undefined;
+    const isBinaryFixed = mode === CalculateFieldMode.BinaryOperation && !Number.isNaN(Number(rightVal));
+
+    const needsSingleFrame = asTimeSeries && !isBinaryFixed;
+
+    const operator = needsSingleFrame
+      ? ensureColumnsTransformer.operator(null, ctx)
+      : noopTransformer.operator({}, ctx);
 
     return outerSource.pipe(
       operator,
       map((data) => {
-        const mode = options.mode ?? CalculateFieldMode.ReduceRow;
         let creator: ValuesCreator | undefined = undefined;
 
         switch (mode) {
@@ -172,15 +176,16 @@ export const calculateFieldTransformer: DataTransformerInfo<CalculateFieldTransf
             if (binaryOptions.left?.matcher?.id && binaryOptions.left?.matcher.id === FieldMatcherID.byType) {
               const fieldType = binaryOptions.left.matcher.options;
               const operator = binaryOperators.getIfExists(binaryOptions.operator);
-              return data.map((frame) => {
+              const outFrames = data.map((frame) => {
                 const { timeField } = getTimeField(frame);
                 const newFields: Field[] = [];
+                let didAddNewFields = false;
                 if (timeField && options.timeSeries !== false) {
                   newFields.push(timeField);
                 }
                 // For each field of type match, apply operator
                 frame.fields.map((field, index) => {
-                  if (!options.replaceFields) {
+                  if (!options.replaceFields && !newFields.includes(field)) {
                     newFields.push(field);
                   }
                   if (field.type === fieldType) {
@@ -205,11 +210,20 @@ export const calculateFieldTransformer: DataTransformerInfo<CalculateFieldTransf
                       name: `${field.name} ${options.binary?.operator ?? ''} ${options.binary?.right.matcher?.options ?? options.binary?.right.fixed}`,
                       values: arr,
                     };
+                    delete newField.state;
                     newFields.push(newField);
+                    didAddNewFields = true;
                   }
                 });
+
+                if (options.replaceFields && !didAddNewFields) {
+                  return undefined;
+                }
+
                 return { ...frame, fields: newFields };
               });
+
+              return outFrames.filter((frame) => frame != null);
             } else {
               creator = getBinaryCreator(defaults(binaryOptions, defaultBinaryOptions), data, ctx);
             }
@@ -242,10 +256,14 @@ export const calculateFieldTransformer: DataTransformerInfo<CalculateFieldTransf
           return data;
         }
 
-        return data.map((frame) => {
+        const outFrames = data.map((frame) => {
           // delegate field creation to the specific function
           const values = creator!(frame);
           if (!values) {
+            // if nothing was done to frame, omit it when replacing fields
+            if (options.replaceFields) {
+              return undefined;
+            }
             return frame;
           }
 
@@ -273,6 +291,7 @@ export const calculateFieldTransformer: DataTransformerInfo<CalculateFieldTransf
             fields,
           };
         });
+        return outFrames.filter((frame) => frame != null);
       })
     );
   },
@@ -338,8 +357,11 @@ function getTrailingWindowValues(frame: DataFrame, reducer: ReducerID, selectedF
         sum += currentValue;
 
         if (i > window - 1) {
-          sum -= selectedField.values[i - window];
-          count--;
+          const value = selectedField.values[i - window];
+          if (value != null) {
+            sum -= value;
+            count--;
+          }
         }
       }
       vals.push(count === 0 ? 0 : sum / count);
@@ -551,7 +573,8 @@ function findFieldValuesWithNameOrConstant(
   }
 
   if (value.matcher && value.matcher.id === FieldMatcherID.byName) {
-    const name = ctx.interpolate(value.matcher.options ?? '');
+    const name = value.matcher.options ?? '';
+
     for (const f of frame.fields) {
       if (name === getFieldDisplayName(f, frame, allFrames)) {
         if (f.type === FieldType.boolean) {
@@ -562,7 +585,7 @@ function findFieldValuesWithNameOrConstant(
     }
   }
 
-  const v = parseFloat(value.fixed ?? ctx.interpolate(value.matcher?.options ?? ''));
+  const v = parseFloat(value.fixed ?? value.matcher?.options ?? '');
   if (!isNaN(v)) {
     return new Array(frame.length).fill(v);
   }

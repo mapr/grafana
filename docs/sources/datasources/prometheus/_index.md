@@ -111,9 +111,9 @@ For more information on how to query other Prometheus-compatible projects from G
 You can define and configure the data source in YAML files as part of Grafana's provisioning system.
 For more information about provisioning, and for available configuration options, refer to [Provisioning Grafana](ref:provisioning-data-sources).
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 Once you have provisioned a data source you cannot edit it.
-{{% /admonition %}}
+{{< /admonition >}}
 
 ### Provisioning example
 
@@ -163,21 +163,7 @@ For details about these metrics, refer to [Internal Grafana metrics](ref:set-up-
 
 ## Amazon Managed Service for Prometheus
 
-The Prometheus data source works with Amazon Managed Service for Prometheus.
-
-If you use an AWS Identity and Access Management (IAM) policy to control access to your Amazon Elasticsearch Service domain, you must use AWS Signature Version 4 (AWS SigV4) to sign all requests to that domain.
-
-For details on AWS SigV4, refer to the [AWS documentation](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
-
-### AWS Signature Version 4 authentication
-
-{{% admonition type="note" %}}
-Available in Grafana v7.3.5 and higher.
-{{% /admonition %}}
-
-To connect the Prometheus data source to Amazon Managed Service for Prometheus using SigV4 authentication, refer to the AWS guide to [Set up Grafana open source or Grafana Enterprise for use with AMP](https://docs.aws.amazon.com/prometheus/latest/userguide/AMP-onboard-query-standalone-grafana.html).
-
-If you run Grafana in an Amazon EKS cluster, follow the AWS guide to [Query using Grafana running in an Amazon EKS cluster](https://docs.aws.amazon.com/prometheus/latest/userguide/AMP-onboard-query-grafana-7.3.html).
+The Prometheus data source with Amazon Managed Service for Prometheus is deprecated. Please use the [Amazon Managed service for Prometheus data source](https://grafana.com/grafana/plugins/grafana-amazonprometheus-datasource/). Migrations steps are detailed in the link.
 
 ## Azure authentication settings
 
@@ -191,19 +177,19 @@ Add the following setting in the **[auth]** section :
 azure_auth_enabled = true
 ```
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 If you are using Azure authentication settings do not enable `Forward OAuth identity`. Both use the same HTTP authorization headers. Azure settings will get overwritten by the Oauth token.
-{{% /admonition %}}
+{{< /admonition >}}
 
 ## Exemplars
 
 Exemplars associate higher-cardinality metadata from a specific event with traditional time series data. See [Introduction to exemplars](ref:exemplars) in Prometheus documentation for detailed information on how they work.
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 Available in Prometheus v2.26 and higher with Grafana v7.4 and higher.
-{{% /admonition %}}
+{{< /admonition >}}
 
-Grafana 7.4 and higher can show exemplars data alongside a metric both in Explore and in Dashboards.
+Grafana can show exemplars data alongside a metric both in Explore and in Dashboards.
 
 {{< figure src="/static/img/docs/v74/exemplars.png" class="docs-image--no-shadow" caption="Screenshot showing the detail window of an Exemplar" >}}
 

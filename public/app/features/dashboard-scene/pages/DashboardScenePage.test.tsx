@@ -5,8 +5,9 @@ import { useParams } from 'react-router-dom-v5-compat';
 import { TestProvider } from 'test/helpers/TestProvider';
 import { getGrafanaContextMock } from 'test/mocks/getGrafanaContextMock';
 
-import { PanelProps } from '@grafana/data';
+import { PanelProps, systemDateFormats, SystemDateFormatsState } from '@grafana/data';
 import { getPanelPlugin } from '@grafana/data/test/__mocks__/pluginMocks';
+import { selectors } from '@grafana/e2e-selectors';
 import {
   LocationServiceProvider,
   config,
@@ -20,10 +21,10 @@ import { getRouteComponentProps } from 'app/core/navigation/__mocks__/routeProps
 import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
 import store from 'app/core/store';
 import { DashboardLoaderSrv, setDashboardLoaderSrv } from 'app/features/dashboard/services/DashboardLoaderSrv';
-import { DASHBOARD_FROM_LS_KEY } from 'app/features/dashboard/state/initDashboard';
-import { DashboardRoutes } from 'app/types';
+import { DASHBOARD_FROM_LS_KEY, DashboardRoutes } from 'app/types';
 
 import { dashboardSceneGraph } from '../utils/dashboardSceneGraph';
+import { setupLoadDashboardMockReject, setupLoadDashboardRuntimeErrorMock } from '../utils/test-utils';
 
 import { DashboardScenePage, Props } from './DashboardScenePage';
 import { getDashboardScenePageStateManager } from './DashboardScenePageStateManager';
@@ -186,7 +187,7 @@ describe('DashboardScenePage', () => {
     getDashboardScenePageStateManager().clearDashboardCache();
     loadDashboardMock.mockResolvedValue({ dashboard: updatedDashboard, meta: {} });
 
-    props.history.location.state = { routeReloadCounter: 1 };
+    props.location.state = { routeReloadCounter: 1 };
 
     rerender(props);
 
@@ -228,6 +229,42 @@ describe('DashboardScenePage', () => {
     expect(await screen.findByTitle('Panel B')).toBeInTheDocument();
   });
 
+  describe('absolute time range', () => {
+    it('should render with absolute time range when use_browser_locale is true', async () => {
+      locationService.push('/d/my-dash-uid?from=2025-03-11T07:09:37.253Z&to=2025-03-12T07:09:37.253Z');
+      systemDateFormats.update({
+        fullDate: 'YYYY-MM-DD HH:mm:ss.SSS',
+        interval: {} as SystemDateFormatsState['interval'],
+        useBrowserLocale: true,
+      });
+      setup();
+
+      await waitForDashboardToRenderWithTimeRange({
+        from: '03/11/2025, 02:09:37 AM',
+        to: '03/12/2025, 02:09:37 AM',
+      });
+    });
+
+    it('should render correct time range when use_browser_locale is true and time range is other than default system date format', async () => {
+      locationService.push('/d/my-dash-uid?from=2025-03-11T07:09:37.253Z&to=2025-03-12T07:09:37.253Z');
+      // mocking navigator.languages to return 'de'
+      // this property configured in the browser settings
+      Object.defineProperty(navigator, 'languages', { value: ['de'] });
+      systemDateFormats.update({
+        // left fullDate empty to show that this should be overridden by the browser locale
+        fullDate: '',
+        interval: {} as SystemDateFormatsState['interval'],
+        useBrowserLocale: true,
+      });
+      setup();
+
+      await waitForDashboardToRenderWithTimeRange({
+        from: '11.03.2025, 02:09:37',
+        to: '12.03.2025, 02:09:37',
+      });
+    });
+  });
+
   describe('empty state', () => {
     it('Shows empty state when dashboard is empty', async () => {
       loadDashboardMock.mockResolvedValue({ dashboard: { uid: 'my-dash-uid', panels: [] }, meta: {} });
@@ -244,7 +281,7 @@ describe('DashboardScenePage', () => {
       expect(await screen.queryByText('Start your new dashboard by adding a visualization')).not.toBeInTheDocument();
 
       // Hacking a bit, accessing private cache property to get access to the underlying DashboardScene object
-      const dashboardScenesCache = getDashboardScenePageStateManager()['cache'];
+      const dashboardScenesCache = getDashboardScenePageStateManager().getCache();
       const dashboard = dashboardScenesCache['my-dash-uid'];
       const panels = dashboardSceneGraph.getVizPanels(dashboard);
 
@@ -265,20 +302,6 @@ describe('DashboardScenePage', () => {
       expect(await screen.findByTitle('Panel Added')).toBeInTheDocument();
       expect(await screen.queryByText('Start your new dashboard by adding a visualization')).not.toBeInTheDocument();
     });
-  });
-
-  it('is in edit mode when coming from explore to an existing dashboard', async () => {
-    store.setObject(DASHBOARD_FROM_LS_KEY, { dashboard: simpleDashboard, meta: { slug: '123' } });
-
-    setup();
-
-    await waitForDashboardToRender();
-
-    const panelAMenu = await screen.findByLabelText('Menu for panel with title Panel A');
-    expect(panelAMenu).toBeInTheDocument();
-    await userEvent.click(panelAMenu);
-    const editMenuItem = await screen.findAllByText('Edit');
-    expect(editMenuItem).toHaveLength(1);
   });
 
   describe('home page', () => {
@@ -313,6 +336,64 @@ describe('DashboardScenePage', () => {
       await waitFor(() => expect(screen.queryByText('Last 6 hours')).toBeInTheDocument());
     });
   });
+
+  describe('errors rendering', () => {
+    it('should render dashboard not found notice when dashboard... not found', async () => {
+      setupLoadDashboardMockReject({
+        status: 404,
+        statusText: 'Not Found',
+        data: {
+          message: 'Dashboard not found',
+        },
+        config: {
+          method: 'GET',
+          url: 'api/dashboards/uid/adfjq9edwm0hsdsa',
+          retry: 0,
+          headers: {
+            'X-Grafana-Org-Id': 1,
+          },
+          hideFromInspector: true,
+        },
+        isHandled: true,
+      });
+
+      setup();
+
+      expect(await screen.findByTestId(selectors.components.EntityNotFound.container)).toBeInTheDocument();
+    });
+    it('should render error alert for backend errors', async () => {
+      setupLoadDashboardMockReject({
+        status: 500,
+        statusText: 'internal server error',
+        data: {
+          message: 'Internal server error',
+        },
+        config: {
+          method: 'GET',
+          url: 'api/dashboards/uid/adfjq9edwm0hsdsa',
+          retry: 0,
+          headers: {
+            'X-Grafana-Org-Id': 1,
+          },
+          hideFromInspector: true,
+        },
+        isHandled: true,
+      });
+
+      setup();
+
+      expect(await screen.findByTestId('dashboard-page-error')).toBeInTheDocument();
+      expect(await screen.findByTestId('dashboard-page-error')).toHaveTextContent('Internal server error');
+    });
+    it('should render error alert for runtime errors', async () => {
+      setupLoadDashboardRuntimeErrorMock();
+
+      setup();
+
+      expect(await screen.findByTestId('dashboard-page-error')).toBeInTheDocument();
+      expect(await screen.findByTestId('dashboard-page-error')).toHaveTextContent('Runtime error');
+    });
+  });
 });
 
 interface VizOptions {
@@ -326,5 +407,10 @@ function CustomVizPanel(props: VizProps) {
 
 async function waitForDashboardToRender() {
   expect(await screen.findByText('Last 6 hours')).toBeInTheDocument();
+  expect(await screen.findByTitle('Panel A')).toBeInTheDocument();
+}
+
+async function waitForDashboardToRenderWithTimeRange(timeRange: { from: string; to: string }) {
+  expect(await screen.findByText(`${timeRange.from} to ${timeRange.to}`)).toBeInTheDocument();
   expect(await screen.findByTitle('Panel A')).toBeInTheDocument();
 }

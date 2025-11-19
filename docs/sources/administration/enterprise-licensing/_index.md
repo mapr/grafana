@@ -41,19 +41,24 @@ To download your Grafana Enterprise license:
 
 1. Sign in to your [Grafana Cloud](/) account.
 1. Go to **My Account** and select an organization from the drop-down menu at the top left of the page. On the Overview page for each organization, you can see a section for Grafana Enterprise licenses. Click **Details** next to a license.
+1. If the license shows "License not configured" or if the URL is listed as "-", you need to update the details. This requires the Admin role.
+   1. Click **Update** next to License Details. _If the **Update** button isn't visible, contact the Grafana account team._
+   1. Enter the URL. It must match the effective [`root_url`](https://grafana.com/docs/grafana/<GRAFANA_VERSION>/setup-grafana/configure-grafana/#root_url) configuration setting (including the trailing slash) of the Grafana Enterprise instance. It should be the URL that users type in their browsers to access the frontend, not the node hostname. The URL must start with "https://", and it can't be `localhost` or contain wildcards.
+   1. (Optional) Edit the license name. This name is only used for display purposes.
+   1. Click **Save**.
 1. At the bottom of the license details page, select **Download token** to download the `license.jwt` file that contains your license.
 
 ### Step 2. Add your license to a Grafana instance
 
 You must install a Grafana Enterprise build to use the enterprise features, which you can [download](https://grafana.com/grafana/download?edition=enterprise).
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 
 If you already use Grafana OSS, you can replace it with the same version of Grafana Enterprise.
 Ensure that you back up the configuration and database before proceeding.
 For more information, refer to [Back up Grafana](https://grafana.com/docs/grafana/<GRAFANA_VERSION>/administration/back-up-grafana/).
 
-{{% /admonition %}}
+{{< /admonition >}}
 
 There is more than one way to add the license to a Grafana instance:
 
@@ -234,7 +239,7 @@ To determine the number of active users:
 
 A tiered license defines dashboard viewers, and dashboard editors and administrators, as two distinct user types that each have their own user limit.
 
-As of Grafana Enterprise version 9.0, Grafana only counts and enforces the _total_ number of active users in your Grafana instance. For example, if you purchase 150 active users, you can have 20 admins, 70 editors, and 60 viewers, or you can have 150 admins. Grafana will enforce the total number of active users even if you use a license that grants a specific number of admins or editors and a certain number of viewers. This is a more permissive policy than before, which gives you the flexibility to change users' roles.
+Grafana only counts and enforces the _total_ number of active users in your Grafana instance. For example, if you purchase 150 active users, you can have 20 admins, 70 editors, and 60 viewers, or you can have 150 admins. Grafana will enforce the total number of active users even if you use a license that grants a specific number of admins or editors and a certain number of viewers. This is a more permissive policy than before, which gives you the flexibility to change users' roles.
 
 If you are running a pre-9.0 version of Grafana Enterprise, please refer to the documentation for that version to learn more about license enforcement in your current version.
 
@@ -245,6 +250,14 @@ Your license is controlled by the following rules:
 **License expiration date:** The license includes an expiration date, which is the date when a license becomes inactive.
 
 As the license expiration date approaches, you will see a banner in Grafana that encourages you to renew. To learn about how to renew your license and what happens in Grafana when a license expires, refer to [License expiration](#license-expiration).
+
+**License token expiration:** Grafana Enterprise requires a valid token, which is automatically renewed.
+
+A license token is a digital key that activates your license. By default, the license token is renewed every 24 hours by calling the Grafana API. Short-lived license tokens enable more frequent validation that licenses are compliant, and allow for more frequent license updates - for example, adding users or invalidating a compromised license.
+
+To view the details of your license token, sign in to Grafana Enterprise as a Server Administrator and visit **Administration** > **General** > **Statistics and licensing**. Token details are in the Token section under License Details.
+
+License token renewal requires internet access, and requires that the `auto_refresh_license` [configuration setting](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/enterprise-configuration/#auto_refresh_license) be set to `true`. If your Grafana Enterprise instance cannot connect to the internet, contact your Grafana Labs account team for additional options for token renewal and license audit.
 
 **Grafana License URL:** Your license does not work with an instance of Grafana with a different root URL.
 
@@ -264,7 +277,7 @@ For instructions about how to activate your license after it is updated, refer t
 
 ## Usage billing
 
-Standard Grafana Enterprise licenses include a certain number of seats that can be used, and prevent more users logging into Grafana than have been licensed. This makes sense if you prefer a predictable bill. It can however be a problem if you anticipate uneven usage patterns over time or when it's critical that no user ever be prevented from logging into Grafana due to capacity constraints.
+Standard Grafana Enterprise licenses include a certain number of seats that can be used, and prevent more users logging into Grafana than have been licensed. This makes sense if you prefer a predictable bill. It can however be a problem if you anticipate uneven usage patterns over time or when it's critical that no user ever be prevented from logging in to Grafana due to capacity constraints.
 
 For those use-cases we support usage-based billing, where your license includes a certain number of included users and you are billed on a monthly basis for any excess active users during the month.
 

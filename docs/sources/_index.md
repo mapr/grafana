@@ -47,7 +47,7 @@ cards:
       height: 24
     - title: Dashboards
       href: ./dashboards/
-      description: Query, transform, visualize, and understand your data no matter where it’s stored.
+      description: Query, transform, visualize, and understand your data no matter where it's stored.
       height: 24
     - title: Panels and Visualizations
       href: ./panels-visualizations/
@@ -85,6 +85,10 @@ _Grafana Open Source Software (OSS)_ enables you to query, visualize, alert on, 
 
 _Grafana Enterprise_ is a commercial edition of Grafana that includes exclusive data source plugins and additional features not found in the open source version. You also get 24x7x365 support and training from the core Grafana team.
 To learn more about these features, refer to [Enterprise features](https://grafana.com/docs/grafana/<GRAFANA_VERSION>/introduction/grafana-enterprise/#enterprise-features-in-grafana-cloud).
+
+## Guidance and help
+
+{{< guide name="whichgrafana" title="Which Grafana is right for you?" text="Answer a few questions and Grot will help you decide." >}}
 
 ## Learn
 

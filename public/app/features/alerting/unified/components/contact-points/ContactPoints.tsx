@@ -14,7 +14,7 @@ import {
   Text,
 } from '@grafana/ui';
 import { contextSrv } from 'app/core/core';
-import { t, Trans } from 'app/core/internationalization';
+import { Trans, t } from 'app/core/internationalization';
 import { shouldUseK8sApi } from 'app/features/alerting/unified/utils/k8s/utils';
 import { makeAMLink, stringifyErrorLike } from 'app/features/alerting/unified/utils/misc';
 import { AccessControlAction } from 'app/types';
@@ -24,6 +24,8 @@ import { usePagination } from '../../hooks/usePagination';
 import { useURLSearchParams } from '../../hooks/useURLSearchParams';
 import { useAlertmanager } from '../../state/AlertmanagerContext';
 import { GRAFANA_RULES_SOURCE_NAME } from '../../utils/datasource';
+import { withPageErrorBoundary } from '../../withPageErrorBoundary';
+import { AlertmanagerPageWrapper } from '../AlertingPageWrapper';
 import { GrafanaAlertmanagerDeliveryWarning } from '../GrafanaAlertmanagerDeliveryWarning';
 
 import { ContactPoint } from './ContactPoint';
@@ -126,8 +128,11 @@ const ContactPointsTab = () => {
           )}
         </Stack>
       </Stack>
-      {error && <Alert title="Failed to fetch contact points">{stringifyErrorLike(error)}</Alert>}
-      {!error && <ContactPointsList contactPoints={contactPoints} search={search} pageSize={DEFAULT_PAGE_SIZE} />}
+      {error ? (
+        <Alert title="Failed to fetch contact points">{stringifyErrorLike(error)}</Alert>
+      ) : (
+        <ContactPointsList contactPoints={contactPoints} search={search} pageSize={DEFAULT_PAGE_SIZE} />
+      )}
       {/* Grafana manager Alertmanager does not support global config, Mimir and Cortex do */}
       {!isGrafanaManagedAlertmanager && <GlobalConfigAlert alertManagerName={selectedAlertmanager!} />}
       {ExportDrawer}
@@ -153,7 +158,7 @@ const NotificationTemplatesTab = () => {
             href="/alerting/notifications/templates/new"
             disabled={!createTemplateAllowed}
           >
-            Add notification template
+            Add notification template group
           </LinkButton>
         )}
       </Stack>
@@ -162,31 +167,39 @@ const NotificationTemplatesTab = () => {
   );
 };
 
-const useTabQueryParam = () => {
+const useTabQueryParam = (defaultTab: ActiveTab) => {
   const [queryParams, setQueryParams] = useURLSearchParams();
   const param = useMemo(() => {
     const queryParam = queryParams.get('tab');
 
     if (!queryParam || !Object.values(ActiveTab).map(String).includes(queryParam)) {
-      return ActiveTab.ContactPoints;
+      return defaultTab;
     }
 
-    return queryParam || ActiveTab.ContactPoints;
-  }, [queryParams]);
+    return queryParam || defaultTab;
+  }, [defaultTab, queryParams]);
 
   const setParam = (tab: ActiveTab) => setQueryParams({ tab });
-
   return [param, setParam] as const;
 };
 
-const ContactPointsPageContents = () => {
+export const ContactPointsPageContents = () => {
   const { selectedAlertmanager } = useAlertmanager();
-  const [activeTab, setActiveTab] = useTabQueryParam();
+  const [, showContactPointsTab] = useAlertmanagerAbility(AlertmanagerAction.ViewContactPoint);
+  const [, showTemplatesTab] = useAlertmanagerAbility(AlertmanagerAction.ViewNotificationTemplate);
+
+  // Depending on permissions, user may not have access to all tabs,
+  // but we can default to picking the first one that they definitely _do_ have access to
+  const defaultTab = [
+    showContactPointsTab && ActiveTab.ContactPoints,
+    showTemplatesTab && ActiveTab.NotificationTemplates,
+  ].filter((tab) => !!tab)[0];
+
+  const [activeTab, setActiveTab] = useTabQueryParam(defaultTab);
 
   const { contactPoints } = useContactPointsWithStatus({
     alertmanager: selectedAlertmanager!,
   });
-  const [_, showTemplatesTab] = useAlertmanagerAbility(AlertmanagerAction.ViewNotificationTemplate);
 
   const showingContactPoints = activeTab === ActiveTab.ContactPoints;
   const showNotificationTemplates = activeTab === ActiveTab.NotificationTemplates;
@@ -196,12 +209,14 @@ const ContactPointsPageContents = () => {
       <GrafanaAlertmanagerDeliveryWarning currentAlertmanager={selectedAlertmanager!} />
       <Stack direction="column">
         <TabsBar>
-          <Tab
-            label="Contact Points"
-            active={showingContactPoints}
-            counter={contactPoints.length}
-            onChangeTab={() => setActiveTab(ActiveTab.ContactPoints)}
-          />
+          {showContactPointsTab && (
+            <Tab
+              label="Contact Points"
+              active={showingContactPoints}
+              counter={contactPoints.length}
+              onChangeTab={() => setActiveTab(ActiveTab.ContactPoints)}
+            />
+          )}
           {showTemplatesTab && (
             <Tab
               label="Notification Templates"
@@ -231,6 +246,11 @@ const ContactPointsList = ({ contactPoints, search, pageSize = DEFAULT_PAGE_SIZE
   const searchResults = useContactPointsSearch(contactPoints, search);
   const { page, pageItems, numberOfPages, onPageChange } = usePagination(searchResults, 1, pageSize);
 
+  if (pageItems.length === 0) {
+    const emptyMessage = t('alerting.contact-points.no-contact-points-found', 'No contact points found');
+    return <EmptyState variant="not-found" message={emptyMessage} />;
+  }
+
   return (
     <>
       {pageItems.map((contactPoint, index) => {
@@ -242,4 +262,12 @@ const ContactPointsList = ({ contactPoints, search, pageSize = DEFAULT_PAGE_SIZE
   );
 };
 
-export default ContactPointsPageContents;
+function ContactPointsPage() {
+  return (
+    <AlertmanagerPageWrapper navId="receivers" accessType="notification">
+      <ContactPointsPageContents />
+    </AlertmanagerPageWrapper>
+  );
+}
+
+export default withPageErrorBoundary(ContactPointsPage);

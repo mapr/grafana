@@ -15,6 +15,7 @@ import {
   Switch,
   TagsInput,
   TextArea,
+  WeekStart,
 } from '@grafana/ui';
 import { Page } from 'app/core/components/Page/Page';
 import { FolderPicker } from 'app/core/components/Select/FolderPicker';
@@ -25,7 +26,7 @@ import { GenAIDashTitleButton } from 'app/features/dashboard/components/GenAI/Ge
 
 import { updateNavModel } from '../pages/utils';
 import { DashboardScene } from '../scene/DashboardScene';
-import { NavToolbarActions, ToolbarActions } from '../scene/NavToolbarActions';
+import { NavToolbarActions } from '../scene/NavToolbarActions';
 import { dashboardSceneGraph } from '../utils/dashboardSceneGraph';
 import { getDashboardSceneFor } from '../utils/utils';
 
@@ -122,7 +123,7 @@ export class GeneralSettingsEditView
     });
   };
 
-  public onWeekStartChange = (value: string) => {
+  public onWeekStartChange = (value?: WeekStart) => {
     this.getTimeRange().setState({ weekStart: value });
   };
 
@@ -175,16 +176,10 @@ export class GeneralSettingsEditView
     const { intervals } = model.getRefreshPicker().useState();
     const { hideTimeControls } = model.getDashboardControls().useState();
     const { enabled: liveNow } = model.getLiveNowTimer().useState();
-    const isSingleTopNav = config.featureToggles.singleTopNav;
 
     return (
-      <Page
-        navModel={navModel}
-        pageNav={pageNav}
-        layout={PageLayoutType.Standard}
-        toolbar={isSingleTopNav ? <ToolbarActions dashboard={dashboard} /> : undefined}
-      >
-        {!isSingleTopNav && <NavToolbarActions dashboard={dashboard} />}
+      <Page navModel={navModel} pageNav={pageNav} layout={PageLayoutType.Standard}>
+        <NavToolbarActions dashboard={dashboard} />
         <div style={{ maxWidth: '600px' }}>
           <Box marginBottom={5}>
             <Field
@@ -263,7 +258,7 @@ export class GeneralSettingsEditView
             nowDelay={nowDelay || ''}
             liveNow={liveNow}
             timezone={timeZone || ''}
-            weekStart={weekStart || ''}
+            weekStart={weekStart}
           />
 
           {/* @todo: Update "Graph tooltip" description to remove prompt about reloading when resolving #46581 */}

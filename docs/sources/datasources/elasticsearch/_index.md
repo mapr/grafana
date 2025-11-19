@@ -65,11 +65,11 @@ Our maintenance policy for Elasticsearch data source is aligned with the [Elasti
 You can define and configure the data source in YAML files as part of Grafana's provisioning system.
 For more information about provisioning, and for available configuration options, refer to [Provisioning Grafana](ref:provisioning-grafana).
 
-{{% admonition type="note" %}}
+{{< admonition type="note" >}}
 The previously used `database` field has now been [deprecated](https://github.com/grafana/grafana/pull/58647).
 You should now use the `index` field in `jsonData` to store the index name.
 Please see the examples below.
-{{% /admonition %}}
+{{< /admonition >}}
 
 ### Provisioning examples
 
@@ -120,10 +120,6 @@ If you use an AWS Identity and Access Management (IAM) policy to control access 
 For details on AWS SigV4, refer to the [AWS documentation](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
 ### AWS Signature Version 4 authentication
-
-{{% admonition type="note" %}}
-Available in Grafana v7.3 and higher.
-{{% /admonition %}}
 
 To sign requests to your Amazon Elasticsearch Service domain, you can enable SigV4 in Grafana's [configuration](ref:configuration).
 

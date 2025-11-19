@@ -2,10 +2,14 @@ package userimpl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/mattn/go-sqlite3"
 
 	"github.com/grafana/grafana/pkg/events"
 	"github.com/grafana/grafana/pkg/infra/db"
@@ -20,7 +24,7 @@ import (
 type store interface {
 	Insert(context.Context, *user.User) (int64, error)
 	GetByID(context.Context, int64) (*user.User, error)
-	GetByUID(ctx context.Context, orgId int64, uid string) (*user.User, error)
+	GetByUID(ctx context.Context, uid string) (*user.User, error)
 	GetByLogin(context.Context, *user.GetUserByLoginQuery) (*user.User, error)
 	GetByEmail(context.Context, *user.GetUserByEmailQuery) (*user.User, error)
 	Delete(context.Context, int64) error
@@ -72,7 +76,7 @@ func (ss *sqlStore) Insert(ctx context.Context, cmd *user.User) (int64, error) {
 		return nil
 	})
 	if err != nil {
-		return 0, err
+		return 0, handleSQLError(err)
 	}
 
 	return cmd.ID, nil
@@ -108,14 +112,11 @@ func (ss *sqlStore) GetByID(ctx context.Context, userID int64) (*user.User, erro
 	return &usr, err
 }
 
-func (ss *sqlStore) GetByUID(ctx context.Context, orgId int64, uid string) (*user.User, error) {
+func (ss *sqlStore) GetByUID(ctx context.Context, uid string) (*user.User, error) {
 	var usr user.User
 
 	err := ss.db.WithDbSession(ctx, func(sess *db.Session) error {
-		has, err := sess.Table("user").
-			Where("org_id = ? AND uid = ?", orgId, uid).
-			Get(&usr)
-
+		has, err := sess.Table("user").Where("uid = ?", uid).Get(&usr)
 		if err != nil {
 			return err
 		} else if !has {
@@ -582,4 +583,31 @@ func setOptional[T any](v *T, add func(v T)) {
 	if v != nil {
 		add(*v)
 	}
+}
+
+func handleSQLError(err error) error {
+	if isUniqueConstraintError(err) {
+		return user.ErrUserAlreadyExists
+	}
+	return err
+}
+
+func isUniqueConstraintError(err error) bool {
+	// check mysql error code
+	var me *mysql.MySQLError
+	if errors.As(err, &me) && me.Number == 1062 {
+		return true
+	}
+
+	// for postgres we check the error message
+	if strings.Contains(err.Error(), "duplicate key value") {
+		return true
+	}
+
+	var se sqlite3.Error
+	if errors.As(err, &se) && se.ExtendedCode == sqlite3.ErrConstraintUnique {
+		return true
+	}
+
+	return false
 }

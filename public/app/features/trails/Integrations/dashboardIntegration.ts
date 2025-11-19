@@ -1,4 +1,4 @@
-import { PanelMenuItem } from '@grafana/data';
+import { DataSourceApi, PanelMenuItem } from '@grafana/data';
 import { PromQuery } from '@grafana/prometheus';
 import { getDataSourceSrv } from '@grafana/runtime';
 import { SceneTimeRangeState, VizPanel } from '@grafana/scenes';
@@ -30,11 +30,21 @@ export async function addDataTrailPanelAction(dashboard: DashboardScene, panel: 
     return;
   }
 
-  if (datasource.type !== 'prometheus') {
+  if (
+    datasource.type !== 'prometheus' &&
+    datasource.type !== 'grafana-amazonprometheus-datasource' &&
+    datasource.type !== 'grafana-azureprometheus-datasource'
+  ) {
     return;
   }
 
-  const dataSourceApi = await getDataSourceSrv().get(datasource);
+  let dataSourceApi: DataSourceApi | undefined;
+
+  try {
+    dataSourceApi = await getDataSourceSrv().get(datasource);
+  } catch (e) {
+    return;
+  }
 
   if (dataSourceApi.interpolateVariablesInQueries == null) {
     return;
@@ -55,7 +65,7 @@ export async function addDataTrailPanelAction(dashboard: DashboardScene, panel: 
 
   if (subMenu.length > 0) {
     items.push({
-      text: 'Explore metrics',
+      text: 'Metrics drilldown',
       iconClassName: 'code-branch',
       subMenu: getUnique(subMenu),
     });
@@ -103,7 +113,7 @@ function createCommonEmbeddedTrailStateProps(item: QueryMetric, dashboard: Dashb
 
   const commonProps = {
     scene: embeddedTrail,
-    title: 'Explore metrics',
+    title: 'Metrics drilldown',
   };
 
   return commonProps;

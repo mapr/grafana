@@ -14,9 +14,9 @@ import (
 	"github.com/grafana/grafana/pkg/apimachinery/identity"
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/accesscontrol/acimpl"
-	"github.com/grafana/grafana/pkg/services/authz/zanzana"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	ac "github.com/grafana/grafana/pkg/services/ngalert/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
@@ -1019,7 +1019,7 @@ func TestReceiverServiceAC_Read(t *testing.T) {
 				}
 				return false
 			}
-			sut.authz = ac.NewReceiverAccess[*models.Receiver](acimpl.ProvideAccessControl(featuremgmt.WithFeatures(), zanzana.NewNoopClient()), true)
+			sut.authz = ac.NewReceiverAccess[*models.Receiver](acimpl.ProvideAccessControl(featuremgmt.WithFeatures()), true)
 			for _, recv := range allReceivers() {
 				response, err := sut.GetReceiver(context.Background(), singleQ(orgId, recv.Name), usr)
 				if isVisibleInProvisioning(recv.UID) {
@@ -1528,7 +1528,7 @@ func createReceiverServiceSut(t *testing.T, encryptSvc secretService) *ReceiverS
 	provisioningStore := fakes.NewFakeProvisioningStore()
 
 	return NewReceiverService(
-		ac.NewReceiverAccess[*models.Receiver](acimpl.ProvideAccessControl(featuremgmt.WithFeatures(), zanzana.NewNoopClient()), false),
+		ac.NewReceiverAccess[*models.Receiver](acimpl.ProvideAccessControl(featuremgmt.WithFeatures()), false),
 		legacy_storage.NewAlertmanagerConfigStore(store),
 		provisioningStore,
 		&fakeAlertRuleNotificationStore{},
@@ -1536,6 +1536,7 @@ func createReceiverServiceSut(t *testing.T, encryptSvc secretService) *ReceiverS
 		xact,
 		log.NewNopLogger(),
 		fakes.NewFakeReceiverPermissionsService(),
+		tracing.InitializeTracerForTest(),
 	)
 }
 
