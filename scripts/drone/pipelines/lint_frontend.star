@@ -40,8 +40,6 @@ def lint_frontend_pipeline(trigger, ver_mode):
 
     volumes = []
 
-    volumes = []
-
     if ver_mode == "pr":
         # In pull requests, attempt to clone grafana enterprise.
         init_steps = [
