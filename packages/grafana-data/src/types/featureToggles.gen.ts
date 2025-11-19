@@ -1223,4 +1223,8 @@ export interface FeatureToggles {
   * @default false
   */
   awsDatasourcesHttpProxy?: boolean;
+  /**
+  * Enables profiles exemplars support in profiles drilldown
+  */
+  profilesExemplars?: boolean;
 }

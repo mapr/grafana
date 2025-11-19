@@ -3300,6 +3300,19 @@
     },
     {
       "metadata": {
+        "name": "profilesExemplars",
+        "resourceVersion": "1763467654562",
+        "creationTimestamp": "2025-11-18T12:07:34Z"
+      },
+      "spec": {
+        "description": "Enables profiles exemplars support in profiles drilldown",
+        "stage": "experimental",
+        "codeowner": "@grafana/observability-traces-and-profiling",
+        "frontend": true
+      }
+    },
+    {
+      "metadata": {
         "name": "promQLScope",
         "resourceVersion": "1753448760331",
         "creationTimestamp": "2024-01-29T20:22:17Z",
