@@ -33,6 +33,21 @@ func Test_PyroscopeClient(t *testing.T) {
 		require.Equal(t, series, resp)
 	})
 
+	t.Run("GetSeriesWithExemplars", func(t *testing.T) {
+		limit := int64(42)
+		resp, err := client.GetSeries(context.Background(), "memory:alloc_objects:count:space:bytes", "{}", 0, 100, []string{}, &limit, 15, typesv1.ExemplarType_EXEMPLAR_TYPE_INDIVIDUAL)
+		require.Nil(t, err)
+
+		series := &SeriesResponse{
+			Series: []*Series{
+				{Labels: []*LabelPair{{Name: "foo", Value: "bar"}}, Points: []*Point{{Timestamp: int64(1000), Value: 30, Exemplars: []*Exemplar{{Id: "id1", Value: 3, Timestamp: 1000}}}, {Timestamp: int64(2000), Value: 10, Exemplars: []*Exemplar{{Id: "id2", Value: 1, Timestamp: 2000}}}}},
+			},
+			Units: "short",
+			Label: "alloc_objects",
+		}
+		require.Equal(t, series, resp)
+	})
+
 	t.Run("GetProfile", func(t *testing.T) {
 		maxNodes := int64(-1)
 		resp, err := client.GetProfile(context.Background(), "memory:alloc_objects:count:space:bytes", "{}", 0, 100, &maxNodes)
@@ -116,6 +131,21 @@ func (f *FakePyroscopeConnectClient) SelectMergeStacktraces(ctx context.Context,
 
 func (f *FakePyroscopeConnectClient) SelectSeries(ctx context.Context, req *connect.Request[querierv1.SelectSeriesRequest]) (*connect.Response[querierv1.SelectSeriesResponse], error) {
 	f.Req = req
+	if req.Msg.ExemplarType == typesv1.ExemplarType_EXEMPLAR_TYPE_INDIVIDUAL {
+		return &connect.Response[querierv1.SelectSeriesResponse]{
+			Msg: &querierv1.SelectSeriesResponse{
+				Series: []*typesv1.Series{
+					{
+						Labels: []*typesv1.LabelPair{{Name: "foo", Value: "bar"}},
+						Points: []*typesv1.Point{
+							{Timestamp: int64(1000), Value: 30, Exemplars: []*typesv1.Exemplar{{Timestamp: int64(1000), Value: 3, ProfileId: "id1"}}},
+							{Timestamp: int64(2000), Value: 10, Exemplars: []*typesv1.Exemplar{{Timestamp: int64(2000), Value: 1, ProfileId: "id2"}}},
+						},
+					},
+				},
+			},
+		}, nil
+	}
 	return &connect.Response[querierv1.SelectSeriesResponse]{
 		Msg: &querierv1.SelectSeriesResponse{
 			Series: []*typesv1.Series{
