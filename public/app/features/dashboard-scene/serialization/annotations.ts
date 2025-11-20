@@ -38,7 +38,8 @@ export function transformV1ToV2AnnotationQuery(
   const result: AnnotationQueryKind = {
     kind: 'AnnotationQuery',
     spec: {
-      builtIn: Boolean(annotation.builtIn),
+      // Only set builtIn if it's explicitly set (1 or truthy), not if it's undefined or false
+      ...(annotation.builtIn === 1 || (annotation.builtIn !== undefined && Boolean(annotation.builtIn)) ? { builtIn: true } : {}),
       name: annotation.name ?? defaultAnnotationQuerySpec().name,
       enable: Boolean(override?.enable) || Boolean(annotation.enable),
       hide: Boolean(override?.hide) || Boolean(annotation.hide),
@@ -103,8 +104,9 @@ export function transformV2ToV1AnnotationQuery(annotation: AnnotationQueryKind):
     };
   }
 
+  // Only set builtIn if it's truthy (handles both boolean true and number 1)
+  // builtIn should be a number (1) in v1, not a boolean
   if (annotation.spec.builtIn) {
-    annoQuerySpec.type = 'dashboard';
     annoQuerySpec.builtIn = 1;
   }
 
@@ -119,6 +121,12 @@ export function transformV2ToV1AnnotationQuery(annotation: AnnotationQueryKind):
       ...annoQuerySpec,
       ...annotationQuery.legacyOptions,
     };
+  }
+
+  // Always preserve type: "dashboard" for built-in annotations
+  // Set this AFTER spreading legacyOptions to prevent overwrite
+  if (annoQuerySpec.builtIn === 1) {
+    annoQuerySpec.type = 'dashboard';
   }
 
   // get data source from annotation query

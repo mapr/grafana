@@ -206,8 +206,13 @@ function getPanelDataSource(panel: PanelKind): DataSourceRef | undefined {
 }
 
 export function getRuntimeVariableDataSource(variable: QueryVariableKind): DataSourceRef | undefined {
+  // If the variable doesn't have a datasource in v2beta1, return undefined
+  // Don't add a default datasource - this matches backend behavior
+  if (!variable.spec.query.datasource?.name) {
+    return undefined;
+  }
   const ds: DataSourceRef = {
-    uid: variable.spec.query.datasource?.name,
+    uid: variable.spec.query.datasource.name,
     type: variable.spec.query.group,
   };
   return getDataSourceForQuery(ds, variable.spec.query.group);

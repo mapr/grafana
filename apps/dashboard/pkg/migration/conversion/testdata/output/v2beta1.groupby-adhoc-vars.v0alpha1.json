@@ -20,10 +20,18 @@
           "annotations": [],
           "cursorSync": "",
           "elements": {},
-          "layout": null,
+          "layout": {
+            "kind": "AutoGridLayout",
+            "spec": {
+              "maxColumnCount": 3,
+              "columnWidthMode": "standard",
+              "rowHeightMode": "standard",
+              "items": []
+            }
+          },
           "links": [],
           "preload": false,
-          "tags": null,
+          "tags": [],
           "timeSettings": {
             "from": "",
             "to": "",

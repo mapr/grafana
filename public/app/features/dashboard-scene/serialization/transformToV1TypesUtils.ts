@@ -18,13 +18,18 @@ import {
   ThresholdsMode,
 } from '@grafana/schema/dist/esm/schema/dashboard/v2';
 
-export function transformVariableRefreshToEnumV1(refresh?: VariableRefresh): VariableRefreshV1 {
-  switch (refresh) {
+export function transformVariableRefreshToEnumV1(refresh?: VariableRefresh | string | undefined | any): VariableRefreshV1 {
+  // Handle both enum types and string values
+  const refreshStr = typeof refresh === 'string' ? refresh : (refresh as any)?.toString?.() ?? String(refresh ?? '');
+  switch (refreshStr) {
     case 'never':
+    case '0':
       return VariableRefreshV1.never;
     case 'onDashboardLoad':
+    case '1':
       return VariableRefreshV1.onDashboardLoad;
     case 'onTimeRangeChanged':
+    case '2':
       return VariableRefreshV1.onTimeRangeChanged;
     default:
       return VariableRefreshV1.never;

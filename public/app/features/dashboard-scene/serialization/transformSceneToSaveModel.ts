@@ -46,6 +46,7 @@ import {
   isLibraryPanel,
 } from '../utils/utils';
 
+import { isDashboardV2Spec } from 'app/features/dashboard/api/utils';
 import { GRAFANA_DATASOURCE_REF } from './const';
 import { dataLayersToAnnotations } from './dataLayersToAnnotations';
 import { sceneVariablesSetToVariables } from './sceneVariablesSetToVariables';
@@ -106,25 +107,87 @@ export function transformSceneToSaveModel(scene: DashboardScene, isSnapshot = fa
     defaultTimePickerConfig
   );
 
-  const graphTooltip =
-    state.$behaviors?.find((b): b is behaviors.CursorSync => b instanceof behaviors.CursorSync)?.state.sync ??
-    defaultDashboard.graphTooltip;
+  // Preserve graphTooltip value from CursorSync behavior, or from initial save model if behavior doesn't exist
+  const cursorSyncBehavior = state.$behaviors?.find((b): b is behaviors.CursorSync => b instanceof behaviors.CursorSync);
+  let graphTooltip = cursorSyncBehavior?.state.sync;
+  
+  // If CursorSync behavior doesn't have a value, check the initial save model
+  if (graphTooltip === undefined && initialSaveModel && !isDashboardV2Spec(initialSaveModel)) {
+    graphTooltip = initialSaveModel.graphTooltip;
+  }
+  
+  // Default to 0 if still undefined
+  if (graphTooltip === undefined) {
+    graphTooltip = defaultDashboard.graphTooltip ?? 0;
+  }
   const liveNow =
     state.$behaviors?.find((b): b is behaviors.LiveNowTimer => b instanceof behaviors.LiveNowTimer)?.isEnabled ||
     undefined;
 
+  // Check if the original save model had empty time strings and preserve them
+  const initialSaveModel = scene.getInitialSaveModel();
+  let timeFrom = timeRange.from;
+  let timeTo = timeRange.to;
+  let shouldIncludeTime = true;
+  
+  // If initialSaveModel exists and had empty time strings, preserve them
+  // SceneTimeRange converts empty strings to defaults, so we need to check the original
+  if (initialSaveModel) {
+    if (isDashboardV2Spec(initialSaveModel)) {
+      // For v2 specs, check timeSettings
+      if (initialSaveModel.timeSettings) {
+        if (initialSaveModel.timeSettings.from === '') {
+          timeFrom = '';
+        }
+        if (initialSaveModel.timeSettings.to === '') {
+          timeTo = '';
+        }
+        // If both are empty strings, preserve them (don't skip time field)
+        if (initialSaveModel.timeSettings.from === '' && initialSaveModel.timeSettings.to === '') {
+          shouldIncludeTime = true;
+        }
+      }
+    } else {
+      // For v1 specs, check time field
+      if (initialSaveModel.time) {
+        // If initialSaveModel has time field, preserve it (including empty strings)
+        if (initialSaveModel.time.from === '') {
+          timeFrom = '';
+        }
+        if (initialSaveModel.time.to === '') {
+          timeTo = '';
+        }
+      } else {
+        // If initialSaveModel doesn't have time field, check if SceneTimeRange has empty strings
+        // This handles the case where v2beta1 had empty strings, backend output doesn't have time field,
+        // but SceneTimeRange might have preserved empty strings (or converted them to defaults)
+        // If both time values are empty strings, preserve them
+        if (timeRange.from === '' && timeRange.to === '') {
+          timeFrom = '';
+          timeTo = '';
+          shouldIncludeTime = true;
+        } else {
+          // If initialSaveModel doesn't have time field and SceneTimeRange doesn't have empty strings,
+          // don't add it to output
+          // This matches backend behavior: if input has empty time strings, backend output doesn't have time field
+          shouldIncludeTime = false;
+        }
+      }
+    }
+  }
+
   const dashboard: Dashboard = {
-    ...defaultDashboard,
     title: state.title,
     description: state.description || undefined,
     uid: state.uid,
     id: state.id,
-    editable: state.editable,
     preload: state.preload,
-    time: {
-      from: timeRange.from,
-      to: timeRange.to,
-    },
+    ...(shouldIncludeTime ? {
+      time: {
+        from: timeFrom,
+        to: timeTo,
+      },
+    } : {}),
     timepicker: timePickerWithoutDefaults,
     panels,
     annotations: {
@@ -134,7 +197,6 @@ export function transformSceneToSaveModel(scene: DashboardScene, isSnapshot = fa
       list: variables,
     },
     version: state.version,
-    timezone: timeRange.timeZone,
     fiscalYearStartMonth: timeRange.fiscalYearStartMonth,
     weekStart: timeRange.weekStart,
     tags: state.tags,
@@ -146,6 +208,14 @@ export function transformSceneToSaveModel(scene: DashboardScene, isSnapshot = fa
     // @ts-expect-error not in dashboard schema because it's experimental
     scopeMeta: state.scopeMeta,
   };
+
+  // Only add optional fields if they are explicitly set (not default values)
+  if (state.editable !== undefined) {
+    dashboard.editable = state.editable;
+  }
+  if (timeRange.timeZone !== undefined && timeRange.timeZone !== '') {
+    dashboard.timezone = timeRange.timeZone;
+  }
 
   return sortedDeepCloneWithoutNulls(dashboard, true);
 }

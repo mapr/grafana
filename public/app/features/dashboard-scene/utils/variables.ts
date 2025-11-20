@@ -1,4 +1,4 @@
-import { AdHocVariableFilter, TypedVariableModel } from '@grafana/data';
+import { AdHocVariableFilter, TypedVariableModel, VariableRefresh } from '@grafana/data';
 import { config, getDataSourceSrv } from '@grafana/runtime';
 import {
   AdHocFiltersVariable,
@@ -185,6 +185,9 @@ export function createSceneVariableFromVariableModel(variable: TypedVariableMode
     });
     // Query variable
   } else if (variable.type === 'query') {
+    // Ensure refresh is explicitly set - if it's 0 (never), preserve it, otherwise default to onDashboardLoad
+    // This prevents QueryVariable from defaulting to onDashboardLoad when refresh is 0
+    const refresh = variable.refresh !== undefined ? variable.refresh : VariableRefresh.onDashboardLoad;
     return new QueryVariable({
       ...commonProperties,
       value: variable.current?.value ?? '',
@@ -193,7 +196,7 @@ export function createSceneVariableFromVariableModel(variable: TypedVariableMode
       query: variable.query ?? {},
       datasource: variable.datasource,
       sort: variable.sort,
-      refresh: variable.refresh,
+      refresh,
       regex: variable.regex,
       allValue: variable.allValue || undefined,
       includeAll: variable.includeAll,
@@ -240,6 +243,9 @@ export function createSceneVariableFromVariableModel(variable: TypedVariableMode
       intervals = getIntervalsFromQueryString('');
     }
     const currentInterval = getCurrentValueForOldIntervalModel(variable, intervals);
+    // Ensure refresh is explicitly set - if it's 2 (onTimeRangeChanged), preserve it, otherwise default to onTimeRangeChanged
+    // This prevents IntervalVariable from defaulting incorrectly when refresh is 2
+    const refresh = variable.refresh !== undefined ? variable.refresh : VariableRefresh.onTimeRangeChanged;
     return new IntervalVariable({
       ...commonProperties,
       value: currentInterval,
@@ -247,7 +253,7 @@ export function createSceneVariableFromVariableModel(variable: TypedVariableMode
       autoEnabled: variable.auto,
       autoStepCount: variable.auto_count,
       autoMinInterval: variable.auto_min,
-      refresh: variable.refresh,
+      refresh,
       skipUrlSync: variable.skipUrlSync,
       hide: variable.hide,
     });

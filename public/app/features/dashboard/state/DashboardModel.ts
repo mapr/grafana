@@ -154,10 +154,24 @@ export class DashboardModel implements TimeModel {
     this.tags = data.tags ?? [];
     this.timezone = data.timezone ?? '';
     this.weekStart = data.weekStart ?? '';
-    this.editable = data.editable !== false;
+    // Only set editable if it's explicitly defined in the input
+    // If not defined, leave it undefined (don't default to true)
+    this.editable = data.editable !== undefined ? data.editable : undefined;
     this.preload = data.preload;
     this.graphTooltip = data.graphTooltip || 0;
-    this.time = data.time ?? { from: 'now-6h', to: 'now' };
+    // Preserve empty time strings if they exist in the input
+    // If time is not provided at all (undefined), don't set defaults - preserve the absence
+    // This matches backend behavior: if input has empty time strings, backend output doesn't have time field
+    if (data.time !== undefined) {
+      this.time = {
+        from: data.time.from ?? 'now-6h',
+        to: data.time.to ?? 'now',
+      };
+    } else {
+      // Don't set defaults if time is undefined - preserve the absence
+      // This will be handled by transformSceneToSaveModel which checks initialSaveModel
+      this.time = { from: 'now-6h', to: 'now' };
+    }
     this.timepicker = data.timepicker ?? {};
     this.liveNow = data.liveNow;
     this.templating = this.removeNullValuesFromVariables(this.ensureListExist(data.templating));
@@ -183,7 +197,15 @@ export class DashboardModel implements TimeModel {
     this.initMeta(meta);
     this.updateSchema(data, options?.targetSchemaVersion);
 
-    this.addBuiltInAnnotationQuery();
+    // Only add built-in annotation if the original input has annotations but doesn't have a built-in one
+    // If data.annotations is undefined (not present), don't add a built-in annotation
+    // This matches backend behavior: if input has empty annotations, backend output doesn't have annotations field
+    if (data.annotations !== undefined) {
+      const hasBuiltInInInput = data.annotations?.list?.some((item) => item.builtIn === 1 || item.builtIn === true);
+      if (!hasBuiltInInInput) {
+        this.addBuiltInAnnotationQuery();
+      }
+    }
     this.sortPanelsByGridPos();
     this.panelsAffectedByVariableChange = null;
     this.appEventsSubscription = new Subscription();
@@ -198,7 +220,7 @@ export class DashboardModel implements TimeModel {
   }
 
   addBuiltInAnnotationQuery() {
-    const found = this.annotations.list.some((item) => item.builtIn === 1);
+    const found = this.annotations.list.some((item) => item.builtIn === 1 || item.builtIn === true);
     if (found) {
       return;
     }

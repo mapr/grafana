@@ -323,7 +323,7 @@ export function createDashboardSceneFromDashboardModel(oldModel: DashboardModel,
 
   const behaviorList: SceneObjectState['$behaviors'] = [
     new behaviors.CursorSync({
-      sync: oldModel.graphTooltip,
+      sync: oldModel.graphTooltip !== undefined ? oldModel.graphTooltip : 0,
     }),
     queryController,
     interactionTracker,
@@ -372,8 +372,8 @@ export function createDashboardSceneFromDashboardModel(oldModel: DashboardModel,
       scopeMeta,
       body,
       $timeRange: new SceneTimeRange({
-        from: oldModel.time.from,
-        to: oldModel.time.to,
+        from: oldModel.time.from === '' ? '' : oldModel.time.from,
+        to: oldModel.time.to === '' ? '' : oldModel.time.to,
         fiscalYearStartMonth: oldModel.fiscalYearStartMonth,
         timeZone: oldModel.timezone,
         weekStart: isWeekStart(oldModel.weekStart) ? oldModel.weekStart : undefined,
