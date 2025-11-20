@@ -1,5 +1,5 @@
 import { isString } from 'lodash';
-import { combineLatest, map, Observable } from 'rxjs';
+import { combineLatest, from, map, mergeMap, Observable } from 'rxjs';
 
 import {
   PluginExtensionTypes,
@@ -15,7 +15,7 @@ import { AddedLinkRegistryItem } from './registry/AddedLinksRegistry';
 import { RegistryType } from './registry/Registry';
 import { pluginExtensionRegistries } from './registry/setup';
 import type { PluginExtensionRegistries } from './registry/types';
-import { GetExtensions, GetExtensionsOptions, GetPluginExtensions } from './types';
+import { GetExtensions, GetExtensionsOptions, GetExtensionsSync, GetPluginExtensions } from './types';
 import {
   getReadOnlyProxy,
   generateExtensionId,
@@ -36,7 +36,7 @@ import {
 
 export const getObservablePluginExtensions = (
   options: Omit<GetExtensionsOptions, 'addedComponentsRegistry' | 'addedLinksRegistry'>
-): Observable<ReturnType<GetExtensions>> => {
+): Observable<ReturnType<GetExtensionsSync>> => {
   const { extensionPointId } = options;
   const { addedComponentsRegistry, addedLinksRegistry } = pluginExtensionRegistries;
 
@@ -44,16 +44,18 @@ export const getObservablePluginExtensions = (
     addedComponentsRegistry.asObservableSlice((state) => state[extensionPointId]),
     addedLinksRegistry.asObservableSlice((state) => state[extensionPointId]),
   ]).pipe(
-    map(([components, links]) =>
-      getPluginExtensions({
-        ...options,
-        addedComponentsRegistry: {
-          [extensionPointId]: components,
-        },
-        addedLinksRegistry: {
-          [extensionPointId]: links,
-        },
-      })
+    mergeMap(([components, links]) =>
+      from(
+        getPluginExtensions({
+          ...options,
+          addedComponentsRegistry: {
+            [extensionPointId]: components,
+          },
+          addedLinksRegistry: {
+            [extensionPointId]: links,
+          },
+        })
+      )
     )
   );
 };
@@ -88,7 +90,7 @@ export function createPluginExtensionsGetter(registries: PluginExtensionRegistri
 }
 
 // Returns with a list of plugin extensions for the given extension point
-export const getPluginExtensions: GetExtensions = ({
+export const getPluginExtensions: GetExtensions = async ({
   context,
   extensionPointId,
   limitPerPlugin,
@@ -121,7 +123,7 @@ export const getPluginExtensions: GetExtensions = ({
         onClick: typeof addedLink.onClick,
       });
       // Run the configure() function with the current context, and apply the ovverides
-      const overrides = getLinkExtensionOverrides(pluginId, addedLink, linkLog, frozenContext);
+      const overrides = await getLinkExtensionOverrides(addedLink, linkLog, frozenContext);
 
       // configure() returned an `undefined` -> hide the extension
       if (addedLink.configure && overrides === undefined) {
