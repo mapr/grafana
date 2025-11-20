@@ -84,5 +84,10 @@ func (s *ConsolidationService) Consolidate(ctx context.Context) (err error) {
 
 	// TODO: After all values are re-encrypted, we can safely remove the old data keys.
 
+	err = s.globalDataKeyStore.DeleteAllInactiveDataKeys(ctx)
+	if err != nil {
+		return fmt.Errorf("deleting all data keys: %w", err)
+	}
+
 	return nil
 }

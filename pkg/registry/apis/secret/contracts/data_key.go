@@ -37,4 +37,5 @@ type DataKeyStorage interface {
 // GlobalDataKeyStorage is an interface for namespace unbounded operations.
 type GlobalDataKeyStorage interface {
 	DisableAllDataKeys(ctx context.Context) error
+	DeleteAllInactiveDataKeys(ctx context.Context) error
 }

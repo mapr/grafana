@@ -86,17 +86,24 @@ func NewDataKeyMetrics(reg prometheus.Registerer) *DataKeyMetrics {
 }
 
 type GlobalDataKeyMetrics struct {
-	DisableAllDataKeysDuration prometheus.Histogram
+	DisableAllDataKeysDuration        prometheus.Histogram
+	DeleteAllInactiveDataKeysDuration prometheus.Histogram
 }
 
 func newGlobalDataKeyMetrics() *GlobalDataKeyMetrics {
 	return &GlobalDataKeyMetrics{
-
 		DisableAllDataKeysDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      "disable_all_data_keys_duration_seconds",
 			Help:      "Duration of disable all data keys operations",
+			Buckets:   prometheus.DefBuckets,
+		}),
+		DeleteAllInactiveDataKeysDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "delete_all_inactive_data_keys_duration_seconds",
+			Help:      "Duration of delete all inactive data keys operations",
 			Buckets:   prometheus.DefBuckets,
 		}),
 	}

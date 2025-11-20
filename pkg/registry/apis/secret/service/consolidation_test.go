@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/grafana/authlib/authn"
 	"github.com/grafana/authlib/types"
@@ -280,4 +281,96 @@ func TestConsolidation(t *testing.T) {
 			require.NotEqual(t, newSecretEncryptedData[i], encryptedValue.EncryptedData)
 		}
 	})
+}
+
+// TestCacheRaceConditionDuringConsolidation tests the potential race condition:
+//
+//	r1: load data key A from cache
+//	r2: consolidation disables all keys
+//	r2: consolidation flushes cache
+//	r2: consolidation re-encrypts all values
+//	r2: consolidation deletes disabled data keys
+//	r1: encrypt using data key A from memory
+//	r1: store encrypted value X
+//	r3: read X
+//	r3: data key not found!
+func TestCacheRaceConditionDuringConsolidation(t *testing.T) {
+	t.Parallel()
+	sut := testutils.Setup(t)
+	ctx := context.Background()
+
+	createAuthContext := func(ctx context.Context, namespace string) context.Context {
+		return types.WithAuthInfo(ctx, &identity.StaticRequester{
+			Type:      types.TypeAccessPolicy,
+			Namespace: namespace,
+			AccessTokenClaims: &authn.Claims[authn.AccessTokenClaims]{
+				Rest: authn.AccessTokenClaims{
+					Permissions:     []string{"secret.grafana.app/securevalues:decrypt"},
+					ServiceIdentity: "decrypter1",
+				},
+			},
+		})
+	}
+
+	// Create an initial secret
+	initialSv := &secretv1beta1.SecureValue{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "initial-secret",
+			Namespace: "namespace1",
+		},
+		Spec: secretv1beta1.SecureValueSpec{
+			Description: "Initial secret",
+			Value:       ptr.To(secretv1beta1.NewExposedSecureValue("initial-value")),
+			Decrypters:  []string{"decrypter1"},
+		},
+	}
+	_, err := sut.CreateSv(ctx, testutils.CreateSvWithSv(initialSv))
+	require.NoError(t, err)
+
+	// r1: Start creating a secret
+	go func() {
+		raceSv := &secretv1beta1.SecureValue{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "race-secret",
+				Namespace: "namespace1",
+			},
+			Spec: secretv1beta1.SecureValueSpec{
+				Description: "Secret created during consolidation",
+				Value:       ptr.To(secretv1beta1.NewExposedSecureValue("race-value")),
+				Decrypters:  []string{"decrypter1"},
+			},
+		}
+		sut.CreateSv(ctx, testutils.CreateSvWithSv(raceSv))
+	}()
+
+	// r2: Run consolidation concurrently
+	go func() {
+		sut.ConsolidationService.Consolidate(ctx)
+	}()
+
+	// Give both operations time to run concurrently
+	time.Sleep(500 * time.Millisecond)
+
+	// r3: Try to read the race secret
+	authCtx := createAuthContext(ctx, "namespace1")
+	decryptedValue, err := sut.DecryptStorage.Decrypt(authCtx, xkube.Namespace("namespace1"), "race-secret")
+
+	if err != nil {
+		// Check if it's because the secret doesn't exist yet or actual data key issue
+		_, getErr := sut.EncryptedValueStorage.Get(ctx, xkube.Namespace("namespace1"), "race-secret", 1)
+		if getErr != nil {
+			t.Logf("Secret doesn't exist yet, skipping test")
+			return
+		}
+
+		t.Logf("RACE CONDITION DETECTED: %v", err)
+		// try decrypt again to make sure it works outside of the previous concurrent requests
+		decryptedValue, err = sut.DecryptStorage.Decrypt(authCtx, xkube.Namespace("namespace1"), "race-secret")
+		require.NoError(t, err)
+		raceValue := decryptedValue.DangerouslyExposeAndConsumeValue()
+		require.Equal(t, "race-value", raceValue)
+	}
+
+	raceValue := decryptedValue.DangerouslyExposeAndConsumeValue()
+	require.Equal(t, "race-value", raceValue)
 }

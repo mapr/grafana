@@ -406,3 +406,37 @@ func (ss *globalEncryptionStoreImpl) DisableAllDataKeys(ctx context.Context) err
 
 	return nil
 }
+
+func (ss *globalEncryptionStoreImpl) DeleteAllInactiveDataKeys(ctx context.Context) error {
+	start := time.Now()
+	ctx, span := ss.tracer.Start(ctx, "GlobalDataKeyStorage.DeleteAllInactiveDataKeys")
+	defer func() {
+		span.End()
+		ss.metrics.DeleteAllInactiveDataKeysDuration.Observe(float64(time.Since(start)))
+	}()
+
+	req := deleteInactiveDataKeys{
+		SQLTemplate: sqltemplate.New(ss.dialect),
+	}
+
+	query, err := sqltemplate.Execute(sqlDataKeyDeleteAll, req)
+	if err != nil {
+		return fmt.Errorf("execute template %q: %w", sqlDataKeyDeleteAll.Name(), err)
+	}
+
+	result, err := ss.db.ExecContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("deleting data keys: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("getting rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		logging.FromContext(ctx).Info("Delete all data inactive keys: no keys were deleted")
+	}
+
+	return nil
+}

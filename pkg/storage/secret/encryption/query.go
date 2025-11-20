@@ -31,6 +31,7 @@ var (
 	sqlDataKeyDisable     = mustTemplate("data_key_disable.sql")
 	sqlDataKeyDelete      = mustTemplate("data_key_delete.sql")
 	sqlDataKeyDisableAll  = mustTemplate("data_key_disable_all.sql")
+	sqlDataKeyDeleteAll   = mustTemplate("data_key_delete_all.sql")
 )
 
 // TODO: Move this to a common place so that all stores can use
@@ -169,3 +170,9 @@ type disableAllDataKeys struct {
 }
 
 func (r disableAllDataKeys) Validate() error { return nil }
+
+type deleteInactiveDataKeys struct {
+	sqltemplate.SQLTemplate
+}
+
+func (r deleteInactiveDataKeys) Validate() error { return nil }
