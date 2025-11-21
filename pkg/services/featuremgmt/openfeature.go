@@ -65,17 +65,17 @@ func InitOpenFeatureWithCfg(cfg *setting.Cfg) error {
 		return fmt.Errorf("failed to read feature flags from config: %w", err)
 	}
 
-	var httpcli *http.Client
+	//var httpcli *http.Client
 	if cfg.OpenFeature.ProviderType == setting.GOFFProviderType {
-		m, err := clientauthmiddleware.NewTokenExchangeMiddleware(cfg)
-		if err != nil {
-			return fmt.Errorf("failed to create token exchange middleware: %w", err)
-		}
+		//m, err := clientauthmiddleware.NewTokenExchangeMiddleware(cfg)
+		//if err != nil {
+		//	return fmt.Errorf("failed to create token exchange middleware: %w", err)
+		//}
 
-		httpcli, err = goffHTTPClient(m)
-		if err != nil {
-			return err
-		}
+		//httpcli, err = goffHTTPClient(m)
+		//if err != nil {
+		//	return err
+		//}
 	}
 
 	contextAttrs := make(map[string]any)
@@ -86,7 +86,10 @@ func InitOpenFeatureWithCfg(cfg *setting.Cfg) error {
 	return InitOpenFeature(OpenFeatureConfig{
 		ProviderType: cfg.OpenFeature.ProviderType,
 		URL:          cfg.OpenFeature.URL,
-		HTTPClient:   httpcli,
+		//HTTPClient:   httpcli,
+		HTTPClient: &http.Client{
+			Timeout: 10 * time.Second,
+		},
 		StaticFlags:  confFlags,
 		TargetingKey: cfg.OpenFeature.TargetingKey,
 		ContextAttrs: contextAttrs,
