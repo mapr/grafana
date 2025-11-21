@@ -243,10 +243,6 @@ const (
 	// Enables the UI to use certain backend-side filters
 	FlagAlertingUIUseBackendFilters = "alertingUIUseBackendFilters"
 
-	// FlagCreateAlertRuleFromPanel
-	// Enables creating alert rules from a panel using a drawer UI
-	FlagCreateAlertRuleFromPanel = "createAlertRuleFromPanel"
-
 	// FlagAlertmanagerRemotePrimary
 	// Enable Grafana to have a remote Alertmanager instance as the primary Alertmanager.
 	FlagAlertmanagerRemotePrimary = "alertmanagerRemotePrimary"
