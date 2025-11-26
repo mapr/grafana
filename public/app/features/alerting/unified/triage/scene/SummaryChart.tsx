@@ -39,7 +39,7 @@ export function SummaryChartReact() {
 
   const dataProvider = useQueryRunner({
     queries: [
-      getDataQuery(`count by (alertstate) (${METRIC_NAME}{${filter}})`, {
+      getDataQuery(`count by (alertstate) (max_over_time(${METRIC_NAME}{${filter}}[$__interval]))`, {
         legendFormat: '{{alertstate}}', // we need this so we can map states to the correct color in the vizConfig
       }),
     ],
