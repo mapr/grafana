@@ -141,6 +141,7 @@ describe('sceneVariablesSetToVariables', () => {
       "query": "query",
       "refresh": 1,
       "regex": "",
+      "regexApplyTo": 0,
       "staticOptions": [
         {
           "text": "test",
@@ -205,6 +206,7 @@ describe('sceneVariablesSetToVariables', () => {
       "query": "query",
       "refresh": 1,
       "regex": "",
+      "regexApplyTo": 0,
       "staticOptions": [
         {
           "text": "test",
@@ -1100,6 +1102,7 @@ describe('sceneVariablesSetToVariables', () => {
             },
             "refresh": "onDashboardLoad",
             "regex": "",
+            "regexApplyTo": "value",
             "skipUrlSync": false,
             "sort": "disabled",
             "staticOptions": [
