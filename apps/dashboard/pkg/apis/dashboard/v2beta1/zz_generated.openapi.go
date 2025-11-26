@@ -3168,18 +3168,15 @@ func schema_pkg_apis_dashboard_v2beta1_DashboardPanelKindOrLibraryPanelKind(ref 
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"PanelKind": {
-						SchemaProps: spec.SchemaProps{
+				OneOf: []spec.Schema{{
+					SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/grafana/grafana/apps/dashboard/pkg/apis/dashboard/v2beta1.DashboardPanelKind"),
 						},
-					},
-					"LibraryPanelKind": {
-						SchemaProps: spec.SchemaProps{
+				},{
+					SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/grafana/grafana/apps/dashboard/pkg/apis/dashboard/v2beta1.DashboardLibraryPanelKind"),
 						},
-					},
-				},
+				}},
 			},
 		},
 		Dependencies: []string{
