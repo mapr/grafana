@@ -30,6 +30,20 @@ type keeperMetadataStorage struct {
 }
 
 var _ contracts.KeeperMetadataStorage = (*keeperMetadataStorage)(nil)
+var _ contracts.KeeperConfigReader = (*keeperMetadataStorage)(nil)
+
+func ProvideKeeperConfigReader(
+	db contracts.Database,
+	tracer trace.Tracer,
+	reg prometheus.Registerer,
+) (contracts.KeeperConfigReader, error) {
+	return &keeperMetadataStorage{
+		db:      db,
+		dialect: sqltemplate.DialectForDriver(db.DriverName()),
+		tracer:  tracer,
+		metrics: metrics.NewStorageMetrics(reg),
+	}, nil
+}
 
 func ProvideKeeperMetadataStorage(
 	db contracts.Database,

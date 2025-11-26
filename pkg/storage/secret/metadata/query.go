@@ -29,6 +29,7 @@ var (
 	sqlSecureValueRead             = mustTemplate("secure_value_read.sql")
 	sqlSecureValueList             = mustTemplate("secure_value_list.sql")
 	sqlSecureValueCreate           = mustTemplate("secure_value_create.sql")
+	sqlSecureValueUpdateV2         = mustTemplate("secure_value_update.sql")
 	sqlSecureValueUpdateExternalId = mustTemplate("secure_value_updateExternalId.sql")
 	sqlSecureValueDelete           = mustTemplate("secure_value_delete.sql")
 	sqlSecureValueLeaseInactive    = mustTemplate("secure_value_lease_inactive.sql")
@@ -270,5 +271,15 @@ type listSecureValuesByLeaseToken struct {
 
 // Validate is only used if we use `dbutil` from `unifiedstorage`
 func (r listSecureValuesByLeaseToken) Validate() error {
+	return nil // TODO
+}
+
+type updateSecureValueV2 struct {
+	sqltemplate.SQLTemplate
+	Row *secureValueDB
+}
+
+// Validate is only used if we use `dbutil` from `unifiedstorage`
+func (r updateSecureValueV2) Validate() error {
 	return nil // TODO
 }

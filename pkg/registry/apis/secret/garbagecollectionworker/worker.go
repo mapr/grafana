@@ -22,20 +22,22 @@ import (
 type Worker struct {
 	Cfg                        *setting.Cfg
 	secureValueMetadataStorage contracts.SecureValueMetadataStorage
-	keeperMetadataStorage      contracts.KeeperMetadataStorage
+	keeperConfigReader         contracts.KeeperConfigReader
 	keeperService              contracts.KeeperService
 }
 
 func ProvideWorker(
 	cfg *setting.Cfg,
 	secureValueMetadataStorage contracts.SecureValueMetadataStorage,
-	keeperMetadataStorage contracts.KeeperMetadataStorage,
-	keeperService contracts.KeeperService) *Worker {
+	keeperConfigReader contracts.KeeperConfigReader,
+	keeperService contracts.KeeperService,
+) *Worker {
 	return &Worker{
 		Cfg:                        cfg,
 		secureValueMetadataStorage: secureValueMetadataStorage,
-		keeperMetadataStorage:      keeperMetadataStorage,
-		keeperService:              keeperService}
+		keeperConfigReader:         keeperConfigReader,
+		keeperService:              keeperService,
+	}
 }
 
 func (w *Worker) Run(ctx context.Context) error {
@@ -93,7 +95,7 @@ func (w *Worker) CleanupInactiveSecureValues(ctx context.Context) ([]secretv1bet
 }
 
 func (w *Worker) Cleanup(ctx context.Context, sv *secretv1beta1.SecureValue) error {
-	keeperCfg, err := w.keeperMetadataStorage.GetKeeperConfig(ctx, sv.Namespace, sv.Status.Keeper, contracts.ReadOpts{ForUpdate: false})
+	keeperCfg, err := w.keeperConfigReader.GetKeeperConfig(ctx, sv.Namespace, sv.Status.Keeper, contracts.ReadOpts{ForUpdate: false})
 	if err != nil {
 		return fmt.Errorf("fetching keeper config: namespace=%+v keeperName=%+v %w", sv.Namespace, sv.Status.Keeper, err)
 	}

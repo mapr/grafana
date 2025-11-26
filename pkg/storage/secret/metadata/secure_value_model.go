@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	secretv1beta1 "github.com/grafana/grafana/apps/secret/pkg/apis/secret/v1beta1"
 	"github.com/grafana/grafana/pkg/apimachinery/utils"
+	"github.com/grafana/grafana/pkg/registry/apis/secret/contracts"
 	"github.com/grafana/grafana/pkg/registry/apis/secret/xkube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -135,6 +136,69 @@ func toCreateRow(createdAt, updatedAt int64, keeper string, sv *secretv1beta1.Se
 	row.UpdatedBy = actorUID
 
 	return row, nil
+}
+
+func toRowV2(sv *contracts.SecureValueMetadataModel) (*secureValueDB, error) {
+	var annotations string
+	if len(sv.Annotations) > 0 {
+		cleanedAnnotations := xkube.CleanAnnotations(sv.Annotations)
+		if len(cleanedAnnotations) > 0 {
+			sv.Annotations = make(map[string]string) // Safety: reset to prohibit use of sv.Annotations further.
+
+			encodedAnnotations, err := json.Marshal(cleanedAnnotations)
+			if err != nil {
+				return nil, fmt.Errorf("failed to encode annotations: %w", err)
+			}
+
+			annotations = string(encodedAnnotations)
+		}
+	}
+
+	var labels string
+	if len(sv.Labels) > 0 {
+		encodedLabels, err := json.Marshal(sv.Labels)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode labels: %w", err)
+		}
+
+		labels = string(encodedLabels)
+	}
+
+	var decrypters *string
+	if len(sv.Decrypters) > 0 {
+		encodedDecrypters, err := json.Marshal(sv.Decrypters)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode decrypters: %w", err)
+		}
+
+		rawDecrypters := string(encodedDecrypters)
+		decrypters = &rawDecrypters
+	}
+
+	return &secureValueDB{
+		GUID:                     sv.GUID,
+		Name:                     sv.Name,
+		Namespace:                sv.Namespace,
+		Annotations:              annotations,
+		Labels:                   labels,
+		Created:                  sv.Created,
+		CreatedBy:                sv.CreatedBy,
+		Updated:                  sv.Updated,
+		UpdatedBy:                sv.UpdatedBy,
+		OwnerReferenceAPIGroup:   toNullString(sv.OwnerReferenceAPIGroup),
+		OwnerReferenceAPIVersion: toNullString(sv.OwnerReferenceAPIVersion),
+		OwnerReferenceKind:       toNullString(sv.OwnerReferenceKind),
+		OwnerReferenceName:       toNullString(sv.OwnerReferenceName),
+
+		Active:  sv.Active,
+		Version: sv.Version,
+
+		Description: sv.Description,
+		Keeper:      toNullString(sv.Keeper),
+		Decrypters:  toNullString(decrypters),
+		Ref:         toNullString(sv.Ref),
+		ExternalID:  sv.ExternalID,
+	}, nil
 }
 
 // toRow maps a Kubernetes resource into a DB row.

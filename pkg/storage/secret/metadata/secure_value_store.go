@@ -47,6 +47,92 @@ type secureValueMetadataStorage struct {
 	tracer  trace.Tracer
 }
 
+func (s *secureValueMetadataStorage) CreateV2(ctx context.Context, sv *contracts.SecureValueMetadataModel) (int64, error) {
+	version := sv.Version
+
+	// Some other concurrent request may have created the version we're trying to create,
+	// if that's the case, we'll retry with a new version up to max attempts.
+	attempts, maxAttempts := 0, 3
+	for {
+		sv.Version = version
+		sv.Updated = s.clock.Now().UTC().Unix()
+
+		row, err := toRowV2(sv)
+		if err != nil {
+			return 0, fmt.Errorf("to create row: %w", err)
+		}
+
+		req := createSecureValue{
+			SQLTemplate: sqltemplate.New(s.dialect),
+			Row:         row,
+		}
+
+		query, err := sqltemplate.Execute(sqlSecureValueCreate, req)
+		if err != nil {
+			return 0, fmt.Errorf("execute template %q: %w", sqlSecureValueCreate.Name(), err)
+		}
+
+		res, err := s.db.ExecContext(ctx, query, req.GetArgs()...)
+		if err != nil {
+			if sql.IsRowAlreadyExistsError(err) {
+				if attempts < maxAttempts {
+					attempts += 1
+					version += 1
+					continue
+				}
+				return 0, fmt.Errorf("namespace=%+v name=%+v %w", sv.Namespace, sv.Name, contracts.ErrSecureValueAlreadyExists)
+			}
+			return 0, fmt.Errorf("inserting row: %w", err)
+		}
+
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			return 0, fmt.Errorf("getting rows affected: %w", err)
+		}
+
+		if rowsAffected != 1 {
+			return 0, fmt.Errorf("expected 1 row affected, got %d for %s on %s", rowsAffected, row.Name, row.Namespace)
+		}
+
+		break
+	}
+
+	return version, nil
+}
+
+func (s *secureValueMetadataStorage) UpdateV2(ctx context.Context, sv *contracts.SecureValueMetadataModel) error {
+	row, err := toRowV2(sv)
+	if err != nil {
+		return fmt.Errorf("to update row: %w", err)
+	}
+
+	req := updateSecureValueV2{
+		SQLTemplate: sqltemplate.New(s.dialect),
+		Row:         row,
+	}
+
+	query, err := sqltemplate.Execute(sqlSecureValueUpdateV2, req)
+	if err != nil {
+		return fmt.Errorf("execute template %q: %w", sqlSecureValueUpdateV2.Name(), err)
+	}
+
+	res, err := s.db.ExecContext(ctx, query, req.GetArgs()...)
+	if err != nil {
+		return fmt.Errorf("updating row: %w", err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("getting rows affected: %w", err)
+	}
+
+	if rowsAffected != 1 {
+		return fmt.Errorf("expected 1 row affected, got %d for %s on %s", rowsAffected, row.Name, row.Namespace)
+	}
+
+	return nil
+}
+
 func (s *secureValueMetadataStorage) Create(ctx context.Context, keeper string, sv *secretv1beta1.SecureValue, actorUID string) (_ *secretv1beta1.SecureValue, svmCreateErr error) {
 	start := s.clock.Now()
 	name := sv.GetName()

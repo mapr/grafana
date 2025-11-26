@@ -29,8 +29,38 @@ type ReadOpts struct {
 	ForUpdate bool
 }
 
-// SecureValueMetadataStorage is the interface for wiring and dependency injection.
+type SecureValueMetadataModel struct {
+	// Kubernetes Metadata
+	GUID                     string
+	Name                     string
+	Namespace                string
+	Annotations              map[string]string
+	Labels                   map[string]string
+	Created                  int64
+	CreatedBy                string
+	Updated                  int64
+	UpdatedBy                string
+	OwnerReferenceAPIGroup   *string
+	OwnerReferenceAPIVersion *string
+	OwnerReferenceKind       *string
+	OwnerReferenceName       *string
+
+	// Kubernetes Status
+	Active  bool
+	Version int64
+
+	// Spec
+	Keeper      *string
+	Ref         *string
+	Decrypters  []string
+	Description string
+	ExternalID  string
+}
+
 type SecureValueMetadataStorage interface {
+	CreateV2(ctx context.Context, sv *SecureValueMetadataModel) (version int64, err error)
+	UpdateV2(ctx context.Context, sv *SecureValueMetadataModel) error
+
 	Create(ctx context.Context, keeper string, sv *secretv1beta1.SecureValue, actorUID string) (*secretv1beta1.SecureValue, error)
 	Read(ctx context.Context, namespace xkube.Namespace, name string, opts ReadOpts) (*secretv1beta1.SecureValue, error)
 	List(ctx context.Context, namespace xkube.Namespace) ([]secretv1beta1.SecureValue, error)
@@ -47,7 +77,6 @@ type SecureValueService interface {
 	List(ctx context.Context, namespace xkube.Namespace) (*secretv1beta1.SecureValueList, error)
 	Update(ctx context.Context, newSecureValue *secretv1beta1.SecureValue, actorUID string) (*secretv1beta1.SecureValue, bool, error)
 	Delete(ctx context.Context, namespace xkube.Namespace, name string) (*secretv1beta1.SecureValue, error)
-	SetKeeperAsActive(ctx context.Context, namespace xkube.Namespace, keeperName string) error
 }
 
 type SecureValueClient interface {

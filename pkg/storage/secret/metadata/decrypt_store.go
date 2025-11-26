@@ -27,7 +27,7 @@ import (
 func ProvideDecryptStorage(
 	tracer trace.Tracer,
 	keeperService contracts.KeeperService,
-	keeperMetadataStorage contracts.KeeperMetadataStorage,
+	keeperConfigReader contracts.KeeperConfigReader,
 	secureValueMetadataStorage contracts.SecureValueMetadataStorage,
 	decryptAuthorizer contracts.DecryptAuthorizer,
 	reg prometheus.Registerer,
@@ -38,7 +38,7 @@ func ProvideDecryptStorage(
 
 	return &decryptStorage{
 		tracer:                     tracer,
-		keeperMetadataStorage:      keeperMetadataStorage,
+		keeperConfigReader:         keeperConfigReader,
 		keeperService:              keeperService,
 		secureValueMetadataStorage: secureValueMetadataStorage,
 		decryptAuthorizer:          decryptAuthorizer,
@@ -49,7 +49,7 @@ func ProvideDecryptStorage(
 // decryptStorage is the actual implementation of the decrypt storage.
 type decryptStorage struct {
 	tracer                     trace.Tracer
-	keeperMetadataStorage      contracts.KeeperMetadataStorage
+	keeperConfigReader         contracts.KeeperConfigReader
 	keeperService              contracts.KeeperService
 	secureValueMetadataStorage contracts.SecureValueMetadataStorage
 	decryptAuthorizer          contracts.DecryptAuthorizer
@@ -135,7 +135,7 @@ func (s *decryptStorage) Decrypt(ctx context.Context, namespace xkube.Namespace,
 		return "", fmt.Errorf("failed to authorize decryption with reason %v (%w)", reason, contracts.ErrDecryptNotAuthorized)
 	}
 
-	keeperConfig, err := s.keeperMetadataStorage.GetKeeperConfig(ctx, namespace.String(), sv.Status.Keeper, contracts.ReadOpts{})
+	keeperConfig, err := s.keeperConfigReader.GetKeeperConfig(ctx, namespace.String(), sv.Status.Keeper, contracts.ReadOpts{})
 	if err != nil {
 		return "", fmt.Errorf("failed to read keeper config metadata storage: %v (%w)", err, contracts.ErrDecryptFailed)
 	}
