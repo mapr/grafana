@@ -35,7 +35,7 @@ interface QueryVariableEditorFormProps {
   regex: string | null;
   onRegExChange: (event: FormEvent<HTMLTextAreaElement>) => void;
   regexApplyTo?: VariableRegexApplyTo;
-  onRegexApplyToChange?: (event: VariableRegexApplyTo) => void;
+  onRegexApplyToChange: (event: VariableRegexApplyTo) => void;
   sort: VariableSort;
   onSortChange: (option: SelectableValue<VariableSort>) => void;
   refresh: VariableRefresh;
@@ -134,7 +134,6 @@ export function QueryVariableEditorForm({
         regexApplyTo={regexApplyTo}
         onRegExChange={onRegExChange}
         onRegexApplyToChange={onRegexApplyToChange}
-        testId={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRegExInputV2}
       />
 
       <QueryVariableSortSelect

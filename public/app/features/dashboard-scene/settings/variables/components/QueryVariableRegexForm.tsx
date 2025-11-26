@@ -1,6 +1,7 @@
 import { useMemo, FormEvent } from 'react';
 
 import { VariableRegexApplyTo } from '@grafana/data';
+import { selectors } from '@grafana/e2e-selectors';
 import { Trans, t } from '@grafana/i18n';
 import { Field, Stack, TextLink, RadioButtonGroup, Box } from '@grafana/ui';
 
@@ -11,7 +12,6 @@ interface Props {
   regexApplyTo?: VariableRegexApplyTo;
   onRegExChange: (event: FormEvent<HTMLTextAreaElement>) => void;
   onRegexApplyToChange: (option: VariableRegexApplyTo) => void;
-  testId?: string;
 }
 
 export function QueryVariableRegexForm({
@@ -19,7 +19,6 @@ export function QueryVariableRegexForm({
   regexApplyTo = VariableRegexApplyTo.value,
   onRegExChange,
   onRegexApplyToChange,
-  testId,
 }: Props) {
   const APPLY_REGEX_TO_OPTIONS = useMemo(
     () => [
@@ -67,7 +66,7 @@ export function QueryVariableRegexForm({
           // eslint-disable-next-line @grafana/i18n/no-untranslated-strings
           placeholder="/.*-(?<text>.*)-(?<value>.*)-.*/"
           onBlur={onRegExChange}
-          testId={testId}
+          testId={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRegExInputV2}
           width={52}
           noMargin
         />
@@ -78,7 +77,7 @@ export function QueryVariableRegexForm({
             'dashboard-scene.query-variable-editor-form.description-regex-apply-to',
             'Choose whether to apply the regex pattern to the variable value or display text'
           )}
-          data-testid={testId}
+          data-testid={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRegExApplyToSelectV2}
           noMargin
         >
           <RadioButtonGroup
