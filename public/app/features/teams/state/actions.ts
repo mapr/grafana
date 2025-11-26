@@ -3,7 +3,7 @@ import { debounce } from 'lodash';
 import { VersionsV0Alpha1Kinds7RoutesGroupsGetResponseExternalGroupMapping } from '@grafana/api-clients/rtkq/iam/v0alpha1';
 import { config, getBackendSrv } from '@grafana/runtime';
 import { FetchDataArgs } from '@grafana/ui';
-import { iamAPIv0alpha1, } from 'app/api/clients/iam/v0alpha1';
+import { iamAPIv0alpha1 } from 'app/api/clients/iam/v0alpha1';
 import { updateNavIndex } from 'app/core/actions';
 import { contextSrv } from 'app/core/services/context_srv';
 import { accessControlQueryParam } from 'app/core/utils/accessControl';
@@ -116,7 +116,7 @@ export function loadTeamGroups(): ThunkResult<void> {
 
     if (config.featureToggles.kubernetesExternalGroupMapping) {
       const args = { name: team.uid };
-      
+
       const data = await dispatch(
         iamAPIv0alpha1.endpoints.getTeamGroups.initiate(args, {
           forceRefetch: true,
@@ -124,8 +124,12 @@ export function loadTeamGroups(): ThunkResult<void> {
       ).unwrap();
 
       // Map to internal TeamGroup type
-      const groups: TeamGroup[] = data?.items?.map((item: VersionsV0Alpha1Kinds7RoutesGroupsGetResponseExternalGroupMapping) => 
-        ({ groupId: item.externalGroup, teamId: 0, mappingUid: item.name })) || [];
+      const groups: TeamGroup[] =
+        data?.items?.map((item: VersionsV0Alpha1Kinds7RoutesGroupsGetResponseExternalGroupMapping) => ({
+          groupId: item.externalGroup,
+          teamId: 0,
+          mappingUid: item.name,
+        })) || [];
 
       dispatch(teamGroupsLoaded(groups));
     } else {
@@ -140,19 +144,23 @@ export function addTeamGroup(groupId: string): ThunkResult<void> {
     const team = getStore().team.team;
 
     if (config.featureToggles.kubernetesExternalGroupMapping) {
-      await dispatch(iamAPIv0alpha1.endpoints.createExternalGroupMapping.initiate({ externalGroupMapping: {
-        apiVersion: 'iam.grafana.app/v0alpha1',
-        kind: 'ExternalGroupMapping',
-        metadata: {
-          generateName: 'group-mapping-',
-        },
-        spec: {
-          externalGroupId: groupId,
-          teamRef: {
-            name: team.uid,
+      await dispatch(
+        iamAPIv0alpha1.endpoints.createExternalGroupMapping.initiate({
+          externalGroupMapping: {
+            apiVersion: 'iam.grafana.app/v0alpha1',
+            kind: 'ExternalGroupMapping',
+            metadata: {
+              generateName: 'group-mapping-',
+            },
+            spec: {
+              externalGroupId: groupId,
+              teamRef: {
+                name: team.uid,
+              },
+            },
           },
-        },
-      } })).unwrap();
+        })
+      ).unwrap();
     } else {
       await getBackendSrv().post(`/api/teams/${team.uid}/groups`, { groupId: groupId });
     }
