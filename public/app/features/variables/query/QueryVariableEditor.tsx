@@ -57,6 +57,7 @@ export interface State {
   tagValuesQuery: string | null;
 }
 
+// is this before scene component? should this be updated with regexApplyTo field?
 export class QueryVariableEditorUnConnected extends PureComponent<Props, State> {
   state: State = {
     regex: null,
