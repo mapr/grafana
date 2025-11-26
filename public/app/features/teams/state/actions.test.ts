@@ -91,7 +91,7 @@ describe('Team actions', () => {
         { forceRefetch: true }
       );
 
-      const expectedGroups = [{ groupId: 'g1', teamId: 0, mappingUid: 'mapping-1' }];
+      const expectedGroups = [{ groupId: 'g1', teamId: 0, uid: 'mapping-1' }];
       const loadedAction = dispatchedActions.find((a) => a.type === teamGroupsLoaded.type);
       expect(loadedAction).toBeDefined();
       expect(loadedAction?.payload).toEqual(expectedGroups);

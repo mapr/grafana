@@ -128,7 +128,7 @@ export function loadTeamGroups(): ThunkResult<void> {
         data?.items?.map((item: VersionsV0Alpha1Kinds7RoutesGroupsGetResponseExternalGroupMapping) => ({
           groupId: item.externalGroup,
           teamId: 0,
-          mappingUid: item.name,
+          uid: item.name,
         })) || [];
 
       dispatch(teamGroupsLoaded(groups));
