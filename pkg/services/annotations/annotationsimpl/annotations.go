@@ -7,7 +7,6 @@ import (
 
 	"github.com/grafana/grafana/pkg/services/annotations/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/annotations/annotationsimpl/loki"
-	"github.com/grafana/grafana/pkg/services/annotations/annotationsimpl/loki_annotations"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	alertingStore "github.com/grafana/grafana/pkg/services/ngalert/store"
 
@@ -41,46 +40,26 @@ func ProvideService(
 	l := log.New("annotations")
 	l.Debug("Initializing annotations service")
 
-	var write writeStore
+	xormStore := NewXormStore(cfg, log.New("annotations.sql"), db, tagService, reg)
+	write := xormStore
+
 	var read readStore
-
-	// Try to create Loki store first (default)
-	lokiStore, err := loki_annotations.NewLokiAnnotationsStore(cfg.AnnotationsLoki, log.New("annotations.loki"), tracer, reg)
-	if err != nil {
-		l.Warn("Failed to initialize Loki annotations store", "error", err)
-	}
-	if lokiStore != nil {
-		l.Debug("Using Loki annotations store")
-		write = lokiStore
-		read = lokiStore
+	historianStore := loki.NewLokiHistorianStore(cfg.UnifiedAlerting.StateHistory, db, ruleStore, log.New("annotations.loki"), tracer, reg)
+	if historianStore != nil {
+		l.Debug("Using composite read store")
+		read = NewCompositeStore(log.New("annotations.composite"), xormStore, historianStore)
 	} else {
-		// Fallback to SQL store
-		l.Debug("Using SQL annotations store")
-		xormStore := NewXormStore(cfg, log.New("annotations.sql"), db, tagService, reg)
-		write = xormStore
-		read = xormStore
-
-		// Check if we should also use historian store for reading
-		historianStore := loki.NewLokiHistorianStore(cfg.UnifiedAlerting.StateHistory, db, ruleStore, log.New("annotations.loki"), tracer, reg)
-		if historianStore != nil {
-			l.Debug("Using composite read store (SQL + Historian)")
-			read = NewCompositeStore(log.New("annotations.composite"), xormStore, historianStore)
-		}
+		l.Debug("Using xorm read store")
+		read = write
 	}
 
-	// Create repository first (we need it for AuthService)
-	repo := &RepositoryImpl{
+	return &RepositoryImpl{
 		db:       db,
 		features: features,
+		authZ:    accesscontrol.NewAuthService(db, features, dashSvc, cfg),
 		reader:   read,
 		writer:   write,
 	}
-
-	// Create AuthService with reader reference (to avoid circular dependency)
-	// AuthService needs to read annotations directly without going through Repository.Find
-	repo.authZ = accesscontrol.NewAuthService(db, features, dashSvc, cfg, read)
-
-	return repo
 }
 
 func (r *RepositoryImpl) Save(ctx context.Context, item *annotations.Item) error {

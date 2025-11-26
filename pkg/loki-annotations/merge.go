@@ -1,10 +1,8 @@
-package loki_annotations
+package main
 
 import (
 	"sort"
 	"strconv"
-
-	"github.com/grafana/grafana/pkg/services/annotations"
 )
 
 // Merger handles merging annotations with changes
@@ -19,8 +17,8 @@ func NewMerger() *Merger {
 func (m *Merger) Merge(
 	annEntries []*AnnotationEntry,
 	changes []*ChangeEntry,
-	query annotations.ItemQuery,
-) []*annotations.ItemDTO {
+	query Query,
+) []*Annotation {
 	// If no changes, convert annotations directly
 	if len(changes) == 0 {
 		return m.annotationsToDTOs(annEntries)
@@ -42,7 +40,7 @@ func (m *Merger) Merge(
 	}
 
 	// Apply changes and build result
-	result := make([]*annotations.ItemDTO, 0, len(annEntries))
+	result := make([]*Annotation, 0, len(annEntries))
 	for _, ann := range annEntries {
 		// Check if there's a change for this annotation
 		if change, hasChange := changesByID[ann.ID]; hasChange {
@@ -56,9 +54,9 @@ func (m *Merger) Merge(
 			}
 		}
 
-		// Convert to DTO
-		dto := m.annotationToDTO(ann)
-		result = append(result, dto)
+		// Convert to annotation
+		annotation := m.annotationEntryToAnnotation(ann)
+		result = append(result, annotation)
 	}
 
 	// Sort by time (descending)
@@ -88,43 +86,37 @@ func (m *Merger) applyChanges(ann *AnnotationEntry, change *ChangeEntry) {
 	// Time and TimeEnd cannot be changed - they remain from the original annotation
 }
 
-// annotationsToDTOs converts annotation entries to DTOs
-func (m *Merger) annotationsToDTOs(entries []*AnnotationEntry) []*annotations.ItemDTO {
-	result := make([]*annotations.ItemDTO, 0, len(entries))
+// annotationsToDTOs converts annotation entries to annotations
+func (m *Merger) annotationsToDTOs(entries []*AnnotationEntry) []*Annotation {
+	result := make([]*Annotation, 0, len(entries))
 	for _, entry := range entries {
-		result = append(result, m.annotationToDTO(entry))
+		result = append(result, m.annotationEntryToAnnotation(entry))
 	}
 	return result
 }
 
-// annotationToDTO converts a single annotation entry to DTO
-func (m *Merger) annotationToDTO(entry *AnnotationEntry) *annotations.ItemDTO {
-	dto := &annotations.ItemDTO{
-		Time:    entry.Time,
-		TimeEnd: entry.TimeEnd,
-		Text:    entry.Text,
-		Tags:    entry.Tags,
-		Data:    nil, // Data field is not stored in Loki annotations
+// annotationEntryToAnnotation converts a single annotation entry to annotation
+func (m *Merger) annotationEntryToAnnotation(entry *AnnotationEntry) *Annotation {
+	ann := &Annotation{
+		Time:         entry.Time,
+		TimeEnd:      entry.TimeEnd,
+		Text:         entry.Text,
+		Tags:         entry.Tags,
+		OrgID:        entry.OrgID,
+		UserID:       entry.UserID,
+		PanelID:      entry.PanelID,
+		Created:      entry.Created,
+		DashboardUID: entry.DashboardUID,
 	}
 
 	// Parse ID to get numeric ID
 	if len(entry.ID) > 4 && entry.ID[:4] == "ann-" {
 		if id, err := parseID(entry.ID[4:]); err == nil {
-			dto.ID = id
+			ann.ID = id
 		}
 	}
 
-	if entry.DashboardUID != "" {
-		dto.DashboardUID = &entry.DashboardUID
-	}
-	if entry.PanelID > 0 {
-		dto.PanelID = entry.PanelID
-	}
-	if entry.UserID > 0 {
-		dto.UserID = entry.UserID
-	}
-
-	return dto
+	return ann
 }
 
 // parseID parses annotation ID from string

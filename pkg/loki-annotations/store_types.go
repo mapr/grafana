@@ -1,4 +1,4 @@
-package loki_annotations
+package main
 
 const (
 	annotationsStream = "grafana_annotations"
