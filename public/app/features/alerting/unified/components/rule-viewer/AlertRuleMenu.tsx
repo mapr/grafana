@@ -4,7 +4,7 @@ import { AppEvents } from '@grafana/data';
 import { t } from '@grafana/i18n';
 import { config } from '@grafana/runtime';
 import { Button, ComponentSize, Dropdown, Menu } from '@grafana/ui';
-import appEvents from 'app/core/app_events';
+import { appEvents } from 'app/core/app_events';
 import MenuItemPauseRule from 'app/features/alerting/unified/components/MenuItemPauseRule';
 import MoreButton from 'app/features/alerting/unified/components/MoreButton';
 import { useRulePluginLinkExtension } from 'app/features/alerting/unified/plugins/useRulePluginLinkExtensions';
@@ -13,7 +13,9 @@ import { PromAlertingRuleState, RulerRuleDTO } from 'app/types/unified-alerting-
 
 import {
   AlertRuleAction,
+  EnrichmentAction,
   skipToken,
+  useEnrichmentAbility,
   useGrafanaPromRuleAbilities,
   useRulerRuleAbilities,
 } from '../../hooks/useAbilities';
@@ -112,6 +114,8 @@ const AlertRuleMenu = ({
 
   const extensionsAvailable = ruleExtensionLinks.length > 0;
 
+  const [enrichmentReadSupported, enrichmentReadAllowed] = useEnrichmentAbility(EnrichmentAction.Read);
+
   /**
    * Since Incident isn't available as an open-source product we shouldn't show it for Open-Source licenced editions of Grafana.
    * We should show it in development mode
@@ -139,7 +143,8 @@ const AlertRuleMenu = ({
     ruleUid &&
     handleManageEnrichments &&
     config.featureToggles.alertingEnrichmentPerRule &&
-    config.featureToggles.alertEnrichment;
+    enrichmentReadSupported &&
+    enrichmentReadAllowed;
 
   const menuItems = (
     <>
