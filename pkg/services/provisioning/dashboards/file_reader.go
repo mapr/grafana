@@ -439,6 +439,7 @@ func (fr *FileReader) getOrCreateFolder(ctx context.Context, cfg *config, servic
 
 	// dashboard folder not found. create one.
 	if errors.Is(err, dashboards.ErrFolderNotFound) {
+		fmt.Printf(">>>> folder not found, creating...\n")
 		createCmd := &folder.CreateFolderCommand{
 			OrgID:        cfg.OrgID,
 			UID:          cfg.FolderUID,

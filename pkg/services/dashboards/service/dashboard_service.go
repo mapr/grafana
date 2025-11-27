@@ -877,16 +877,14 @@ func (dr *DashboardServiceImpl) waitForSearchQuery(ctx context.Context, query *d
 }
 
 func (dr *DashboardServiceImpl) DeleteOrphanedProvisionedDashboards(ctx context.Context, cmd *dashboards.DeleteOrphanedProvisionedDashboardsCommand) error {
-	// cleanup duplicate provisioned dashboards first (this will have the same name and external_id)
-	// note: only works in modes 1-3
-	if err := dr.DeleteDuplicateProvisionedDashboards(ctx); err != nil {
-		dr.log.Error("Failed to delete duplicate provisioned dashboards", "error", err)
-	}
-
 	// check each org for orphaned provisioned dashboards
 	orgs, err := dr.orgService.Search(ctx, &org.SearchOrgsQuery{})
 	if err != nil {
 		return err
+	}
+
+	if err := dr.DeleteDuplicateProvisionedDashboards(ctx, orgs); err != nil {
+		dr.log.Error("Failed to delete duplicate provisioned dashboards", "error", err)
 	}
 
 	for _, org := range orgs {
@@ -921,7 +919,13 @@ func (dr *DashboardServiceImpl) DeleteOrphanedProvisionedDashboards(ctx context.
 	return nil
 }
 
-func (dr *DashboardServiceImpl) DeleteDuplicateProvisionedDashboards(ctx context.Context) error {
+// deleteProvisionedDashboardExactDuplicates deletes duplicate provisioned
+// dashboards that are an *exact match*, i.e., the dashboard's name,
+// external_id and checksum are the same.
+//
+// NOTE: only works in modes 1-3, as it relies on the legacy database to find
+// duplicates.
+func (dr *DashboardServiceImpl) deleteProvisionedDashboardExactDuplicates(ctx context.Context) error {
 	duplicates, err := dr.dashboardStore.GetDuplicateProvisionedDashboards(ctx)
 	if err != nil {
 		return err
@@ -944,6 +948,46 @@ func (dr *DashboardServiceImpl) DeleteDuplicateProvisionedDashboards(ctx context
 			}
 		}
 		groups[key] = append(groups[key], dash)
+	}
+
+	return nil
+}
+
+func (dr *DashboardServiceImpl) deleteProvisionedDashboardLogicalDuplicates(ctx context.Context, orgs []*org.OrgDTO) error {
+	for _, org := range orgs {
+		ctx, _ := identity.WithServiceIdentity(ctx, org.ID)
+		var provisionedResources []dashboards.DashboardSearchProjection
+		var err error
+		for range 30 {
+			provisionedResources, err = dr.FindDashboards(ctx, &dashboards.FindPersistedDashboardsQuery{
+				ManagedBy: utils.ManagerKindClassicFP, // nolint:staticcheck
+				OrgId:     org.ID,
+			})
+			if err != nil {
+				return err
+			}
+
+			dr.log.Info("found duplicate provisioned folders/dashboards, deleting", "resource_count", len(provisionedResources))
+			time.Sleep(time.Second)
+		}
+		for _, step := range logicalCleanupSteps(provisionedResources) {
+			fmt.Printf(">>>> Running cleanup step: %#v\n", step)
+			if err := step.Run(ctx, org.ID, dr); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (dr *DashboardServiceImpl) DeleteDuplicateProvisionedDashboards(ctx context.Context, orgs []*org.OrgDTO) error {
+	if err := dr.deleteProvisionedDashboardExactDuplicates(ctx); err != nil {
+		return fmt.Errorf("deleting exact duplicates: %w", err)
+	}
+
+	if err := dr.deleteProvisionedDashboardLogicalDuplicates(ctx, orgs); err != nil {
+		return fmt.Errorf("deleting logical duplicates: %w", err)
 	}
 
 	return nil
