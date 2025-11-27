@@ -195,7 +195,6 @@ export function ModalEditor({ variable }: { variable: QueryVariable }) {
   );
 }
 
-// how do i test this in UI?
 export function Editor({ variable }: { variable: QueryVariable }) {
   const {
     datasource: datasourceRef,
@@ -285,7 +284,6 @@ export function Editor({ variable }: { variable: QueryVariable }) {
         regexApplyTo={regexApplyTo}
         onRegExChange={onRegExChange}
         onRegexApplyToChange={onRegexApplyToChange}
-        testId={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRegExInputV2}
       />
 
       <QueryVariableSortSelect

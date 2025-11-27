@@ -72,7 +72,7 @@ export function QueryVariableRegexForm({
         />
 
         <Field
-          label=""
+          label={t('dashboard-scene.query-variable-editor-form.label-regex-apply-to', 'Apply regex to')}
           description={t(
             'dashboard-scene.query-variable-editor-form.description-regex-apply-to',
             'Choose whether to apply the regex pattern to the variable value or display text'
