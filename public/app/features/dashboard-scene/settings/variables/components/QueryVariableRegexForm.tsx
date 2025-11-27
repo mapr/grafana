@@ -9,9 +9,9 @@ import { VariableTextAreaField } from '../components/VariableTextAreaField';
 
 interface Props {
   regex: string | null;
-  regexApplyTo?: VariableRegexApplyTo;
   onRegExChange: (event: FormEvent<HTMLTextAreaElement>) => void;
-  onRegexApplyToChange: (option: VariableRegexApplyTo) => void;
+  regexApplyTo?: VariableRegexApplyTo;
+  onRegexApplyToChange?: (option: VariableRegexApplyTo) => void;
 }
 
 export function QueryVariableRegexForm({
@@ -71,21 +71,25 @@ export function QueryVariableRegexForm({
           noMargin
         />
 
-        <Field
-          label={t('dashboard-scene.query-variable-editor-form.label-regex-apply-to', 'Apply regex to')}
-          description={t(
-            'dashboard-scene.query-variable-editor-form.description-regex-apply-to',
-            'Choose whether to apply the regex pattern to the variable value or display text'
-          )}
-          data-testid={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRegExApplyToSelectV2}
-          noMargin
-        >
-          <RadioButtonGroup
-            options={APPLY_REGEX_TO_OPTIONS}
-            onChange={onRegexApplyToChange}
-            value={regexApplyToValue}
-          />
-        </Field>
+        {onRegexApplyToChange && (
+          <Field
+            label={t('dashboard-scene.query-variable-editor-form.label-regex-apply-to', 'Apply regex to')}
+            description={t(
+              'dashboard-scene.query-variable-editor-form.description-regex-apply-to',
+              'Choose whether to apply the regex pattern to the variable value or display text'
+            )}
+            data-testid={
+              selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRegExApplyToSelectV2
+            }
+            noMargin
+          >
+            <RadioButtonGroup
+              options={APPLY_REGEX_TO_OPTIONS}
+              onChange={onRegexApplyToChange}
+              value={regexApplyToValue}
+            />
+          </Field>
+        )}
       </Stack>
     </Box>
   );
