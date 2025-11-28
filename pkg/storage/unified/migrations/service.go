@@ -61,8 +61,8 @@ func (p *UnifiedStorageMigrationServiceImpl) Run(ctx context.Context) error {
 
 	// TODO: Re-enable once migrations are ready
 	// TODO: add guarantee that this only runs once
-	return RegisterMigrations(p.migrator, p.cfg, p.sqlStore, p.client)
-	// return nil
+	// return RegisterMigrations(p.migrator, p.cfg, p.sqlStore, p.client)
+	return nil
 }
 
 func RegisterMigrations(
@@ -135,12 +135,14 @@ func registerDashboardAndFolderMigration(mg *sqlstoremigrator.Migrator, migrator
 
 func registerPlaylistMigration(mg *sqlstoremigrator.Migrator, migrator UnifiedMigrator, client resource.ResourceClient) {
 	playlists := schema.GroupResource{Group: "playlist.grafana.app", Resource: "playlists"}
+	driverName := mg.Dialect.DriverName()
 
 	playlistCountValidator := NewCountValidator(
 		client,
 		playlists,
 		"playlist",
 		"org_id = ?",
+		driverName,
 	)
 
 	playlistsMigration := NewResourceMigration(
