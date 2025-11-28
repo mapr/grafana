@@ -61,8 +61,8 @@ func (p *UnifiedStorageMigrationServiceImpl) Run(ctx context.Context) error {
 
 	// TODO: Re-enable once migrations are ready
 	// TODO: add guarantee that this only runs once
-	// return RegisterMigrations(p.migrator, p.cfg, p.sqlStore, p.client)
-	return nil
+	return RegisterMigrations(p.migrator, p.cfg, p.sqlStore, p.client)
+	// return nil
 }
 
 func RegisterMigrations(
@@ -82,6 +82,7 @@ func RegisterMigrations(
 
 	// Register resource migrations
 	registerDashboardAndFolderMigration(mg, migrator, client)
+	registerPlaylistMigration(mg, migrator, client)
 
 	// Run all registered migrations (blocking)
 	sec := cfg.Raw.Section("database")
@@ -130,4 +131,23 @@ func registerDashboardAndFolderMigration(mg *sqlstoremigrator.Migrator, migrator
 		[]Validator{folderCountValidator, dashboardCountValidator, folderTreeValidator},
 	)
 	mg.AddMigration("folders and dashboards migration", dashboardsAndFolders)
+}
+
+func registerPlaylistMigration(mg *sqlstoremigrator.Migrator, migrator UnifiedMigrator, client resource.ResourceClient) {
+	playlists := schema.GroupResource{Group: "playlist.grafana.app", Resource: "playlists"}
+
+	playlistCountValidator := NewCountValidator(
+		client,
+		playlists,
+		"playlist",
+		"org_id = ?",
+	)
+
+	playlistsMigration := NewResourceMigration(
+		migrator,
+		[]schema.GroupResource{playlists},
+		"playlists",
+		[]Validator{playlistCountValidator},
+	)
+	mg.AddMigration("playlists migration", playlistsMigration)
 }
