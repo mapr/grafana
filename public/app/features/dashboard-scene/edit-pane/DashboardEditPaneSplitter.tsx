@@ -69,6 +69,13 @@ export function DashboardEditPaneSplitter({ dashboard, isEditing, body, controls
     hasOpenPane: Boolean(openPane),
     contentMargin: 1,
     position: 'right',
+<<<<<<< Updated upstream
+||||||| Stash base
+    onClosePane: () => editPane.closePane(),
+=======
+    persistanceKey: 'dashboard',
+    onClosePane: () => editPane.closePane(),
+>>>>>>> Stashed changes
   });
 
   /**
