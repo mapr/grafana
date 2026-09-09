@@ -434,6 +434,25 @@ func NewFolderValidationError(path string, err error) *FolderValidationError {
 	return &FolderValidationError{Path: path, Err: err}
 }
 
+// IsFolderNotEmptyAPIError reports whether the folder API rejected deletion because the folder contains resources.
+func IsFolderNotEmptyAPIError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if errors.Is(err, foldermodel.ErrFolderNotEmpty) {
+		return true
+	}
+
+	var statusErr apierrors.APIStatus
+	if errors.As(err, &statusErr) {
+		status := statusErr.Status()
+		return status.Code == 400 && status.Details != nil && status.Details.UID == "folder.not-empty"
+	}
+
+	return false
+}
+
 // IsFolderValidationAPIError reports whether err is a 4xx rejection from the
 // folder API caused by a user-fixable validation rule.
 //

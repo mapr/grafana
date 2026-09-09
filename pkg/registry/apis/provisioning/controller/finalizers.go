@@ -167,6 +167,33 @@ func (f *finalizer) processFolderItems(ctx context.Context, items []*provisionin
 	return count, nil
 }
 
+// releaseFolders removes repository ownership from blocked folders.
+// It processes parents first because managed parents cannot contain unmanaged child folders.
+func releaseFolders(ctx context.Context, clients resources.ResourceClients, folders []*provisioning.ResourceListItem) error {
+	for _, folder := range slices.Backward(folders) {
+		client, _, err := clients.ForResource(ctx, schema.GroupVersionResource{Group: folder.Group, Resource: folder.Resource})
+		if err != nil {
+			return err
+		}
+		patch, err := resources.GetReleasePatch(folder)
+		if err != nil {
+			return err
+		}
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			_, err := client.Patch(ctx, folder.Name, types.JSONPatchType, patch, v1.PatchOptions{})
+			return err
+		})
+		if errors.IsNotFound(err) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		logging.FromContext(ctx).Warn("preserving non-empty folder", "name", folder.Name)
+	}
+	return nil
+}
+
 // processResourceItems processes non-folder items concurrently.
 func (f *finalizer) processResourceItems(ctx context.Context, items []*provisioning.ResourceListItem, process itemProcessor) (int, error) {
 	var processed int64
@@ -214,13 +241,25 @@ func (f *finalizer) deleteExistingItems(
 		return count, err
 	}
 
-	n, err := f.processFolderItems(ctx, folderItems, process)
+	blockedFolders := make([]*provisioning.ResourceListItem, 0)
+	deleteFolder := f.newItemProcessor(ctx, clients, func(client dynamic.ResourceInterface, folder *provisioning.ResourceListItem) error {
+		err := client.Delete(ctx, folder.Name, v1.DeleteOptions{})
+		if resources.IsFolderNotEmptyAPIError(err) {
+			blockedFolders = append(blockedFolders, folder)
+			return nil
+		}
+		return err
+	})
+	n, err := f.processFolderItems(ctx, folderItems, deleteFolder)
 	count += n
 	if err != nil {
 		return count, err
 	}
+	if err := releaseFolders(ctx, clients, blockedFolders); err != nil {
+		return count, err
+	}
 
-	logger.Info("deleted items", "items", count)
+	logger.Info("processed resource cleanup items", "items", count)
 	return count, nil
 }
 

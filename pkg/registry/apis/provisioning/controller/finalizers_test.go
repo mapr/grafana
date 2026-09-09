@@ -733,6 +733,58 @@ func TestDeleteExistingItems_ResourcesBeforeFolders(t *testing.T) {
 	assert.Equal(t, []string{"folder-nested", "folder-root"}, order[2:], "folders should be deleted deepest first")
 }
 
+func TestDeleteExistingItems_ReleasesNestedNonEmptyFoldersTopDown(t *testing.T) {
+	items := provisioning.ResourceList{Items: []provisioning.ResourceListItem{
+		{Group: folders.GroupVersion.Group, Resource: "folders", Name: "shared-folder", Path: "shared"},
+		{Group: folders.GroupVersion.Group, Resource: "folders", Name: "nested-folder", Path: "shared/nested", Folder: "shared-folder"},
+		{Group: "dashboard.grafana.app", Resource: "dashboards", Name: "managed-dashboard", Path: "shared/nested/dashboard.json", Folder: "nested-folder"},
+	}}
+	resourceLister := resources.NewMockResourceLister(t)
+	resourceLister.On("List", mock.Anything, "default", "my-repo").Return(&items, nil)
+
+	clientFactory := resources.NewMockClientFactory(t)
+	clients := resources.NewMockResourceClients(t)
+	clientFactory.On("Clients", mock.Anything, "default").Return(clients, nil)
+
+	var deleted []string
+	var patched []string
+	client := &mockDynamicClient{
+		deleteFunc: func(_ context.Context, name string, _ metav1.DeleteOptions, _ ...string) error {
+			deleted = append(deleted, name)
+			if name == "managed-dashboard" {
+				return nil
+			}
+			return &apierrors.StatusError{ErrStatus: metav1.Status{
+				Code: http.StatusBadRequest, Details: &metav1.StatusDetails{UID: "folder.not-empty"},
+			}}
+		},
+		patchFunc: func(_ context.Context, name string, _ types.PatchType, _ []byte, _ metav1.PatchOptions, _ ...string) (*unstructured.Unstructured, error) {
+			patched = append(patched, name)
+			return nil, nil
+		},
+	}
+	clients.On("ForResource", mock.Anything, schema.GroupVersionResource{
+		Group: folders.GroupVersion.Group, Resource: "folders",
+	}).Return(client, schema.GroupVersionKind{}, nil).Times(4)
+	clients.On("ForResource", mock.Anything, schema.GroupVersionResource{
+		Group: "dashboard.grafana.app", Resource: "dashboards",
+	}).Return(client, schema.GroupVersionKind{}, nil).Once()
+
+	f := &finalizer{
+		lister: resourceLister, clientFactory: clientFactory,
+		metrics:    func() *finalizerMetrics { m := registerFinalizerMetrics(prometheus.NewRegistry()); return &m }(),
+		maxWorkers: 1,
+	}
+	count, err := f.deleteExistingItems(context.Background(), &provisioning.Repository{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-repo", Namespace: "default"},
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, 3, count)
+	assert.Equal(t, []string{"managed-dashboard", "nested-folder", "shared-folder"}, deleted)
+	assert.Equal(t, []string{"shared-folder", "nested-folder"}, patched)
+}
+
 func TestReleaseExistingItems_FoldersBeforeResources(t *testing.T) {
 	var order []string
 	var mu sync.Mutex

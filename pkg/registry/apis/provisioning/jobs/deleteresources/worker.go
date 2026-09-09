@@ -3,6 +3,7 @@ package deleteresources
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/grafana/dskit/concurrency"
@@ -10,10 +11,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/grafana/grafana-app-sdk/logging"
 	provisioning "github.com/grafana/grafana/apps/provisioning/pkg/apis/provisioning/v0alpha1"
 	"github.com/grafana/grafana/apps/provisioning/pkg/repository"
+	"github.com/grafana/grafana/apps/provisioning/pkg/safepath"
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/registry/apis/provisioning/jobs"
 	"github.com/grafana/grafana/pkg/registry/apis/provisioning/resources"
@@ -108,16 +111,26 @@ func (w *Worker) Process(ctx context.Context, repo repository.Repository, job pr
 		folderCtx, folderSpan := tracing.Start(ctx, "provisioning.deleteresources.folders",
 			attribute.Int("count", len(folderItems)),
 		)
+		blockedFolders := make([]*provisioning.ResourceListItem, 0)
 		for _, item := range folderItems {
-			if err := w.deleteItem(folderCtx, clients, item, progress); err != nil {
+			err := w.deleteItem(folderCtx, clients, item, progress)
+			if resources.IsFolderNotEmptyAPIError(err) {
+				blockedFolders = append(blockedFolders, item)
+				continue
+			}
+			if err != nil {
 				folderSpan.End()
 				return err
 			}
 		}
+		if err := w.releaseFolders(folderCtx, clients, blockedFolders, progress); err != nil {
+			folderSpan.End()
+			return err
+		}
 		folderSpan.End()
 	}
 
-	progress.SetMessage(ctx, fmt.Sprintf("deleted %d items", len(items.Items)))
+	progress.SetMessage(ctx, fmt.Sprintf("processed %d cleanup items", len(items.Items)))
 	return nil
 }
 
@@ -147,6 +160,9 @@ func (w *Worker) deleteItem(ctx context.Context, clients resources.ResourceClien
 	delCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	err = res.Delete(delCtx, item.Name, v1.DeleteOptions{})
 	cancel()
+	if resources.IsFolderNotEmptyAPIError(err) {
+		return err
+	}
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -161,5 +177,52 @@ func (w *Worker) deleteItem(ctx context.Context, clients resources.ResourceClien
 		return tooMany
 	}
 
+	return nil
+}
+
+// releaseFolders removes ownership from blocked folders and records each result.
+// It keeps ownership when a managed child deletion failed.
+func (w *Worker) releaseFolders(ctx context.Context, clients resources.ResourceClients, items []*provisioning.ResourceListItem, progress jobs.JobProgressRecorder) error {
+	for _, folder := range slices.Backward(items) {
+		if progress.HasDirPathFailedDeletion(safepath.EnsureTrailingSlash(folder.Path)) {
+			result := jobs.NewResourceResult().
+				WithName(folder.Name).
+				WithPath(folder.Path).
+				WithAction(repository.FileActionDeleted).
+				WithError(fmt.Errorf("preserve folder %s: child resource deletion failed", folder.Name))
+			progress.Record(ctx, result.Build())
+			if err := progress.TooManyErrors(); err != nil {
+				return err
+			}
+			continue
+		}
+
+		result := jobs.NewResourceResult().
+			WithName(folder.Name).
+			WithPath(folder.Path).
+			WithAction(repository.FileActionUpdated).
+			WithWarning(fmt.Errorf("preserved non-empty folder %s", folder.Name))
+		res, gvk, err := clients.ForResource(ctx, schema.GroupVersionResource{Group: folder.Group, Resource: folder.Resource})
+		if err == nil {
+			result.WithGVK(gvk)
+		}
+		var patch []byte
+		if err == nil {
+			patch, err = resources.GetReleasePatch(folder)
+		}
+		if err == nil {
+			releaseCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+			_, err = res.Patch(releaseCtx, folder.Name, types.JSONPatchType, patch, v1.PatchOptions{})
+			cancel()
+		}
+		if err != nil {
+			result.WithError(fmt.Errorf("release folder %s: %w", folder.Name, err))
+		}
+
+		progress.Record(ctx, result.Build())
+		if err := progress.TooManyErrors(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
