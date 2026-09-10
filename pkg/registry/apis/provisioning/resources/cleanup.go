@@ -1,9 +1,15 @@
 package resources
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 
 	folders "github.com/grafana/grafana/apps/folder/pkg/apis/folder/v1beta1"
 	provisioning "github.com/grafana/grafana/apps/provisioning/pkg/apis/provisioning/v0alpha1"
@@ -36,6 +42,18 @@ func GetReleasePatch(item *provisioning.ResourceListItem) ([]byte, error) {
 	}
 
 	return json.Marshal(ops)
+}
+
+// ReleaseResource removes repository ownership from a resource.
+func ReleaseResource(ctx context.Context, client dynamic.ResourceInterface, item *provisioning.ResourceListItem) error {
+	patch, err := GetReleasePatch(item)
+	if err != nil {
+		return fmt.Errorf("get patched annotations: %w", err)
+	}
+	if _, err := client.Patch(ctx, item.Name, types.JSONPatchType, patch, metav1.PatchOptions{}); err != nil {
+		return fmt.Errorf("patch resource to release ownership: %w", err)
+	}
+	return nil
 }
 
 // EscapePatchString escapes a string for use in a JSON Pointer (RFC 6901)

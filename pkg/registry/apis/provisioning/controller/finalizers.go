@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/util/retry"
 
@@ -175,13 +174,8 @@ func releaseFolders(ctx context.Context, clients resources.ResourceClients, fold
 		if err != nil {
 			return err
 		}
-		patch, err := resources.GetReleasePatch(folder)
-		if err != nil {
-			return err
-		}
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			_, err := client.Patch(ctx, folder.Name, types.JSONPatchType, patch, v1.PatchOptions{})
-			return err
+			return resources.ReleaseResource(ctx, client, folder)
 		})
 		if errors.IsNotFound(err) {
 			continue
@@ -312,18 +306,7 @@ func (f *finalizer) releaseResources(
 			"resource", item.Resource,
 		)
 
-		patchAnnotations, err := resources.GetReleasePatch(item)
-		if err != nil {
-			return fmt.Errorf("get patched annotations: %w", err)
-		}
-
-		_, err = client.Patch(
-			ctx, item.Name, types.JSONPatchType, patchAnnotations, v1.PatchOptions{},
-		)
-		if err != nil {
-			return fmt.Errorf("patch resource to release ownership: %w", err)
-		}
-		return nil
+		return resources.ReleaseResource(ctx, client, item)
 	}
 }
 

@@ -169,9 +169,7 @@ func TestWorker_Process_ReleasesNestedNonEmptyFoldersTopDown(t *testing.T) {
 	progress.On("Record", mock.Anything, mock.MatchedBy(func(result jobs.JobResourceResult) bool {
 		return result.Action() == repository.FileActionUpdated && result.Warning() != nil
 	})).Return().Twice()
-	progress.On("HasDirPathFailedDeletion", "shared/").Return(false).Once()
-	progress.On("HasDirPathFailedDeletion", "shared/nested/").Return(false).Once()
-	progress.On("TooManyErrors").Return(nil)
+	progress.On("TooManyErrors").Return(nil).Times(3)
 
 	err := w.Process(ctx, nil, job, progress)
 	require.NoError(t, err)
