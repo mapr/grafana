@@ -128,7 +128,7 @@ func (w *Worker) Process(ctx context.Context, repo repository.Repository, job pr
 		folderSpan.End()
 	}
 
-	progress.SetMessage(ctx, fmt.Sprintf("deleted %d items", len(items.Items)))
+	progress.SetMessage(ctx, fmt.Sprintf("processed %d cleanup items", len(items.Items)))
 	return nil
 }
 
@@ -195,8 +195,7 @@ func releaseFolder(ctx context.Context, clients resources.ResourceClients, folde
 	result := jobs.NewResourceResult().
 		WithName(folder.Name).
 		WithPath(folder.Path).
-		WithAction(repository.FileActionUpdated).
-		WithWarning(fmt.Errorf("preserved non-empty folder %s", folder.Name))
+		WithAction(repository.FileActionUpdated)
 
 	res, gvk, err := clients.ForResource(ctx, schema.GroupVersionResource{Group: folder.Group, Resource: folder.Resource})
 	if err != nil {
@@ -208,8 +207,11 @@ func releaseFolder(ctx context.Context, clients resources.ResourceClients, folde
 	defer cancel()
 
 	if err := resources.ReleaseResource(releaseCtx, res, folder); err != nil {
+		if apierrors.IsNotFound(err) {
+			return result.WithAction(repository.FileActionDeleted).Build()
+		}
 		return result.WithError(fmt.Errorf("release folder %s: %w", folder.Name, err)).Build()
 	}
 
-	return result.Build()
+	return result.WithWarning(fmt.Errorf("preserved non-empty folder %s", folder.Name)).Build()
 }
