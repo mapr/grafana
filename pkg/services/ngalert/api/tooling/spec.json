@@ -7944,7 +7944,6 @@
       }
     },
     "gettableAlert": {
-      "description": "GettableAlert gettable alert",
       "type": "object",
       "required": [
         "labels",
@@ -8001,6 +8000,7 @@
       "$ref": "#/definitions/gettableAlert"
     },
     "gettableAlerts": {
+      "description": "GettableAlerts gettable alerts",
       "type": "array",
       "items": {
         "$ref": "#/definitions/gettableAlert"
@@ -8058,7 +8058,6 @@
       "$ref": "#/definitions/gettableSilence"
     },
     "gettableSilences": {
-      "description": "GettableSilences gettable silences",
       "type": "array",
       "items": {
         "$ref": "#/definitions/gettableSilence"
@@ -8066,7 +8065,6 @@
       "$ref": "#/definitions/gettableSilences"
     },
     "integration": {
-      "description": "Integration integration",
       "type": "object",
       "required": [
         "name",
@@ -8211,6 +8209,7 @@
       }
     },
     "postableSilence": {
+      "description": "PostableSilence postable silence",
       "type": "object",
       "required": [
         "comment",
