@@ -28,8 +28,8 @@ func New(cfg *setting.Cfg, validator validations.DataSourceRequestURLValidator, 
 	return NewForConfig(cfg, validator, tracer)
 }
 
-// NewForConfig keeps timeout settings on the provider instead of modifying SDK
-// defaults, so providers for different tenants can coexist in one process.
+// NewForConfig configures middleware without changing the SDK's process-wide
+// timeout defaults, so it can be used for tenant-specific providers.
 func NewForConfig(cfg *setting.Cfg, validator validations.DataSourceRequestURLValidator, tracer tracing.Tracer) *sdkhttpclient.Provider {
 	logger := log.New("httpclient")
 
@@ -79,10 +79,7 @@ func NewForConfig(cfg *setting.Cfg, validator validations.DataSourceRequestURLVa
 		}))
 	}
 
-	timeouts := timeoutOptions(cfg)
-
 	return newProviderFunc(sdkhttpclient.ProviderOptions{
-		Timeout:     &timeouts,
 		Middlewares: middlewares,
 		ConfigureTransport: func(opts sdkhttpclient.Options, transport *http.Transport) {
 			datasourceName, exists := opts.Labels["datasource_name"]
@@ -113,11 +110,7 @@ func newConntrackRoundTripper(name string, transport *http.Transport) *http.Tran
 //
 // Note: Not optimal changing global state, but hard to not do in this case.
 func setDefaultTimeoutOptions(cfg *setting.Cfg) {
-	sdkhttpclient.DefaultTimeoutOptions = timeoutOptions(cfg)
-}
-
-func timeoutOptions(cfg *setting.Cfg) sdkhttpclient.TimeoutOptions {
-	return sdkhttpclient.TimeoutOptions{
+	sdkhttpclient.DefaultTimeoutOptions = sdkhttpclient.TimeoutOptions{
 		Timeout:               time.Duration(cfg.DataProxyTimeout) * time.Second,
 		DialTimeout:           time.Duration(cfg.DataProxyDialTimeout) * time.Second,
 		KeepAlive:             time.Duration(cfg.DataProxyKeepAlive) * time.Second,

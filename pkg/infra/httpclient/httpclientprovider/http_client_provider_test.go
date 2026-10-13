@@ -95,15 +95,32 @@ func TestHTTPClientProvider(t *testing.T) {
 	})
 }
 
-func TestNewForConfigKeepsTenantTimeoutsIsolated(t *testing.T) {
+func TestNewForConfigPreservesProcessTimeouts(t *testing.T) {
 	original := sdkhttpclient.DefaultTimeoutOptions
-	first := NewForConfig(&setting.Cfg{DataProxyTimeout: 11}, validations.ProvideURLValidator(), tracing.InitializeTracerForTest())
-	second := NewForConfig(&setting.Cfg{DataProxyTimeout: 37}, validations.ProvideURLValidator(), tracing.InitializeTracerForTest())
-	firstClient, err := first.New()
+	t.Cleanup(func() { sdkhttpclient.DefaultTimeoutOptions = original })
+	cfg := setting.NewCfg()
+	cfg.DataProxyTimeout = 30
+	tracer := tracing.InitializeTracerForTest()
+	processProvider := New(cfg, validations.ProvideURLValidator(), tracer)
+	processDefaults := sdkhttpclient.DefaultTimeoutOptions
+
+	for _, timeout := range []int{11, 37} {
+		tenantCfg := setting.NewCfg()
+		tenantCfg.DataProxyTimeout = timeout
+		provider := NewForConfig(tenantCfg, validations.ProvideURLValidator(), tracer)
+		client, err := provider.New()
+		require.NoError(t, err)
+		t.Cleanup(client.CloseIdleConnections)
+		require.Equal(t, 30*time.Second, client.Timeout)
+		require.Equal(t, processDefaults, sdkhttpclient.DefaultTimeoutOptions)
+
+		client, err = provider.New(sdkhttpclient.Options{Timeouts: &sdkhttpclient.TimeoutOptions{Timeout: 7 * time.Second}})
+		require.NoError(t, err)
+		t.Cleanup(client.CloseIdleConnections)
+		require.Equal(t, 7*time.Second, client.Timeout)
+	}
+	client, err := processProvider.New()
 	require.NoError(t, err)
-	secondClient, err := second.New()
-	require.NoError(t, err)
-	require.Equal(t, 11*time.Second, firstClient.Timeout)
-	require.Equal(t, 37*time.Second, secondClient.Timeout)
-	require.Equal(t, original, sdkhttpclient.DefaultTimeoutOptions)
+	t.Cleanup(client.CloseIdleConnections)
+	require.Equal(t, 30*time.Second, client.Timeout)
 }
