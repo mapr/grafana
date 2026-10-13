@@ -68,3 +68,23 @@ func TestCorePlugin(t *testing.T) {
 		require.True(t, callResourceCalled)
 	})
 }
+
+func TestCorePluginQueryDataPanic(t *testing.T) {
+	panicky := backend.QueryDataHandlerFunc(func(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+		panic("nil handler")
+	})
+	factory := New(backend.ServeOpts{QueryDataHandler: panicky})
+	p, err := factory("plugin", log.New("test"), pluginfakes.InitializeNoopTracerForTest(), nil)
+	require.NoError(t, err)
+
+	t.Run("QueryData returns an error", func(t *testing.T) {
+		resp, err := p.QueryData(context.Background(), &backend.QueryDataRequest{})
+		require.Nil(t, resp)
+		require.ErrorContains(t, err, "panic triggered: nil handler")
+	})
+
+	t.Run("QueryChunkedData returns an error", func(t *testing.T) {
+		err := p.QueryChunkedData(context.Background(), &backend.QueryChunkedDataRequest{}, nil)
+		require.ErrorContains(t, err, "panic triggered: nil handler")
+	})
+}

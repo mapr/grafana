@@ -2,6 +2,8 @@ package coreplugin
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -91,7 +93,8 @@ func (cp *corePlugin) CheckHealth(ctx context.Context, req *backend.CheckHealthR
 	return nil, plugins.ErrMethodNotImplemented
 }
 
-func (cp *corePlugin) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+func (cp *corePlugin) QueryData(ctx context.Context, req *backend.QueryDataRequest) (resp *backend.QueryDataResponse, err error) {
+	defer cp.recoverPanic(&err)
 	if cp.QueryDataHandler != nil {
 		ctx = config.WithGrafanaConfig(ctx, req.PluginContext.GrafanaConfig)
 		return cp.QueryDataHandler.QueryData(ctx, req)
@@ -100,7 +103,8 @@ func (cp *corePlugin) QueryData(ctx context.Context, req *backend.QueryDataReque
 	return nil, plugins.ErrMethodNotImplemented
 }
 
-func (cp *corePlugin) QueryChunkedData(ctx context.Context, req *backend.QueryChunkedDataRequest, w backend.ChunkedDataWriter) error {
+func (cp *corePlugin) QueryChunkedData(ctx context.Context, req *backend.QueryChunkedDataRequest, w backend.ChunkedDataWriter) (err error) {
+	defer cp.recoverPanic(&err)
 	ctx = config.WithGrafanaConfig(ctx, req.PluginContext.GrafanaConfig)
 	if raw, isRaw := w.(chunked.RawChunkReceiver); isRaw {
 		w = backend.NewChunkedDataWriter(req.Format, raw.OnChunk) // keeps the raw bytes
@@ -124,6 +128,16 @@ func (cp *corePlugin) QueryChunkedData(ctx context.Context, req *backend.QueryCh
 		return err
 	}
 	return chunked.ProcessTypedResponse(ctx, resp, w)
+}
+
+// recoverPanic turns a panic into an error, as the plugin SDK's gRPC server
+// does for external plugins. Core plugins run in the Grafana process, so an
+// unrecovered panic fails the whole HTTP request.
+func (cp *corePlugin) recoverPanic(err *error) {
+	if p := recover(); p != nil {
+		cp.logger.Error("panic triggered", "error", p, "stack", string(debug.Stack()))
+		*err = fmt.Errorf("panic triggered: %v", p)
+	}
 }
 
 func (cp *corePlugin) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
