@@ -2538,6 +2538,10 @@
       },
       "filter-description": "Filter routes by using a comma separated list of matchers, e.g.:<1>severity=critical, region=EMEA</1>",
       "generated-policies": "Auto-generated policies",
+      "manage-import": {
+        "label": "Manage in Import settings",
+        "return-title": "Notification policies"
+      },
       "matchers": "Matchers",
       "metadata": {
         "active-time": "Active when",
