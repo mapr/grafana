@@ -1865,12 +1865,14 @@
         "cancel-confirm-no": "Dismiss",
         "cancel-confirm-title": "Cancel import?",
         "cancel-confirm-yes": "Discard changes",
+        "continue": "Continue",
+        "review": "Review",
         "skip": "Skip",
-        "step-notifications": "Notification resources",
+        "step-notifications": "Notification configuration",
         "step-notifications-desc": "Contact points, policies, templates",
         "step-review": "Review & import",
         "step-review-desc": "Preview and confirm import",
-        "step-rules": "Alert rules",
+        "step-rules": "Rules",
         "step-rules-desc": "Alert and recording rules"
       },
       "yaml": {

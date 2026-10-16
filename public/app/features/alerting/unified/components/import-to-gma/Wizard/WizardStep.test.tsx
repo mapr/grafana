@@ -161,6 +161,44 @@ describe('WizardStep', () => {
     expect(onSkip).toHaveBeenCalledTimes(1);
   });
 
+  it('labels Next "Continue" before a regular step and "Review" before the review', () => {
+    const { unmount } = renderWithProvider(
+      <WizardStep stepId={StepKey.Notifications} label="Test Step">
+        <div>Step content</div>
+      </WizardStep>,
+      StepKey.Notifications
+    );
+    expect(screen.getByTestId(selectors.pages.Alerting.ImportToGMA.nextButton)).toHaveTextContent(/^continue$/i);
+    unmount();
+
+    renderWithProvider(
+      <WizardStep stepId={StepKey.Rules} label="Test Step">
+        <div>Step content</div>
+      </WizardStep>,
+      StepKey.Rules
+    );
+    expect(screen.getByTestId(selectors.pages.Alerting.ImportToGMA.nextButton)).toHaveTextContent(/^review$/i);
+  });
+
+  it('turns Next into a secondary Skip that skips the step when nextSkips is set', async () => {
+    const onSkip = jest.fn();
+    const onNext = jest.fn(() => true);
+
+    renderWithProvider(
+      <WizardStep stepId={StepKey.Rules} label="Test Step" nextSkips skipLabel="Skip" onSkip={onSkip} onNext={onNext}>
+        <div>Step content</div>
+      </WizardStep>,
+      StepKey.Rules
+    );
+
+    const nextButton = screen.getByTestId(selectors.pages.Alerting.ImportToGMA.nextButton);
+    expect(nextButton).toHaveTextContent(/^skip$/i);
+    await user.click(nextButton);
+
+    expect(onSkip).toHaveBeenCalledTimes(1);
+    expect(onNext).not.toHaveBeenCalled();
+  });
+
   it('should hide Previous button on first step', () => {
     renderWithProvider(
       <WizardStep stepId={StepKey.Notifications} label="Test Step">
