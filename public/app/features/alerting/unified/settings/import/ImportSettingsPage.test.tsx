@@ -1,6 +1,6 @@
 import { HttpResponse, http } from 'msw';
-import { render, testWithFeatureToggles } from 'test/test-utils';
-import { byRole, byText } from 'testing-library-selector';
+import { render, testWithFeatureToggles, waitFor } from 'test/test-utils';
+import { byLabelText, byRole, byText } from 'testing-library-selector';
 
 import { type AlertManagerCortexConfig } from 'app/plugins/datasource/alertmanager/types';
 import { configureStore } from 'app/store/configureStore';
@@ -10,6 +10,12 @@ import { convertToGMAApi } from '../../api/convertToGMAApi';
 import { setupGrafanaManagedServer } from '../../components/settings/mocks/server';
 import { setupMswServer } from '../../mockApi';
 import { grantUserPermissions, grantUserRole } from '../../mocks';
+import { mimirAlertmanagerDataSourcePayload, setupDatasourcesEndpoint } from '../../mocks/server/configure/datasources';
+import {
+  SYNC_SUCCEEDED_CONDITION,
+  setupAutoSyncConfig,
+  setupStatefulAutoSyncConfig,
+} from '../../mocks/server/handlers/k8s/config.k8s';
 import { setupDataSources } from '../../testSetup/datasources';
 
 import ImportSettingsPage from './ImportSettingsPage';
@@ -43,6 +49,15 @@ const syncOwnedConfig: StagedExtraConfig = {
   managed_by: 'auto-sync',
 };
 
+const STOPPED_SYNC_IDENTIFIER = 'devenv-mimir';
+
+/** The copy a sync leaves behind once it is turned off: no longer marked as auto-sync. */
+const stoppedSyncCopy: StagedExtraConfig = {
+  ...stagedConfig,
+  identifier: STOPPED_SYNC_IDENTIFIER,
+  managed_by: 'manual',
+};
+
 /** A staged config from a backend that predates the managed_by field. */
 const legacyStagedConfig: StagedExtraConfig = {
   identifier: stagedConfig.identifier,
@@ -59,6 +74,14 @@ const ui = {
   syncedConfigHeading: byRole('heading', { name: SYNC_DATASOURCE_UID }),
   revertButton: byRole('button', { name: /^revert$/i }),
   syncedBadge: byText(/synced · read-only/i),
+  pendingBadge: byText(/pending first sync/i),
+  waitingForFirstSync: byText(/waiting for the first sync/i),
+  syncDatasourcePicker: byLabelText(/^datasource$/i),
+  disableSyncButton: byRole('button', { name: /^disable sync$/i }),
+  promoteButton: byRole('button', { name: /^promote$/i }),
+  stagedConflict: byText(/auto-sync is not running/i),
+  stoppedBadge: byText(/^sync stopped$/i),
+  enableSyncButton: byRole('button', { name: /^enable sync$/i }),
 };
 
 function serveStagedConfig(staged: StagedExtraConfig) {
@@ -141,6 +164,112 @@ describe('Import settings tab', () => {
       render(<ImportSettingsPage />);
 
       expect(await ui.autoSyncCard.find()).toBeInTheDocument();
+    });
+
+    describe('while sync is set up', () => {
+      beforeEach(() => {
+        grantUserPermissions([
+          AccessControlAction.AlertingNotificationsRead,
+          AccessControlAction.ActionAlertingNotificationsConfigRead,
+        ]);
+        setupDatasourcesEndpoint(server, [mimirAlertmanagerDataSourcePayload({ uid: SYNC_DATASOURCE_UID })]);
+      });
+
+      it('shows the sync and its synced copy in one card', async () => {
+        setupAutoSyncConfig(server, {
+          specUid: SYNC_DATASOURCE_UID,
+          statusUid: SYNC_DATASOURCE_UID,
+          condition: SYNC_SUCCEEDED_CONDITION,
+        });
+        serveStagedConfig(syncOwnedConfig);
+
+        render(<ImportSettingsPage />);
+
+        expect(await ui.syncedBadge.find()).toBeInTheDocument();
+        // The separate auto-sync setting card is folded into the staged card.
+        expect(ui.autoSyncCard.query()).not.toBeInTheDocument();
+        expect(ui.syncDatasourcePicker.get()).toBeDisabled();
+        expect(ui.disableSyncButton.get()).toBeInTheDocument();
+        expect(ui.promoteButton.get()).toBeInTheDocument();
+        expect(ui.revertButton.query()).not.toBeInTheDocument();
+      });
+
+      it('shows the sync as pending before its first copy lands', async () => {
+        setupAutoSyncConfig(server, { specUid: SYNC_DATASOURCE_UID });
+
+        render(<ImportSettingsPage />);
+
+        expect(await ui.pendingBadge.find()).toBeInTheDocument();
+        expect(ui.waitingForFirstSync.get()).toBeInTheDocument();
+        expect(ui.disableSyncButton.get()).toBeInTheDocument();
+        // Nothing to promote yet, and nothing to import from here either.
+        expect(ui.promoteButton.query()).not.toBeInTheDocument();
+        expect(ui.emptyState.query()).not.toBeInTheDocument();
+      });
+
+      it('keeps another staged import in its own card and says it blocks the sync', async () => {
+        setupAutoSyncConfig(server, { specUid: SYNC_DATASOURCE_UID });
+        serveStagedConfig(stagedConfig);
+
+        render(<ImportSettingsPage />);
+
+        expect(await ui.stagedConflict.find()).toBeInTheDocument();
+        expect(ui.stagedConfigHeading.get()).toBeInTheDocument();
+        expect(ui.revertButton.get()).toBeInTheDocument();
+      });
+    });
+
+    describe('after sync is turned off with its copy still staged', () => {
+      beforeEach(() => {
+        grantUserPermissions([
+          AccessControlAction.AlertingNotificationsRead,
+          AccessControlAction.ActionAlertingNotificationsConfigRead,
+        ]);
+        setupDatasourcesEndpoint(server, [mimirAlertmanagerDataSourcePayload({ uid: SYNC_DATASOURCE_UID })]);
+        // Once sync is off the backend marks its leftover copy as manual; only the status ties it to the sync.
+        serveStagedConfig(stoppedSyncCopy);
+      });
+
+      it('keeps the one-card layout, with the copy revertable and sync ready to turn back on', async () => {
+        setupAutoSyncConfig(server, { statusUid: SYNC_DATASOURCE_UID, statusIdentifier: STOPPED_SYNC_IDENTIFIER });
+
+        render(<ImportSettingsPage />);
+
+        expect(await ui.stoppedBadge.find()).toBeInTheDocument();
+        expect(ui.autoSyncCard.query()).not.toBeInTheDocument();
+        expect(ui.syncedBadge.query()).not.toBeInTheDocument();
+        expect(ui.syncDatasourcePicker.get()).toBeEnabled();
+        expect(ui.revertButton.get()).toBeInTheDocument();
+        expect(ui.promoteButton.get()).toBeInTheDocument();
+        expect(ui.enableSyncButton.get()).toBeEnabled();
+      });
+
+      it('keeps the separate setup card for a manual import the sync did not make', async () => {
+        setupAutoSyncConfig(server, { statusUid: SYNC_DATASOURCE_UID, statusIdentifier: STOPPED_SYNC_IDENTIFIER });
+        serveStagedConfig(stagedConfig);
+
+        render(<ImportSettingsPage />);
+
+        expect(await ui.autoSyncCard.find()).toBeInTheDocument();
+        expect(ui.stagedConfigHeading.get()).toBeInTheDocument();
+        expect(ui.stoppedBadge.query()).not.toBeInTheDocument();
+      });
+
+      it('turns sync back on for the datasource the copy came from', async () => {
+        const { getStored } = setupStatefulAutoSyncConfig(server, {
+          statusUid: SYNC_DATASOURCE_UID,
+          statusIdentifier: STOPPED_SYNC_IDENTIFIER,
+        });
+
+        const { user } = render(<ImportSettingsPage />);
+
+        await user.click(await ui.enableSyncButton.find());
+
+        await waitFor(() =>
+          expect(getStored().spec.externalAlertmanagerSync).toEqual({ datasourceUid: SYNC_DATASOURCE_UID })
+        );
+        expect(await ui.disableSyncButton.find()).toBeInTheDocument();
+      });
     });
 
     describe('sync ownership of the staged card', () => {

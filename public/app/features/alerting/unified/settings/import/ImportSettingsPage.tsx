@@ -8,16 +8,20 @@ import { logError } from '../../Analytics';
 import { AlertingPageWrapper } from '../../components/AlertingPageWrapper';
 import { WithReturnButton } from '../../components/WithReturnButton';
 import { AutoSyncConfiguration } from '../../components/settings/AutoSyncConfiguration';
+import { useAutoSyncConfiguration } from '../../components/settings/useAutoSyncConfiguration';
 import { AlertmanagerProvider } from '../../state/AlertmanagerContext';
+import { hasAutoSyncSource } from '../../utils/autoSync';
 import { GRAFANA_RULES_SOURCE_NAME } from '../../utils/datasource';
 import { DOCS_URL_ALERTING_MIGRATION } from '../../utils/docs';
 import { stringifyErrorLike } from '../../utils/misc';
 import { withPageErrorBoundary } from '../../withPageErrorBoundary';
 import { useSettingsPageNav } from '../navigation';
 
+import { AutoSyncStagedCard } from './AutoSyncStagedCard';
 import { StagedConfiguration } from './StagedConfiguration';
+import { type StagedExtraConfig } from './stagedConfig';
 import { getStagedConfigPermissions } from './stagedConfigPermissions';
-import { useStagedConfig } from './useStagedConfig';
+import { useRefetchStagedConfigOnSyncChange, useStagedConfig } from './useStagedConfig';
 
 const IMPORT_WIZARD_URL = '/alerting/import-to-gma';
 
@@ -49,21 +53,67 @@ function ImportSettingsPage() {
 
 function ImportSettingsContent() {
   const isAutoSyncEnabled = config.featureToggles['alerting.syncExternalAlertmanager'];
-  const { stagedConfig } = useStagedConfig();
+  return isAutoSyncEnabled ? <ImportSettingsWithAutoSync /> : <StagedConfigurationSection />;
+}
+
+function ImportSettingsWithAutoSync() {
+  const { stagedConfig, refetch: refetchStagedConfig } = useStagedConfig();
+  useRefetchStagedConfigOnSyncChange(refetchStagedConfig);
+  const autoSync = useAutoSyncConfiguration();
+
+  // Deciding between the two layouts needs the sync setting; guessing would flash the wrong one.
+  if (autoSync.isLoading) {
+    return <LoadingPlaceholder text={t('alerting.settings.import.loading', 'Loading imported configurations…')} />;
+  }
+
+  // Once sync is set up, its setting and the staged copy it keeps are one thing, shown in one card. That
+  // stays so after sync is turned off while its last copy is still staged, so it can be turned back on
+  // from the same place. Otherwise the setting has its own card to pick a datasource and turn sync on.
+  const isSyncSetUp = autoSync.state.kind === 'configured' || autoSync.state.kind === 'operator-managed';
+  const hasStoppedSyncCopy = Boolean(stagedConfig && isStoppedSyncCopy(autoSync, stagedConfig));
+  const showSyncCard = isSyncSetUp || hasStoppedSyncCopy;
 
   return (
     <Stack direction="column" gap={2}>
-      {isAutoSyncEnabled && <AutoSyncConfiguration stagedConfigIdentifier={stagedConfig?.identifier} />}
-      <StagedConfigurationSection />
+      {!showSyncCard && <AutoSyncConfiguration stagedConfigIdentifier={stagedConfig?.identifier} />}
+      <StagedConfigurationSection autoSync={showSyncCard ? autoSync : undefined} />
     </Stack>
   );
 }
 
-function StagedConfigurationSection() {
+/**
+ * Whether the staged config is the copy a sync left behind when it was turned off. Once sync is off the
+ * backend no longer marks the copy as auto-sync, but the status still remembers the datasource the sync
+ * last ran from and the name it imported under.
+ */
+function isStoppedSyncCopy(autoSync: ReturnType<typeof useAutoSyncConfiguration>, stagedConfig: StagedExtraConfig) {
+  return (
+    autoSync.state.kind === 'unconfigured' &&
+    Boolean(autoSync.lastSyncedUid) &&
+    stagedConfig.identifier === autoSync.getSyncIdentifier(autoSync.lastSyncedUid)
+  );
+}
+
+interface StagedConfigurationSectionProps {
+  /** Set while auto-sync is set up, so the section shows the sync and its copy together. */
+  autoSync?: ReturnType<typeof useAutoSyncConfiguration>;
+}
+
+function StagedConfigurationSection({ autoSync }: StagedConfigurationSectionProps) {
   const { canPromote, canRevert } = getStagedConfigPermissions();
   const { stagedConfig, liveConfig, isLoading, isError, error, refetch } = useStagedConfig();
 
   const isSyncManaged = stagedConfig?.managed_by === 'auto-sync';
+  const syncUid = autoSync && hasAutoSyncSource(autoSync.state) ? autoSync.state.uid : '';
+  // The sync's own copy, or another import that keeps the sync from writing one.
+  const isSyncedCopy = Boolean(
+    autoSync &&
+      stagedConfig &&
+      (autoSync.state.kind === 'unconfigured'
+        ? isStoppedSyncCopy(autoSync, stagedConfig)
+        : stagedConfig.identifier === autoSync.getSyncIdentifier(syncUid))
+  );
+  const otherStagedConfig = stagedConfig && !isSyncedCopy ? stagedConfig : undefined;
 
   useEffect(() => {
     if (isError) {
@@ -103,7 +153,27 @@ function StagedConfigurationSection() {
         </Alert>
       )}
 
-      {!isLoading && !isError && !stagedConfig && (
+      {!isLoading && !isError && autoSync && (
+        <AutoSyncStagedCard
+          autoSync={autoSync}
+          syncedConfig={isSyncedCopy ? stagedConfig : undefined}
+          conflictIdentifier={otherStagedConfig?.identifier}
+          liveConfig={liveConfig}
+          canPromote={canPromote}
+          canRevert={canRevert}
+        />
+      )}
+
+      {!isLoading && !isError && autoSync && otherStagedConfig && (
+        <StagedConfiguration
+          stagedConfig={otherStagedConfig}
+          canPromote={canPromote}
+          canRevert={canRevert}
+          liveConfig={liveConfig}
+        />
+      )}
+
+      {!isLoading && !isError && !autoSync && !stagedConfig && (
         <EmptyState
           variant="call-to-action"
           message={t('alerting.settings.import.empty-title', 'No configuration imported yet')}
@@ -123,7 +193,7 @@ function StagedConfigurationSection() {
         </EmptyState>
       )}
 
-      {!isLoading && !isError && stagedConfig && (
+      {!isLoading && !isError && !autoSync && stagedConfig && (
         <StagedConfiguration
           stagedConfig={stagedConfig}
           canPromote={canPromote}
