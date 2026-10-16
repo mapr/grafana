@@ -1331,11 +1331,6 @@
       "count": 1
     }
   },
-  "public/app/features/alerting/unified/rule-list/RuleList.v2.tsx": {
-    "@grafana/no-config-feature-toggles": {
-      "count": 1
-    }
-  },
   "public/app/features/alerting/unified/rule-list/RuleListPageTitle.tsx": {
     "@grafana/no-config-feature-toggles": {
       "count": 1

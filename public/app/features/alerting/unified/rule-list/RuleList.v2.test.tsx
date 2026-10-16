@@ -1,10 +1,12 @@
 import { HttpResponse } from 'msw';
-import { render, testWithFeatureToggles, waitFor } from 'test/test-utils';
+import { act, render, testWithFeatureToggles, waitFor } from 'test/test-utils';
 import { byRole, byTestId } from 'testing-library-selector';
 
 import { OrgRole } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { setPluginComponentsHook, setPluginLinksHook, setReturnToPreviousHook } from '@grafana/runtime';
+import { FlagKeys } from '@grafana/runtime/internal';
+import { setTestFlags } from '@grafana/test-utils/unstable';
 import { AccessControlAction } from 'app/types/accessControl';
 
 import { setupMswServer } from '../mockApi';
@@ -71,6 +73,11 @@ grantUserPermissions([AccessControlAction.AlertingRuleExternalRead]);
 testWithFeatureToggles({ enable: ['alertingListViewV2'] });
 
 const server = setupMswServer();
+
+const IMPORT_WIZARD_FLAGS = {
+  [FlagKeys.AlertingMigrationWizardUI]: true,
+  [FlagKeys.AlertingImportAlertmanagerAPI]: true,
+};
 
 alertingFactory.dataSource.build({ name: 'Mimir', uid: 'mimir' });
 alertingFactory.dataSource.build({ name: 'Prometheus', uid: 'prometheus' });
@@ -284,7 +291,7 @@ describe('RuleListActions', () => {
     expect(ui.menuOptions.newDataSourceRecordingRule.query(menu)).toBeInTheDocument();
   });
 
-  describe('Import Alert Rules', () => {
+  describe('Import rules', () => {
     it('should show "Import alert rules" option when user has required permissions', async () => {
       grantUserPermissions([
         AccessControlAction.AlertingRuleRead,
@@ -330,7 +337,13 @@ describe('RuleListActions', () => {
   });
 
   describe('Import to Grafana Alerting Wizard', () => {
-    testWithFeatureToggles({ enable: ['alertingMigrationWizardUI'] });
+    beforeEach(() => setTestFlags(IMPORT_WIZARD_FLAGS));
+    // The reset fires OpenFeature events while components are still mounted, so it needs act.
+    afterEach(async () => {
+      await act(async () => {
+        setTestFlags();
+      });
+    });
 
     it('shows "Import to Grafana Alerting" for a non-admin with import permissions', async () => {
       grantUserRole(OrgRole.Editor);
@@ -343,21 +356,6 @@ describe('RuleListActions', () => {
       expect(ui.menuOptions.importToGma.query(menu)).toBeInTheDocument();
     });
 
-    it('shows the wizard instead of "Import alert rules", never both', async () => {
-      grantUserPermissions([
-        AccessControlAction.AlertingRuleRead,
-        AccessControlAction.AlertingRuleCreate,
-        AccessControlAction.AlertingProvisioningSetStatus,
-      ]);
-
-      const { user } = render(<RuleListActions />);
-      await user.click(ui.moreButton.get());
-      const menu = await ui.moreMenu.find();
-
-      expect(ui.menuOptions.importToGma.get(menu)).toBeInTheDocument();
-      expect(ui.menuOptions.importAlertRules.query(menu)).not.toBeInTheDocument();
-    });
-
     it('does not show "Import to Grafana Alerting" without import permissions', async () => {
       grantUserPermissions([AccessControlAction.AlertingRuleRead, AccessControlAction.AlertingNotificationsWrite]);
 
@@ -366,6 +364,28 @@ describe('RuleListActions', () => {
       const menu = await ui.moreMenu.find();
 
       expect(ui.menuOptions.importToGma.query(menu)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Import wizard flag on without the Alertmanager import API', () => {
+    beforeEach(() => setTestFlags({ [FlagKeys.AlertingMigrationWizardUI]: true }));
+    // The reset fires OpenFeature events while components are still mounted, so it needs act.
+    afterEach(async () => {
+      await act(async () => {
+        setTestFlags();
+      });
+    });
+
+    // Rule import doesn't use that API, so the wizard still replaces the old rules-only tool.
+    it('offers the wizard instead of the old rules-only import', async () => {
+      grantUserPermissions([AccessControlAction.AlertingRuleCreate, AccessControlAction.AlertingProvisioningSetStatus]);
+
+      const { user } = render(<RuleListActions />);
+      await user.click(ui.moreButton.get());
+      const menu = await ui.moreMenu.find();
+
+      expect(ui.menuOptions.importToGma.get(menu)).toHaveAttribute('href', '/alerting/import-to-gma');
+      expect(ui.menuOptions.importAlertRules.query(menu)).not.toBeInTheDocument();
     });
   });
 
@@ -457,9 +477,14 @@ describe('RuleListActions', () => {
     });
   });
 
-  describe('Auto-sync Mimir Alertmanager — disables Alertmanager import menu items', () => {
-    testWithFeatureToggles({
-      enable: ['alerting.syncExternalAlertmanager', 'alertingMigrationWizardUI'],
+  describe('Auto-sync Mimir Alertmanager — import menu items', () => {
+    testWithFeatureToggles({ enable: ['alerting.syncExternalAlertmanager'] });
+    beforeEach(() => setTestFlags(IMPORT_WIZARD_FLAGS));
+    // The reset fires OpenFeature events while components are still mounted, so it needs act.
+    afterEach(async () => {
+      await act(async () => {
+        setTestFlags();
+      });
     });
 
     // Drive auto-sync state via the Config resource: for an API-configured org useIsAutoSyncActive
@@ -474,32 +499,31 @@ describe('RuleListActions', () => {
       setupAutoSyncConfig(server, { statusUid: uid, origin: 'ini' });
     }
 
-    async function findDisabledWizardItem(menu: HTMLElement) {
-      // The menu item renders the disabled reason in its `description` slot, so the accessible
-      // name expands beyond the original label — match via a name regex that ignores the suffix.
-      return await byRole('menuitem', { name: /import to grafana alerting/i }).find(menu);
-    }
+    // The wizard locks only its notifications step while auto-sync is active, so it stays the way in
+    // for rule import for admins and non-admins alike.
+    it.each([OrgRole.Admin, OrgRole.Editor])(
+      'keeps "Import to Grafana Alerting" enabled for %s when sync is configured for the org',
+      async (role) => {
+        grantUserRole(role);
+        grantUserPermissions([
+          AccessControlAction.AlertingRuleRead,
+          AccessControlAction.AlertingRuleCreate,
+          AccessControlAction.AlertingProvisioningSetStatus,
+          AccessControlAction.ActionAlertingNotificationsConfigRead,
+        ]);
+        mockAutoSync('mimir-uid');
 
-    it('disables "Import to Grafana Alerting" with a reason when sync is configured for the org', async () => {
-      grantUserRole(OrgRole.Editor);
-      grantUserPermissions([
-        AccessControlAction.AlertingRuleCreate,
-        AccessControlAction.AlertingProvisioningSetStatus,
-        AccessControlAction.ActionAlertingNotificationsConfigRead,
-      ]);
-      mockAutoSync('mimir-uid');
+        const { user } = render(<RuleListActions />);
+        await user.click(ui.moreButton.get());
+        const menu = await ui.moreMenu.find();
 
-      const { user } = render(<RuleListActions />);
-      await user.click(ui.moreButton.get());
-      const menu = await ui.moreMenu.find();
+        const item = ui.menuOptions.importToGma.get(menu);
+        expect(item).toHaveAttribute('href', '/alerting/import-to-gma');
+        expect(item).not.toHaveAttribute('aria-disabled', 'true');
+      }
+    );
 
-      const item = await findDisabledWizardItem(menu);
-      expect(item).toHaveAttribute('aria-disabled', 'true');
-      expect(item).not.toHaveAttribute('href');
-      expect(item).toHaveTextContent(/auto-sync/i);
-    });
-
-    it('disables "Import to Grafana Alerting" when sync is configured through grafana.ini', async () => {
+    it('keeps "Import to Grafana Alerting" enabled when sync is configured through grafana.ini', async () => {
       grantUserRole(OrgRole.Editor);
       grantUserPermissions([
         AccessControlAction.AlertingRuleCreate,
@@ -512,12 +536,12 @@ describe('RuleListActions', () => {
       await user.click(ui.moreButton.get());
       const menu = await ui.moreMenu.find();
 
-      const item = await findDisabledWizardItem(menu);
-      expect(item).toHaveAttribute('aria-disabled', 'true');
-      expect(item).toHaveTextContent(/auto-sync/i);
+      const item = ui.menuOptions.importToGma.get(menu);
+      expect(item).toHaveAttribute('href', '/alerting/import-to-gma');
+      expect(item).not.toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('leaves import items enabled when sync is not configured', async () => {
+    it('hides the old "Import alert rules" item whether or not sync is configured', async () => {
       grantUserRole(OrgRole.Admin);
       grantUserPermissions([
         AccessControlAction.AlertingRuleRead,
@@ -532,9 +556,8 @@ describe('RuleListActions', () => {
       await user.click(ui.moreButton.get());
       const menu = await ui.moreMenu.find();
 
-      const wizardItem = ui.menuOptions.importToGma.get(menu);
-      expect(wizardItem).toHaveAttribute('href', '/alerting/import-to-gma');
-      expect(wizardItem).not.toHaveAttribute('aria-disabled', 'true');
+      expect(ui.menuOptions.importAlertRules.query(menu)).not.toBeInTheDocument();
+      expect(ui.menuOptions.importToGma.get(menu)).toHaveAttribute('href', '/alerting/import-to-gma');
     });
   });
 });

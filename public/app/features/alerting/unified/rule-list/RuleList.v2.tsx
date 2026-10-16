@@ -4,6 +4,7 @@ import { useLocalStorage, useToggle } from 'react-use';
 import { selectors } from '@grafana/e2e-selectors';
 import { Trans, t } from '@grafana/i18n';
 import { config } from '@grafana/runtime';
+import { useFlagAlertingMigrationWizardUI } from '@grafana/runtime/internal';
 import { Box, Button, Dropdown, Icon, LinkButton, Menu, Stack } from '@grafana/ui';
 import { contextSrv } from 'app/core/services/context_srv';
 import { AccessControlAction } from 'app/types/accessControl';
@@ -16,7 +17,6 @@ import { useListViewMode } from '../components/rules/Filter/RulesViewModeSelecto
 import { AIAlertRuleButtonComponent } from '../enterprise-components/AI/AIGenAlertRuleButton/addAIAlertRuleButton';
 import { AlertingAction, useAlertingAbility } from '../hooks/useAbilities';
 import { useRulesFilter } from '../hooks/useFilteredRules';
-import { useImportEntrypointState } from '../hooks/useImportEntrypointState';
 import { useAlertRulesNav } from '../navigation/useAlertRulesNav';
 import { useRouteProxyActive } from '../plugin-proxy/withRouteProxy';
 import { getRulesDataSources } from '../utils/datasource';
@@ -87,11 +87,9 @@ export function RuleListActions() {
     contextSrv.hasPermission(AccessControlAction.AlertingRuleCreate) &&
     contextSrv.hasPermission(AccessControlAction.AlertingProvisioningSetStatus);
 
-  const canAccessMigrationWizardUI = config.featureToggles.alertingMigrationWizardUI && hasImportToGMAPermissions;
+  const canAccessMigrationWizardUI = useFlagAlertingMigrationWizardUI() && hasImportToGMAPermissions;
   // The migration wizard replaces the rules-only import tool, so only offer the old one without it.
   const canImportRulesToGMA = hasImportToGMAPermissions && !canAccessMigrationWizardUI;
-
-  const { disabled: importDisabled, reason: importDisabledReason } = useImportEntrypointState();
 
   const [showExportDrawer, toggleShowExportDrawer] = useToggle(false);
 
@@ -124,8 +122,6 @@ export function RuleListActions() {
               label={t('alerting.rule-list-v2.import-to-gma-tool', 'Import to Grafana Alerting')}
               icon="exchange-alt"
               url={ALERTING_PATHS.IMPORT_TO_GMA}
-              disabled={importDisabled}
-              description={importDisabled ? importDisabledReason : undefined}
               testId={selectors.pages.Alerting.RuleList.moreMenu.importToGmaLink}
             />
           )}
@@ -155,8 +151,6 @@ export function RuleListActions() {
       canAccessMigrationWizardUI,
       canExportRules,
       toggleShowExportDrawer,
-      importDisabled,
-      importDisabledReason,
     ]
   );
 

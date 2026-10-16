@@ -14,6 +14,7 @@ import {
   setupAutoSyncConfig,
   setupAutoSyncConfigAbsent,
 } from 'app/features/alerting/unified/mocks/server/handlers/k8s/config.k8s';
+import { ALERTING_API_SERVER_BASE_URL } from 'app/features/alerting/unified/mocks/server/utils';
 import { setupDataSources } from 'app/features/alerting/unified/testSetup/datasources';
 import { type SupportedRulesSourceType } from 'app/features/alerting/unified/utils/datasource';
 import {
@@ -144,7 +145,7 @@ describe('Step1AlertmanagerResources', () => {
       // The YAML source mounts a lazy template dropzone even without import permission.
       expect(await screen.findByText(/drop template files here or click to upload/i)).toBeInTheDocument();
 
-      expect(screen.getByText(/you do not have permission to import notification resources/i)).toBeInTheDocument();
+      expect(screen.getByText(/you do not have permission to import notification configuration/i)).toBeInTheDocument();
       expect(screen.getByText(/insufficient permissions/i)).toBeInTheDocument();
     });
 
@@ -749,13 +750,19 @@ describe('Step1AlertmanagerResources', () => {
         expect(screen.getByRole('switch', { name: /auto-sync/i })).toBeInTheDocument();
       });
 
-      it('disables Policy Tree Name and skips the dry-run once checked', async () => {
+      it('disables Policy Tree Name and runs the dry-run under the name auto-sync will use', async () => {
         grantUserRole('Admin');
         const user = userEvent.setup();
         const onTriggerDryRun = jest.fn();
 
         render(
-          <TestWrapper defaultValues={{ notificationsSource: 'datasource', notificationsDatasourceUID: MIMIR_DS.uid }}>
+          <TestWrapper
+            defaultValues={{
+              notificationsSource: 'datasource',
+              notificationsDatasourceUID: MIMIR_DS.uid,
+              notificationsDatasourceName: MIMIR_DS.name,
+            }}
+          >
             <Step1Content {...defaultStep1Props} onTriggerDryRun={onTriggerDryRun} />
           </TestWrapper>
         );
@@ -765,7 +772,37 @@ describe('Step1AlertmanagerResources', () => {
         await user.click(screen.getByRole('switch', { name: /auto-sync/i }));
 
         expect(screen.getByPlaceholderText(/prometheus-prod/i)).toBeDisabled();
-        expect(onTriggerDryRun).not.toHaveBeenCalled();
+        await waitFor(() => expect(onTriggerDryRun).toHaveBeenCalledWith('mimir-alertmanager'));
+      });
+
+      it('adds a suffix to the dry-run name when a policy tree already uses it, like the sync does', async () => {
+        grantUserRole('Admin');
+        const onTriggerDryRun = jest.fn();
+        server.use(
+          http.get(`${ALERTING_API_SERVER_BASE_URL}/namespaces/:namespace/routingtrees`, () =>
+            HttpResponse.json({
+              kind: 'RoutingTree',
+              metadata: {},
+              items: [{ metadata: { name: 'mimir-alertmanager' }, spec: { defaults: { receiver: 'x' }, routes: [] } }],
+            })
+          )
+        );
+
+        render(
+          <TestWrapper
+            defaultValues={{
+              notificationsSource: 'datasource',
+              notificationsDatasourceUID: MIMIR_DS.uid,
+              notificationsDatasourceName: MIMIR_DS.name,
+              autoSyncNotificationsEnabled: true,
+            }}
+          >
+            <Step1Content {...defaultStep1Props} onTriggerDryRun={onTriggerDryRun} />
+          </TestWrapper>
+        );
+
+        await waitFor(() => expect(onTriggerDryRun).toHaveBeenCalledWith('mimir-alertmanager-2'));
+        expect(onTriggerDryRun).not.toHaveBeenCalledWith('mimir-alertmanager');
       });
 
       it('always lists every Alertmanager datasource regardless of auto-sync checked state', async () => {

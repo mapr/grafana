@@ -180,14 +180,15 @@ describe('Step2AlertRules', () => {
       expect(dataSourceInputs.length).toBeGreaterThan(0);
     });
 
-    it('should render YAML file upload when YAML source is selected', () => {
+    it('should render YAML file upload when YAML source is selected', async () => {
       render(
         <TestWrapper defaultValues={{ rulesSource: 'yaml' }}>
           <Step2Content step1Completed={false} step1Skipped={false} canImport={true} />
         </TestWrapper>
       );
 
-      expect(screen.getByTestId('data-testid-file-upload-input-field')).toBeInTheDocument();
+      // FileDropzone is lazy-loaded, so wait for it to mount.
+      expect(await screen.findByText(/drop yaml file here or click to upload/i)).toBeInTheDocument();
     });
 
     it('should show YAML source option', () => {
@@ -339,7 +340,7 @@ describe('Step2AlertRules', () => {
         </TestWrapper>
       );
 
-      const uploadInput = screen.getByTestId('data-testid-file-upload-input-field');
+      const uploadInput = await screen.findByLabelText(/^rules yaml file/i);
       await userEvent.upload(uploadInput, invalidYaml);
 
       await waitFor(() => {
@@ -364,7 +365,8 @@ describe('Step2AlertRules', () => {
       const yamlRadio = screen.getByRole('radio', { name: /yaml file/i });
       await userEvent.click(yamlRadio);
 
-      expect(screen.getByText(/upload yaml file/i)).toBeInTheDocument();
+      expect(await screen.findByText(/drop yaml file here or click to upload/i)).toBeInTheDocument();
+      expect(screen.queryByText('rules.yaml')).not.toBeInTheDocument();
     });
 
     it('should not block validation when switching from yaml with error to datasource', async () => {
@@ -379,7 +381,7 @@ describe('Step2AlertRules', () => {
 
       // Upload an invalid file to trigger validation error
       const invalidYaml = new File(['not: valid: yaml: {{{'], 'invalid.yaml', { type: 'text/yaml' });
-      const uploadInput = screen.getByTestId('data-testid-file-upload-input-field');
+      const uploadInput = await screen.findByLabelText(/^rules yaml file/i);
       await userEvent.upload(uploadInput, invalidYaml);
 
       await waitFor(() => {
