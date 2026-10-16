@@ -933,11 +933,6 @@
       "count": 5
     }
   },
-  "public/app/features/alerting/routes.tsx": {
-    "@grafana/no-config-feature-toggles": {
-      "count": 2
-    }
-  },
   "public/app/features/alerting/state/alertDef.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -967,11 +962,6 @@
     }
   },
   "public/app/features/alerting/unified/api/integrationSchemasApi.ts": {
-    "@grafana/no-config-feature-toggles": {
-      "count": 1
-    }
-  },
-  "public/app/features/alerting/unified/components/AlertingPageWrapper.tsx": {
     "@grafana/no-config-feature-toggles": {
       "count": 1
     }
@@ -1027,11 +1017,6 @@
     }
   },
   "public/app/features/alerting/unified/components/import-to-gma/steps/Step1AlertmanagerResources.tsx": {
-    "@grafana/no-config-feature-toggles": {
-      "count": 1
-    }
-  },
-  "public/app/features/alerting/unified/components/import-to-gma/useShowImportToGMARulesBanner.ts": {
     "@grafana/no-config-feature-toggles": {
       "count": 1
     }
@@ -1337,11 +1322,6 @@
     }
   },
   "public/app/features/alerting/unified/settings/import/ImportSettingsPage.tsx": {
-    "@grafana/no-config-feature-toggles": {
-      "count": 1
-    }
-  },
-  "public/app/features/alerting/unified/settings/navigation.ts": {
     "@grafana/no-config-feature-toggles": {
       "count": 1
     }

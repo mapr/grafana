@@ -7,7 +7,12 @@ import { type GrafanaRouteComponent, type RouteDescriptor } from 'app/core/navig
 import { AccessControlAction } from 'app/types/accessControl';
 
 import { evaluateAccess, evaluateAccessAll } from './routePermissions';
-import { isNotificationHistoryEnabled, shouldAllowRecoveringDeletedRules } from './unified/featureToggles';
+import {
+  isAlertmanagerImportEnabled,
+  isImportWizardEnabled,
+  isNotificationHistoryEnabled,
+  shouldAllowRecoveringDeletedRules,
+} from './unified/featureToggles';
 import { proxied } from './unified/plugin-proxy/withRouteProxy';
 import {
   PERMISSIONS_CONTACT_POINTS,
@@ -18,6 +23,7 @@ import {
 } from './unified/utils/alertmanagerPermissions';
 
 export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
+  const migrationWizardEnabled = isImportWizardEnabled();
   const routes = [
     {
       path: '/alerting',
@@ -298,12 +304,14 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
         AccessControlAction.AlertingRuleCreate,
         AccessControlAction.AlertingProvisioningSetStatus,
       ]),
-      component: importAlertingComponent(
-        () =>
-          import(
-            /* webpackChunkName: "AlertingImportFromDSRules"*/ 'app/features/alerting/unified/components/import-to-gma/ImportToGMARules'
-          )
-      ),
+      component: migrationWizardEnabled
+        ? () => <Navigate replace to="/alerting/import-to-gma" />
+        : importAlertingComponent(
+            () =>
+              import(
+                /* webpackChunkName: "AlertingImportFromDSRules"*/ 'app/features/alerting/unified/components/import-to-gma/ImportToGMARules'
+              )
+          ),
     },
     {
       path: '/alerting/import-to-gma',
@@ -311,7 +319,7 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
         AccessControlAction.AlertingRuleCreate,
         AccessControlAction.AlertingProvisioningSetStatus,
       ]),
-      component: config.featureToggles.alertingMigrationWizardUI
+      component: migrationWizardEnabled
         ? importAlertingComponent(
             () =>
               import(
@@ -415,7 +423,7 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
     {
       path: '/alerting/admin/import',
       roles: () => ['Admin'],
-      component: cfg.featureToggles.alertingMigrationWizardUI
+      component: isAlertmanagerImportEnabled()
         ? importAlertingComponent(
             () =>
               import(

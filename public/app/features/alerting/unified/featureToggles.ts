@@ -1,5 +1,10 @@
 import { config } from '@grafana/runtime';
-import { FlagKeys, getFeatureFlagClient } from '@grafana/runtime/internal';
+import {
+  FlagKeys,
+  getFeatureFlagClient,
+  useFlagAlertingImportAlertmanagerAPI,
+  useFlagAlertingMigrationWizardUI,
+} from '@grafana/runtime/internal';
 
 import { getPreviewToggle } from './previewToggles';
 import { isAdmin } from './utils/environment';
@@ -37,6 +42,23 @@ export const shouldAllowRecoveringDeletedRules = () =>
   getFeatureFlagClient().getBooleanValue(FlagKeys.AlertRuleRestore, true);
 
 export const shouldAllowPermanentlyDeletingRules = () => shouldAllowRecoveringDeletedRules();
+
+export const isImportWizardEnabled = () =>
+  getFeatureFlagClient().getBooleanValue(FlagKeys.AlertingMigrationWizardUI, false);
+
+// Importing Alertmanager config (the wizard's notifications step, the staged config on the Import
+// settings tab, and auto-sync) goes through the Alertmanager import API, which answers 501 while its
+// flag is off. Rule import doesn't use that API, so the wizard itself only needs its own flag and just
+// locks its notifications step.
+export const isAlertmanagerImportEnabled = () =>
+  isImportWizardEnabled() && getFeatureFlagClient().getBooleanValue(FlagKeys.AlertingImportAlertmanagerAPI, false);
+
+/** React version of {@link isAlertmanagerImportEnabled} that re-renders when either flag changes. */
+export function useIsAlertmanagerImportEnabled(): boolean {
+  const wizardUIEnabled = useFlagAlertingMigrationWizardUI();
+  const importAlertmanagerAPIEnabled = useFlagAlertingImportAlertmanagerAPI();
+  return wizardUIEnabled && importAlertmanagerAPIEnabled;
+}
 
 export const shouldUseBackendFilters = () => config.featureToggles.alertingUIUseBackendFilters ?? false;
 

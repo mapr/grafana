@@ -2,8 +2,9 @@ import { useLocation } from 'react-router-dom-v5-compat';
 
 import { type NavModelItem } from '@grafana/data';
 import { t } from '@grafana/i18n';
-import { config } from '@grafana/runtime';
 import { useSelector } from 'app/types/store';
+
+import { useIsAlertmanagerImportEnabled } from '../featureToggles';
 
 import { useSettingsExtensionsNav } from './extensions';
 
@@ -20,6 +21,7 @@ export function useSettingsPageNav() {
   const settingsNav = navIndex['alerting-admin'];
 
   const extensionTabs = useSettingsExtensionsNav();
+  const alertmanagerImportEnabled = useIsAlertmanagerImportEnabled();
 
   const importTab: NavModelItem = {
     id: 'import',
@@ -40,10 +42,10 @@ export function useSettingsPageNav() {
       icon: 'cloud',
       parentItem: settingsNav,
     },
-    // alertingMigrationWizardUI and alerting.syncExternalAlertmanager always ship together, so gating the
-    // Import tab (which now hosts the auto-sync card) on the wizard flag never hides auto-sync from an
-    // instance that has sync enabled.
-    ...(config.featureToggles.alertingMigrationWizardUI ? [importTab] : []),
+    // The wizard flags and alerting.syncExternalAlertmanager always ship together, and auto-sync needs the
+    // Alertmanager import API anyway, so gating the Import tab (which now hosts the auto-sync card) on the
+    // wizard never hides a working auto-sync from an instance that has sync enabled.
+    ...(alertmanagerImportEnabled ? [importTab] : []),
     ...extensionTabs,
   ];
 
