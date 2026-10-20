@@ -38,6 +38,7 @@ import {
 import { type DashboardSearchItem, DashboardSearchItemType } from '../../search/types';
 
 import { type RulerGroupUpdatedResponse } from './api/alertRuleModel';
+import { resetRulesAPIVersion } from './api/rulesApiVersion';
 
 type Configurator<T> = (builder: T) => T;
 
@@ -342,6 +343,7 @@ export function setupMswServer() {
     resetUserStorage();
     resetHistorianState();
     resetAppPluginMetas();
+    resetRulesAPIVersion();
   });
 
   return server;
