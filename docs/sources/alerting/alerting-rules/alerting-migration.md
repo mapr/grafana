@@ -96,7 +96,7 @@ To use Grafana Alerting to migrate rules, you need the following [RBAC permissio
   The Folders permission is optional and only necessary if you want to create new folders for your target namespace. If your account doesn't have permissions to view a namespace, the tool creates a new one.
 
 {{< admonition type="note" >}}
-When the `alertingMigrationWizardUI` feature toggle is enabled, the import wizard replaces the **Import to Grafana-managed rules** page. To import rules with the wizard, go to **Alerting** > **Alert rules**, click **More** > **Import to Grafana Alerting**, and continue to the **Rules** step. For more information, refer to [Import with the Grafana Alerting user interface](/docs/grafana/<GRAFANA_VERSION>/alerting/configure-notifications/import-alertmanager-configuration/#import-with-the-grafana-alerting-user-interface).
+When the `alertingMigrationWizardUI` feature toggle is enabled, the import wizard replaces the **Import to Grafana-managed rules** page. To import rules with the wizard, go to **Alerting** > **Settings**, click the **Import** tab, and continue to the **Rules** step. The **Import** tab requires the Organization administrator role. For more information, refer to [Import with the Grafana Alerting user interface](/docs/grafana/<GRAFANA_VERSION>/alerting/configure-notifications/import-alertmanager-configuration/#import-with-the-grafana-alerting-user-interface).
 {{< /admonition >}}
 
 To convert data source-managed alert rules to Grafana managed alerts:
