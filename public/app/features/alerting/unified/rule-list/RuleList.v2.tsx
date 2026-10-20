@@ -87,9 +87,10 @@ export function RuleListActions() {
     contextSrv.hasPermission(AccessControlAction.AlertingRuleCreate) &&
     contextSrv.hasPermission(AccessControlAction.AlertingProvisioningSetStatus);
 
-  const canAccessMigrationWizardUI = useFlagAlertingMigrationWizardUI() && hasImportToGMAPermissions;
-  // The migration wizard replaces the rules-only import tool, so only offer the old one without it.
-  const canImportRulesToGMA = hasImportToGMAPermissions && !canAccessMigrationWizardUI;
+  // The migration wizard replaces the rules-only import tool. It imports notification settings as well as
+  // rules, so it is opened from Settings > Import instead of from here.
+  const migrationWizardEnabled = useFlagAlertingMigrationWizardUI();
+  const canImportRulesToGMA = hasImportToGMAPermissions && !migrationWizardEnabled;
 
   const [showExportDrawer, toggleShowExportDrawer] = useToggle(false);
 
@@ -117,14 +118,6 @@ export function RuleListActions() {
               url={ALERTING_PATHS.IMPORT_DATASOURCE_MANAGED_RULES}
             />
           )}
-          {canAccessMigrationWizardUI && (
-            <Menu.Item
-              label={t('alerting.rule-list-v2.import-to-gma-tool', 'Import to Grafana Alerting')}
-              icon="exchange-alt"
-              url={ALERTING_PATHS.IMPORT_TO_GMA}
-              testId={selectors.pages.Alerting.RuleList.moreMenu.importToGmaLink}
-            />
-          )}
         </Menu.Group>
         <Menu.Group label={t('alerting.rule-list.recording-rules', 'Recording rules')}>
           {canCreateGrafanaRules && (
@@ -144,14 +137,7 @@ export function RuleListActions() {
         </Menu.Group>
       </Menu>
     ),
-    [
-      canCreateGrafanaRules,
-      canCreateCloudRules,
-      canImportRulesToGMA,
-      canAccessMigrationWizardUI,
-      canExportRules,
-      toggleShowExportDrawer,
-    ]
+    [canCreateGrafanaRules, canCreateCloudRules, canImportRulesToGMA, canExportRules, toggleShowExportDrawer]
   );
 
   return (

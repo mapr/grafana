@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom-v5-compat';
+import { Navigate, useLocation } from 'react-router-dom-v5-compat';
 
 import { config } from '@grafana/runtime';
 import { FlagKeys, getFeatureFlagClient } from '@grafana/runtime/internal';
@@ -6,14 +6,14 @@ import { SafeDynamicImport } from 'app/core/components/DynamicImports/SafeDynami
 import { type GrafanaRouteComponent, type RouteDescriptor } from 'app/core/navigation/types';
 import { AccessControlAction } from 'app/types/accessControl';
 
-import { evaluateAccess, evaluateAccessAll } from './routePermissions';
+import { evaluateAccess } from './routePermissions';
 import {
-  isAlertmanagerImportEnabled,
   isImportWizardEnabled,
   isNotificationHistoryEnabled,
   shouldAllowRecoveringDeletedRules,
 } from './unified/featureToggles';
 import { proxied } from './unified/plugin-proxy/withRouteProxy';
+import { ALERTING_IMPORT_SETTINGS_URL } from './unified/settings/navigation';
 import {
   PERMISSIONS_CONTACT_POINTS,
   PERMISSIONS_NOTIFICATION_POLICIES,
@@ -305,7 +305,7 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
         AccessControlAction.AlertingProvisioningSetStatus,
       ]),
       component: migrationWizardEnabled
-        ? () => <Navigate replace to="/alerting/import-to-gma" />
+        ? () => <Navigate replace to={`${ALERTING_IMPORT_SETTINGS_URL}?step=rules`} />
         : importAlertingComponent(
             () =>
               import(
@@ -314,19 +314,10 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
           ),
     },
     {
+      // The wizard moved to Settings > Import. Old links still work, including ?step=rules.
       path: '/alerting/import-to-gma',
-      roles: evaluateAccessAll([
-        AccessControlAction.AlertingRuleCreate,
-        AccessControlAction.AlertingProvisioningSetStatus,
-      ]),
-      component: migrationWizardEnabled
-        ? importAlertingComponent(
-            () =>
-              import(
-                /* webpackChunkName: "AlertingImportToGMA"*/ 'app/features/alerting/unified/components/import-to-gma/ImportToGMA'
-              )
-          )
-        : () => <Navigate replace to="/alerting/list" />,
+      roles: () => ['Admin'],
+      component: migrationWizardEnabled ? RedirectToImportSettings : () => <Navigate replace to="/alerting/list" />,
     },
     proxied({
       path: '/alerting/new/:type?',
@@ -421,9 +412,9 @@ export function getAlertingRoutes(cfg = config): RouteDescriptor[] {
       ),
     },
     {
-      path: '/alerting/admin/import',
+      path: ALERTING_IMPORT_SETTINGS_URL,
       roles: () => ['Admin'],
-      component: isAlertmanagerImportEnabled()
+      component: migrationWizardEnabled
         ? importAlertingComponent(
             () =>
               import(
@@ -452,4 +443,9 @@ function importAlertingComponent(loader: () => Promise<unknown>): GrafanaRouteCo
   const featureDisabledPageLoader = () =>
     import(/* webpackChunkName: "AlertingDisabled" */ 'app/features/alerting/unified/AlertingNotEnabled');
   return SafeDynamicImport(config.unifiedAlertingEnabled ? loader : featureDisabledPageLoader);
+}
+
+function RedirectToImportSettings() {
+  const { search } = useLocation();
+  return <Navigate replace to={{ pathname: ALERTING_IMPORT_SETTINGS_URL, search }} />;
 }

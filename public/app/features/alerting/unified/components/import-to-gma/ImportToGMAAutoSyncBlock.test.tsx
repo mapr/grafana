@@ -11,11 +11,11 @@ import { AccessControlAction } from 'app/types/accessControl';
 
 import { setupMswServer } from '../../mockApi';
 import { grantUserPermissions, grantUserRole, mockDataSource } from '../../mocks';
-import { setupDatasourcesEndpoint } from '../../mocks/server/configure/datasources';
+import { mimirAlertmanagerDataSourcePayload, setupDatasourcesEndpoint } from '../../mocks/server/configure/datasources';
 import {
-  MIMIR_FETCH_FAILED_CONDITION,
   SYNC_SUCCEEDED_CONDITION,
   setupAutoSyncConfig,
+  setupStatefulAutoSyncConfig,
 } from '../../mocks/server/handlers/k8s/config.k8s';
 import { type StagedExtraConfig } from '../../settings/import/stagedConfig';
 import { setupDataSources } from '../../testSetup/datasources';
@@ -23,21 +23,15 @@ import { DataSourceType } from '../../utils/datasource';
 
 import { ImportWizardGate } from './ImportToGMA';
 
-const mockReturnToPrevious = jest.fn();
-// The Settings links set up a way back to the wizard, which needs the app chrome these tests don't render.
-jest.mock('@grafana/runtime', () => ({
-  ...jest.requireActual('@grafana/runtime'),
-  useReturnToPrevious: () => mockReturnToPrevious,
-}));
-
 const server = setupMswServer();
 
 const MIMIR_DS_UID = 'mimir-uid';
 
 const AM_CONFIG_URL = '/api/alertmanager/:name/config/api/v1/alerts';
 
+// Auto-sync stages its copy under the datasource UID.
 const syncedConfig: StagedExtraConfig = {
-  identifier: 'mimir-prod',
+  identifier: MIMIR_DS_UID,
   alertmanager_config: 'route:\n  receiver: default\nreceivers:\n  - name: default\n',
   template_files: { 'slack.tmpl': '', 'email.tmpl': '' },
   managed_by: 'auto-sync',
@@ -77,24 +71,14 @@ afterEach(async () => {
 const ui = {
   blockTitle: byText(/auto-sync is enabled/i),
   importAPIDisabledTitle: byText(/notification configuration import is unavailable/i),
-  goToSettings: byRole('link', { name: /go to alerting settings/i }),
-  viewDetails: byRole('link', { name: /^view details$/i }),
-  syncedConfigHeading: byRole('heading', { name: 'mimir-prod' }),
-  syncedDatasourceHeading: byRole('heading', { name: 'Mimir Prod' }),
-  syncedDatasourceLogo: byRole('img', { name: /logo$/i }),
-  contactPointCount: byTestId('synced-config-contact-points'),
-  policyTreeCount: byTestId('synced-config-notification-policies'),
-  templateCount: byTestId('synced-config-templates'),
-  inhibitionRuleCount: byTestId('synced-config-inhibition-rules'),
   syncedBadge: byText(/synced · read-only/i),
-  pendingCardHeading: byRole('heading', { name: MIMIR_DS_UID }),
   pendingBadge: byText(/pending first sync/i),
   pendingDescription: byText(/waiting for the first sync/i),
-  failingBadge: byText(/sync failing/i),
-  failingWithCopyDescription: byText(/configuration from the last successful sync/i),
-  pendingWithCopyDescription: byText(/waiting for the next sync/i),
   importRules: byRole('link', { name: /import alert rules/i }),
-  disableSyncHint: byText(/disable auto-sync in Alerting settings/i),
+  disableSyncHint: byText(/disable sync below to import notification configuration/i),
+  stagedTitle: byText(/^staged configuration$/i),
+  disableSyncButton: byRole('button', { name: /^disable sync$/i }),
+  promoteButton: byRole('button', { name: /^promote$/i }),
   notificationsStep: byRole('group', { name: /import notification configuration/i }),
   rulesStep: byRole('group', { name: /import rules/i }),
   nextButton: byTestId(selectors.pages.Alerting.ImportToGMA.nextButton),
@@ -144,8 +128,6 @@ describe('Import wizard auto-sync gate', () => {
       expect(await ui.notificationsStep.find()).toBeInTheDocument();
       expect(ui.blockTitle.get()).toBeInTheDocument();
       expect(ui.disableSyncHint.get()).toBeInTheDocument();
-      // Settings is reached from the summary card only, never from the notice.
-      expect(ui.goToSettings.query()).not.toBeInTheDocument();
       // The locked step has nothing to skip, it only offers to continue.
       expect(ui.nextButton.get()).toHaveAttribute('aria-disabled', 'false');
       expect(ui.skipButton.query()).not.toBeInTheDocument();
@@ -153,129 +135,64 @@ describe('Import wizard auto-sync gate', () => {
       expect(ui.importRules.query()).not.toBeInTheDocument();
     });
 
-    describe('previewing the synced configuration', () => {
+    describe('showing the synced configuration', () => {
       beforeEach(() => {
+        grantUserRole(OrgRole.Admin);
         grantUserPermissions([
           AccessControlAction.ActionAlertingNotificationsConfigRead,
           AccessControlAction.AlertingRuleCreate,
           AccessControlAction.AlertingProvisioningSetStatus,
           AccessControlAction.AlertingNotificationsRead,
+          AccessControlAction.AlertingNotificationsWrite,
         ]);
-        // A healthy sync by default; tests about other states set their own.
+        setupDatasourcesEndpoint(server, [mimirAlertmanagerDataSourcePayload({ uid: MIMIR_DS_UID })]);
+        setupDataSources();
+      });
+
+      it('shows the synced copy with the controls to stop the sync or promote the copy', async () => {
         setupAutoSyncConfig(server, {
           specUid: MIMIR_DS_UID,
           statusUid: MIMIR_DS_UID,
           condition: SYNC_SUCCEEDED_CONDITION,
         });
-        // Start without registered datasources; a test that needs one registers it.
-        setupDataSources();
-      });
-
-      it('names the card after the synced datasource, with its logo', async () => {
-        grantUserRole(OrgRole.Admin);
-        setupDataSources(mockDataSource({ uid: MIMIR_DS_UID, name: 'Mimir Prod', type: DataSourceType.Alertmanager }));
         serveStagedConfig(syncedConfig);
 
         render(<ImportWizardGate />);
 
-        expect(await ui.syncedDatasourceHeading.find()).toBeInTheDocument();
-        expect(ui.syncedDatasourceLogo.get()).toBeInTheDocument();
-        // The datasource name replaces the config's identifier.
-        expect(ui.syncedConfigHeading.query()).not.toBeInTheDocument();
+        expect(await ui.syncedBadge.find()).toBeInTheDocument();
+        expect(ui.blockTitle.get()).toBeInTheDocument();
+        expect(ui.disableSyncButton.get()).toBeInTheDocument();
+        expect(ui.promoteButton.get()).toBeInTheDocument();
       });
 
-      // No datasource is registered in the other tests, so they also cover falling back to the identifier.
-      it('summarises what the synced config contains, with a details link for admins', async () => {
-        grantUserRole(OrgRole.Admin);
-        serveStagedConfig(syncedConfig);
-
-        const { user } = render(<ImportWizardGate />);
-
-        expect(await ui.syncedConfigHeading.find()).toBeInTheDocument();
-        expect(ui.syncedBadge.get()).toBeInTheDocument();
-        expect(ui.contactPointCount.get()).toHaveTextContent('1contact point');
-        expect(ui.policyTreeCount.get()).toHaveTextContent('1notification policy tree');
-        expect(ui.templateCount.get()).toHaveTextContent('2templates');
-        // Kinds the synced config doesn't have are left out.
-        expect(ui.inhibitionRuleCount.query()).not.toBeInTheDocument();
-        expect(ui.viewDetails.get()).toHaveAttribute('href', '/alerting/admin/import');
-        // Following the link offers a way back to the wizard.
-        await user.click(ui.viewDetails.get());
-        expect(mockReturnToPrevious).toHaveBeenCalledWith('Import to Grafana Alerting');
-        // The card carries the Settings link, so the notice doesn't repeat it.
-        expect(ui.goToSettings.query()).not.toBeInTheDocument();
-      });
-
-      it('shows the preview without the admin-only Settings link to non-admins', async () => {
-        grantUserRole(OrgRole.Editor);
-        serveStagedConfig(syncedConfig);
-
-        render(<ImportWizardGate />);
-
-        expect(await ui.syncedConfigHeading.find()).toBeInTheDocument();
-        expect(ui.viewDetails.query()).not.toBeInTheDocument();
-      });
-
-      it('skips the preview, and its request, for users who cannot read notifications', async () => {
-        grantUserRole(OrgRole.Editor);
-        grantUserPermissions([
-          AccessControlAction.ActionAlertingNotificationsConfigRead,
-          AccessControlAction.AlertingRuleCreate,
-          AccessControlAction.AlertingProvisioningSetStatus,
-        ]);
-        const requests = serveStagedConfig(syncedConfig);
-
-        render(<ImportWizardGate />);
-
-        expect(await ui.blockTitle.find()).toBeInTheDocument();
-        expect(ui.syncedConfigHeading.query()).not.toBeInTheDocument();
-        expect(requests.count).toBe(0);
-      });
-
-      // An older copy must not read as up to date while the sync is failing or hasn't run since.
-      it('shows a failing sync as failing even with a copy from an earlier sync', async () => {
-        grantUserRole(OrgRole.Admin);
-        setupAutoSyncConfig(server, {
-          specUid: MIMIR_DS_UID,
-          statusUid: MIMIR_DS_UID,
-          condition: MIMIR_FETCH_FAILED_CONDITION,
-        });
-        serveStagedConfig(syncedConfig);
-
-        render(<ImportWizardGate />);
-
-        expect(await ui.failingBadge.find()).toBeInTheDocument();
-        expect(ui.syncedBadge.query()).not.toBeInTheDocument();
-        expect(ui.failingWithCopyDescription.get()).toBeInTheDocument();
-        // The copy it still has is summarised.
-        expect(ui.contactPointCount.get()).toBeInTheDocument();
-      });
-
-      it('shows a sync that has not run since being turned back on as pending', async () => {
-        grantUserRole(OrgRole.Admin);
-        setupAutoSyncConfig(server, { specUid: MIMIR_DS_UID });
-        serveStagedConfig(syncedConfig);
-
-        render(<ImportWizardGate />);
-
-        expect(await ui.pendingBadge.find()).toBeInTheDocument();
-        expect(ui.syncedBadge.query()).not.toBeInTheDocument();
-        expect(ui.pendingWithCopyDescription.get()).toBeInTheDocument();
-      });
-
-      it('shows the card as pending while nothing has synced yet', async () => {
-        grantUserRole(OrgRole.Admin);
+      it('shows the sync as pending while nothing has synced yet', async () => {
         setupAutoSyncConfig(server, { specUid: MIMIR_DS_UID });
         serveStagedConfig(undefined);
 
         render(<ImportWizardGate />);
 
-        // No datasource is registered here, so the card falls back to the datasource UID.
-        expect(await ui.pendingCardHeading.find()).toBeInTheDocument();
-        expect(ui.pendingBadge.get()).toBeInTheDocument();
+        expect(await ui.pendingBadge.find()).toBeInTheDocument();
         expect(ui.pendingDescription.get()).toBeInTheDocument();
-        expect(ui.syncedBadge.query()).not.toBeInTheDocument();
-        expect(ui.viewDetails.get()).toBeInTheDocument();
+        expect(ui.promoteButton.query()).not.toBeInTheDocument();
+      });
+
+      it('unlocks the notifications step once sync is disabled from the card', async () => {
+        setupStatefulAutoSyncConfig(server, {
+          specUid: MIMIR_DS_UID,
+          statusUid: MIMIR_DS_UID,
+          condition: SYNC_SUCCEEDED_CONDITION,
+        });
+        serveStagedConfig(syncedConfig);
+
+        const { user } = render(<ImportWizardGate />);
+
+        await user.click(await ui.disableSyncButton.find());
+        await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /^disable sync$/i }));
+
+        await waitFor(() => expect(ui.blockTitle.query()).not.toBeInTheDocument());
+        expect(ui.notificationsStep.get()).toBeInTheDocument();
+        // The copy the sync left behind is still staged, ready to promote or revert.
+        expect(ui.stagedTitle.get()).toBeInTheDocument();
       });
     });
 
@@ -316,19 +233,6 @@ describe('Import wizard auto-sync gate', () => {
 
       expect(await ui.rulesStep.find()).toBeInTheDocument();
       expect(ui.step1SkippedNotice.query()).not.toBeInTheDocument();
-    });
-
-    it('hides the admin-only Settings link from non-admins', async () => {
-      // The Settings route is gated on the Org Admin role, so linking non-admins there would bounce
-      // them to the home page.
-      grantUserRole(OrgRole.Editor);
-      setupAutoSyncConfig(server, { specUid: MIMIR_DS_UID });
-
-      render(<ImportWizardGate />);
-
-      expect(await ui.blockTitle.find()).toBeInTheDocument();
-      expect(ui.goToSettings.query()).not.toBeInTheDocument();
-      expect(ui.disableSyncHint.query()).not.toBeInTheDocument();
     });
 
     it('renders the wizard when auto-sync is not active', async () => {

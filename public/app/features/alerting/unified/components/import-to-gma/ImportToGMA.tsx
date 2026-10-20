@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
 import { getRoutingTreeDisplayName } from '@grafana/alerting/unstable';
-import { type GrafanaTheme2, OrgRole } from '@grafana/data';
+import { type GrafanaTheme2 } from '@grafana/data';
 import { Trans, t } from '@grafana/i18n';
 import { locationService } from '@grafana/runtime';
 import { useFlagAlertingImportAlertmanagerAPI } from '@grafana/runtime/internal';
@@ -20,12 +20,9 @@ import {
   Spinner,
   Stack,
   Text,
-  TextLink,
   useStyles2,
 } from '@grafana/ui';
 import { useAppNotification } from 'app/core/copy/appNotification';
-import { contextSrv } from 'app/core/services/context_srv';
-import { AccessControlAction } from 'app/types/accessControl';
 import { type RulerRulesConfigDTO } from 'app/types/unified-alerting-dto';
 
 import {
@@ -34,30 +31,23 @@ import {
   trackImportToGMADryrunWarning,
   trackImportToGMAError,
   trackImportToGMASuccess,
-  trackImportToGMAWizardCancelled,
   trackImportToGMAWizardStarted,
   trackImportToGMAWizardStepSkipped,
 } from '../../Analytics';
 import { fetchAlertManagerConfig } from '../../api/alertmanager';
-import { useAutoSyncConfigQuery } from '../../api/configApi';
 import { useIsAutoSyncActive } from '../../hooks/useIsAutoSyncActive';
-import { getAlertRulesNavId } from '../../navigation/useAlertRulesNav';
-import { useRefetchStagedConfigOnSyncChange, useStagedConfig } from '../../settings/import/useStagedConfig';
+import { useURLSearchParams } from '../../hooks/useURLSearchParams';
+import { StagedImportSection } from '../../settings/import/StagedImportSection';
+import { useStagedConfig } from '../../settings/import/useStagedConfig';
 import { ALERTING_IMPORT_SETTINGS_URL } from '../../settings/navigation';
 import { type Folder } from '../../types/rule-form';
-import { deriveSyncHealth, deriveSyncSource } from '../../utils/autoSync';
-import { DOCS_URL_ALERTING_MIGRATION } from '../../utils/docs';
 import { stringifyErrorLike } from '../../utils/misc';
 import { createListFilterLink } from '../../utils/navigation';
-import { withPageErrorBoundary } from '../../withPageErrorBoundary';
-import { AlertingPageWrapper } from '../AlertingPageWrapper';
 import { useGetRulerRules } from '../rule-editor/useAlertRuleSuggestions';
 import { useAutoSyncConfiguration } from '../settings/useAutoSyncConfiguration';
 
 import { RenamedResourcesList } from './CollapsibleRenameList';
 import { PolicyTreeNameHelp } from './PolicyTreeNameHelp';
-import { SyncedConfigSummaryCard } from './SyncedConfigSummaryCard';
-import { CancelButton } from './Wizard/CancelButton';
 import { StepperStateProvider, useStepperState } from './Wizard/StepperState';
 import { WizardLayout } from './Wizard/WizardLayout';
 import { WizardStep } from './Wizard/WizardStep';
@@ -110,40 +100,22 @@ export interface ImportFormValues {
   targetDatasourceUID?: string;
 }
 
-const ImportToGMA = () => {
-  return (
-    <AlertingPageWrapper
-      navId={getAlertRulesNavId()}
-      pageNav={{
-        text: t('alerting.import-to-gma-tool.pageTitle', 'Import to Grafana Alerting'),
-      }}
-      subTitle={
-        <Trans i18nKey="alerting.import-to-gma.info-description">
-          This wizard helps you import alert rules and notification configuration from external sources to Grafana
-          Alerting. For more information, refer to the{' '}
-          <TextLink href={DOCS_URL_ALERTING_MIGRATION} external>
-            documentation
-          </TextLink>
-          .
-        </Trans>
-      }
-    >
-      <ImportWizardGate />
-    </AlertingPageWrapper>
-  );
-};
-
 /**
- * Why the notifications step can't be used. Rule import doesn't depend on either of these, so the
+ * Why the notifications step can't be used. Rule import doesn't depend on any of these, so the
  * rest of the wizard stays available.
  * - auto-sync: notification configuration is a read-only mirror of the synced data source.
+ * - staged: an earlier import is still staged. It has to be promoted or reverted before another one.
  * - import-api-disabled: the Alertmanager import API is turned off, so its endpoints answer 501.
  */
-type NotificationsLock = 'auto-sync' | 'import-api-disabled';
+type NotificationsLock = 'auto-sync' | 'staged' | 'import-api-disabled';
 
 function Wizard({ notificationsLock }: { notificationsLock?: NotificationsLock }) {
+  const [searchParams] = useURLSearchParams();
+  // Settings > Import > Alert rules links here with ?step=rules, so rule-only imports start on the rules step.
+  const initialStep = searchParams.get('step') === StepKey.Rules ? StepKey.Rules : undefined;
+
   return (
-    <StepperStateProvider>
+    <StepperStateProvider initialStep={initialStep}>
       <ImportWizardContent notificationsLock={notificationsLock} />
     </StepperStateProvider>
   );
@@ -152,23 +124,25 @@ function Wizard({ notificationsLock }: { notificationsLock?: NotificationsLock }
 export function ImportWizardGate() {
   const importAlertmanagerAPIEnabled = useFlagAlertingImportAlertmanagerAPI();
   const { isActive, isLoading } = useIsAutoSyncActive();
-  // Frozen on first resolution, not live: this only reflects the state on *entry*. Enabling auto-sync
-  // mid-wizard (handleConfirmImport's own save) flips isActive via the same Config cache the mutation
-  // invalidates — without freezing, that would lock step 1 out from under the wizard's own in-flight submit.
-  const [autoSyncActiveOnEntry, setAutoSyncActiveOnEntry] = useState<boolean | null>(null);
-  useEffect(() => {
-    if (!isLoading && autoSyncActiveOnEntry === null) {
-      setAutoSyncActiveOnEntry(isActive);
-    }
-  }, [isLoading, isActive, autoSyncActiveOnEntry]);
+  const { stagedConfig, isLoading: isStagedConfigLoading } = useStagedConfig({ skip: !importAlertmanagerAPIEnabled });
 
   if (!importAlertmanagerAPIEnabled) {
     return <Wizard notificationsLock="import-api-disabled" />;
   }
-  if (isLoading || autoSyncActiveOnEntry === null) {
+  if (isLoading || isStagedConfigLoading) {
     return <LoadingPlaceholder text={t('alerting.import-to-gma.loading', 'Loading…')} />;
   }
-  return <Wizard notificationsLock={autoSyncActiveOnEntry ? 'auto-sync' : undefined} />;
+  // Follows the sync and the staged copy live, so acting on the staged card in step 1 (stopping or
+  // restarting the sync, promoting or reverting the copy) unlocks or locks that step right away. The wizard
+  // holds on to the lock while its own import runs (see ImportWizardContent), since that import is what
+  // stages a copy or turns sync on.
+  let notificationsLock: NotificationsLock | undefined;
+  if (isActive) {
+    notificationsLock = 'auto-sync';
+  } else if (stagedConfig) {
+    notificationsLock = 'staged';
+  }
+  return <Wizard notificationsLock={notificationsLock} />;
 }
 
 function ImportAPIDisabledNotice() {
@@ -185,61 +159,38 @@ function ImportAPIDisabledNotice() {
 }
 
 function AutoSyncActiveNotice() {
-  // Both the Alerting settings route and its nav entry are gated on the Org Admin role, so linking
-  // anyone else there would bounce them to the home page. Rule import stays available to every user
-  // who can reach the wizard: the sync worker mirrors only the Alertmanager configuration, and the
-  // convert endpoint rejects notification imports alone.
-  const canManageAutoSync = contextSrv.hasRole(OrgRole.Admin);
-  const canReadNotifications = contextSrv.hasPermission(AccessControlAction.AlertingNotificationsRead);
-  const {
-    stagedConfig,
-    refetch: refetchStagedConfig,
-    isLoading: isLoadingStagedConfig,
-  } = useStagedConfig({ skip: !canReadNotifications });
-  useRefetchStagedConfigOnSyncChange(refetchStagedConfig, { skip: !canReadNotifications });
-  // Already loaded by ImportWizardGate, so this reads from the cache.
-  const { data: autoSyncConfig } = useAutoSyncConfigQuery();
-  const syncedDatasourceUid = deriveSyncSource(autoSyncConfig).uid;
-  const syncHealth = deriveSyncHealth(autoSyncConfig, syncedDatasourceUid);
-  // Before the first sync lands, or once it has been promoted, there is no synced config to show.
-  const syncedConfig = stagedConfig?.managed_by === 'auto-sync' ? stagedConfig : undefined;
-  // Without read access to the Alertmanager config there is no telling whether anything has synced, so
-  // the card would only guess. Wait for the staged config too, so the card doesn't flash "pending".
-  const showCard = canReadNotifications && !isLoadingStagedConfig;
-
   return (
     <Stack direction="column" gap={2}>
-      <AutoSyncActiveAlert canManageAutoSync={canManageAutoSync} />
-      {showCard && (
-        <SyncedConfigSummaryCard
-          syncedConfig={syncedConfig}
-          datasourceUid={syncedDatasourceUid}
-          syncHealth={syncHealth}
-          showSettingsLink={canManageAutoSync}
-        />
-      )}
+      <AutoSyncActiveAlert />
+      <StagedImportSection />
     </Stack>
   );
 }
 
-function AutoSyncActiveAlert({ canManageAutoSync }: { canManageAutoSync: boolean }) {
+function StagedConfigNotice() {
+  return (
+    <Stack direction="column" gap={2}>
+      <Alert
+        severity="info"
+        title={t('alerting.import-to-gma.staged-block.title', 'A configuration is already staged')}
+      >
+        <Trans i18nKey="alerting.import-to-gma.staged-block.description">
+          Promote or revert the staged configuration below before importing another one, or continue to import rules.
+        </Trans>
+      </Alert>
+      <StagedImportSection />
+    </Stack>
+  );
+}
+
+function AutoSyncActiveAlert() {
   return (
     <Alert severity="info" title={t('alerting.import-to-gma.autosync-active-block.title', 'Auto-sync is enabled')}>
-      <Stack direction="column" gap={1} alignItems="flex-start">
-        <Text>
-          <Trans i18nKey="alerting.import-to-gma.autosync-active-block.description">
-            Grafana is continuously syncing alert configuration from a data source, so notification configuration is a
-            read-only mirror and cannot be imported into. Continue to import rules.
-          </Trans>
-        </Text>
-        {canManageAutoSync && (
-          <Text>
-            <Trans i18nKey="alerting.import-to-gma.autosync-active-block.disable-sync">
-              To import notification configuration, disable auto-sync in Alerting settings first.
-            </Trans>
-          </Text>
-        )}
-      </Stack>
+      <Trans i18nKey="alerting.import-to-gma.autosync-active-block.description">
+        Grafana is continuously syncing alert configuration from a data source, so notification configuration is a
+        read-only mirror and cannot be imported into. Disable sync below to import notification configuration, or
+        continue to import rules.
+      </Trans>
     </Alert>
   );
 }
@@ -247,17 +198,8 @@ function AutoSyncActiveAlert({ canManageAutoSync }: { canManageAutoSync: boolean
 /**
  * Inner content component that uses the stepper state
  */
-function ImportWizardContent({ notificationsLock }: { notificationsLock?: NotificationsLock }) {
+function ImportWizardContent({ notificationsLock: liveNotificationsLock }: { notificationsLock?: NotificationsLock }) {
   const { activeStep, setStepErrors, setStepCompleted } = useStepperState();
-
-  // A locked notifications step has nothing to fill in, so the sidebar shouldn't hold back the steps after
-  // it. This only touches the sidebar's own state; the form never marks the step completed, so nothing
-  // from it is imported.
-  useEffect(() => {
-    if (notificationsLock) {
-      setStepCompleted(StepKey.Notifications, true);
-    }
-  }, [notificationsLock, setStepCompleted]);
 
   useEffect(() => {
     trackImportToGMAWizardStarted();
@@ -267,6 +209,22 @@ function ImportWizardContent({ notificationsLock }: { notificationsLock?: Notifi
   const [importStatus, setImportStatus] = useState<'idle' | 'importing' | 'success' | 'error' | 'partial-error'>(
     'idle'
   );
+
+  // An import can turn sync on, which locks the notifications step. Keep the lock the import started with
+  // until it is done, so the step isn't swapped out from under it.
+  const [notificationsLock, setNotificationsLock] = useState(liveNotificationsLock);
+  useEffect(() => {
+    if (importStatus === 'idle') {
+      setNotificationsLock(liveNotificationsLock);
+    }
+  }, [importStatus, liveNotificationsLock]);
+
+  // A locked notifications step has nothing to fill in, so the sidebar shouldn't hold back the steps after
+  // it. This only touches the sidebar's own state; the form never marks the step completed, so nothing
+  // from it is imported. Once the lock goes away the step has to be filled in or skipped again.
+  useEffect(() => {
+    setStepCompleted(StepKey.Notifications, Boolean(notificationsLock));
+  }, [notificationsLock, setStepCompleted]);
   const {
     runDryRun,
     reset: resetDryRun,
@@ -581,14 +539,6 @@ function ImportWizardContent({ notificationsLock }: { notificationsLock?: Notifi
     }
   }, [importStatus]);
 
-  const handleWizardCancel = useCallback(() => {
-    const { formState } = formAPI;
-    trackImportToGMAWizardCancelled({
-      cancelledAtStep: activeStep,
-      formDirty: formState.isDirty,
-    });
-  }, [activeStep, formAPI]);
-
   return (
     <>
       <FormProvider {...formAPI}>
@@ -600,7 +550,6 @@ function ImportWizardContent({ notificationsLock }: { notificationsLock?: Notifi
               notificationsLock={notificationsLock}
               onNext={notificationsLock ? handleStep1ContinueWhileLocked : handleStep1Next}
               onSkip={handleStep1Skip}
-              onCancel={handleWizardCancel}
               dryRunState={dryRunState}
               dryRunResult={dryRunResult}
               onTriggerDryRun={handleTriggerDryRun}
@@ -616,7 +565,6 @@ function ImportWizardContent({ notificationsLock }: { notificationsLock?: Notifi
               canImport={canImportRules}
               onNext={handleStep2Next}
               onSkip={handleStep2Skip}
-              onCancel={handleWizardCancel}
             />
           )}
 
@@ -625,7 +573,6 @@ function ImportWizardContent({ notificationsLock }: { notificationsLock?: Notifi
             <ReviewStep
               formData={getValues()}
               onStartImport={handleStartImport}
-              onCancel={handleWizardCancel}
               dryRunResult={dryRunResult}
               rulesFromDatasource={rulesFromDatasource}
             />
@@ -655,7 +602,6 @@ interface Step1WrapperProps {
   notificationsLock?: NotificationsLock;
   onNext: () => boolean;
   onSkip: () => void;
-  onCancel: () => void;
   dryRunState: 'idle' | 'loading' | 'success' | 'warning' | 'error';
   dryRunResult?: DryRunValidationResult;
   onTriggerDryRun: (configIdentifier: string) => void;
@@ -667,7 +613,6 @@ function Step1Wrapper({
   notificationsLock,
   onNext,
   onSkip,
-  onCancel,
   dryRunState,
   dryRunResult,
   onTriggerDryRun,
@@ -726,7 +671,6 @@ function Step1Wrapper({
       }
       onNext={onNext}
       onSkip={onSkip}
-      onCancel={onCancel}
       // One button: it skips while the step is empty and continues once something is entered. To move on
       // without importing what was entered, clear it again. A locked step only offers to continue.
       canSkip={false}
@@ -739,7 +683,10 @@ function Step1Wrapper({
       )}
     >
       {notificationsLock === 'auto-sync' && <AutoSyncActiveNotice />}
+      {notificationsLock === 'staged' && <StagedConfigNotice />}
       {notificationsLock === 'import-api-disabled' && <ImportAPIDisabledNotice />}
+      {/* Nothing is staged here, so this only shows up if loading the staged copy failed. */}
+      {!notificationsLock && <StagedImportSection />}
       {!notificationsLock && (
         <Step1Content
           canImport={canImport}
@@ -762,10 +709,9 @@ interface Step2WrapperProps {
   canImport: boolean;
   onNext: () => boolean;
   onSkip: () => void;
-  onCancel: () => void;
 }
 
-function Step2Wrapper({ step1Completed, step1Skipped, canImport, onNext, onSkip, onCancel }: Step2WrapperProps) {
+function Step2Wrapper({ step1Completed, step1Skipped, canImport, onNext, onSkip }: Step2WrapperProps) {
   const isStep2Valid = useStep2Validation(canImport);
   const { watch, setValue } = useFormContext<ImportFormValues>();
   const { setStepSkipped } = useStepperState();
@@ -799,7 +745,6 @@ function Step2Wrapper({ step1Completed, step1Skipped, canImport, onNext, onSkip,
       }
       onNext={onNext}
       onSkip={onSkip}
-      onCancel={onCancel}
       // One button: it skips while no source is chosen and continues once one is. To move on without
       // importing rules, clear the source again.
       canSkip={false}
@@ -1007,12 +952,11 @@ function RulesCardContent({ formData, willImportRules, styles }: RulesCardConten
 interface ReviewStepProps {
   formData: ImportFormValues;
   onStartImport: () => void;
-  onCancel: () => void;
   dryRunResult?: DryRunValidationResult;
   rulesFromDatasource?: RulerRulesConfigDTO;
 }
 
-function ReviewStep({ formData, onStartImport, onCancel, dryRunResult, rulesFromDatasource }: ReviewStepProps) {
+function ReviewStep({ formData, onStartImport, dryRunResult, rulesFromDatasource }: ReviewStepProps) {
   const styles = useStyles2(getStyles);
   const { setActiveStep } = useStepperState();
 
@@ -1224,7 +1168,6 @@ function ReviewStep({ formData, onStartImport, onCancel, dryRunResult, rulesFrom
               : t('alerting.import-to-gma.review.start', 'Start import')}
           </Button>
         </Stack>
-        <CancelButton onCancel={onCancel} />
       </Stack>
 
       {/* Notifications Preview Modal */}
@@ -1532,5 +1475,3 @@ const getStyles = (theme: GrafanaTheme2) => ({
     fontWeight: theme.typography.fontWeightMedium,
   }),
 });
-
-export default withPageErrorBoundary(ImportToGMA);

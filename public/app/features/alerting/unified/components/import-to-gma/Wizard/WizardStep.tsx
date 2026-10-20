@@ -5,7 +5,6 @@ import { type GrafanaTheme2 } from '@grafana/data';
 import { t } from '@grafana/i18n';
 import { FieldSet, Stack, useStyles2 } from '@grafana/ui';
 
-import { CancelButton } from './CancelButton';
 import { NextButton } from './NextButton';
 import { PreviousButton } from './PreviousButton';
 import { useStepperState } from './StepperState';
@@ -34,8 +33,6 @@ interface WizardStepProps {
   disableNext?: boolean;
   /** Tooltip shown on the next button while it is disabled, explaining why */
   disabledNextTooltip?: string;
-  /** Handler called when the wizard is cancelled */
-  onCancel?: () => void;
   /** Make Next skip the step (and say so), for a step left empty where there is nothing to complete */
   nextSkips?: boolean;
 }
@@ -61,7 +58,6 @@ export const WizardStep = ({
   onBack,
   disableNext = false,
   disabledNextTooltip,
-  onCancel,
   nextSkips = false,
 }: WizardStepProps) => {
   const styles = useStyles2(getStyles);
@@ -121,7 +117,6 @@ export const WizardStep = ({
             label={nextSkips ? (skipLabel ?? t('alerting.import-to-gma.wizard.skip', 'Skip')) : undefined}
           />
         </Stack>
-        <CancelButton onCancel={onCancel} />
       </div>
     </FieldSet>
   );

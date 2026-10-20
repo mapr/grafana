@@ -1321,7 +1321,7 @@
       "count": 1
     }
   },
-  "public/app/features/alerting/unified/settings/import/ImportSettingsPage.tsx": {
+  "public/app/features/alerting/unified/settings/import/StagedImportSection.tsx": {
     "@grafana/no-config-feature-toggles": {
       "count": 1
     }

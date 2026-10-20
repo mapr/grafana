@@ -237,17 +237,6 @@ describe('WizardStep', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it('should render Cancel button', () => {
-    renderWithProvider(
-      <WizardStep stepId={StepKey.Notifications} label="Test Step">
-        <div>Step content</div>
-      </WizardStep>
-    );
-
-    expect(screen.getByTestId('wizard-cancel-button')).toBeInTheDocument();
-    expect(screen.getByText(/cancel/i)).toBeInTheDocument();
-  });
-
   it('should disable Next button when disableNext is true', () => {
     renderWithProvider(
       <WizardStep stepId={StepKey.Notifications} label="Test Step" disableNext={true}>

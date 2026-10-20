@@ -176,6 +176,20 @@ describe('ImportWizardGate — gating on mount', () => {
   });
 });
 
+describe('ImportToGMA wizard — opened on the rules step', () => {
+  it('starts on the rules step and can move on to the review from there', async () => {
+    const { user } = render(<ImportWizardGate />, {
+      historyOptions: { initialEntries: ['/alerting/import-to-gma?step=rules'] },
+    });
+
+    expect(await screen.findByRole('group', { name: /import rules/i })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /import notification configuration/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId(selectors.pages.Alerting.ImportToGMA.nextButton));
+    expect(await screen.findByText(/review import/i)).toBeInTheDocument();
+  });
+});
+
 describe('ImportToGMA wizard — stage analytics', () => {
   it('tracks success and lands on the Import settings tab', async () => {
     const { user } = render(<ImportWizardGate />);
