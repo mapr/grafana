@@ -446,6 +446,7 @@ export function Step1Content({
                   t('alerting.import-to-gma.step1.policy-tree-name', 'Policy tree name')
                 )
               }
+              required={!autoSyncActive}
               invalid={!!errors.policyTreeName}
               error={errors.policyTreeName?.message}
               noMargin
@@ -459,7 +460,7 @@ export function Step1Content({
                   onBlur: handlePolicyTreeNameBlur,
                 })}
                 disabled={autoSyncActive}
-                placeholder={t('alerting.import-to-gma.step1.policy-tree-placeholder', 'prometheus-prod')}
+                placeholder={t('alerting.import-to-gma.step1.policy-tree-placeholder', 'e.g. prometheus-prod')}
                 width={40}
               />
             </Field>

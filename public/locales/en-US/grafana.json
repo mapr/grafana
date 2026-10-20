@@ -1777,7 +1777,7 @@
         "policy-tree-help": "When you import this Alertmanager configuration, Grafana will create a separate notification policy tree for it. The name you enter here will identify that tree in the UI and is what you select when you import alert rules that should use this routing. Use a label you will recognize — for example data source, team, cluster, or environment (such as prometheus-prod or platform-team).",
         "policy-tree-help-title": "About policy tree names",
         "policy-tree-name": "Policy tree name",
-        "policy-tree-placeholder": "prometheus-prod",
+        "policy-tree-placeholder": "e.g. prometheus-prod",
         "policy-tree-required": "Policy tree name is required",
         "policy-tree-title": "Policy Tree Name",
         "select-datasource": "Select data source",
@@ -1883,6 +1883,7 @@
         "description": "Accepted file types: {{extensions}}",
         "invalid-type": "File must be a YAML file ({{extensions}})",
         "remove": "Remove {{name}}",
+        "remove-button": "Remove",
         "upload": "Drop YAML file here or click to upload"
       }
     },

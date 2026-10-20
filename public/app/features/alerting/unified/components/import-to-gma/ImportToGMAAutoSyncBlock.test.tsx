@@ -84,7 +84,7 @@ const ui = {
   nextButton: byTestId(selectors.pages.Alerting.ImportToGMA.nextButton),
   // The wizard sidebar is the only list on the page.
   stepper: byRole('list'),
-  policyTreeNameInput: byPlaceholderText('prometheus-prod'),
+  policyTreeNameInput: byPlaceholderText('e.g. prometheus-prod'),
   dataSourceSourceOption: byText(/^data source$/i),
   notificationsDataSourcePlaceholder: byText('Select data source'),
   clearValueButton: byRole('button', { name: /clear value/i }),

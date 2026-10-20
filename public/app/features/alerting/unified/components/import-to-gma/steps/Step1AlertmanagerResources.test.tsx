@@ -192,7 +192,7 @@ describe('Step1AlertmanagerResources', () => {
       expect(await screen.findByText(/drop yaml file here or click to upload/i)).toBeInTheDocument();
     });
 
-    it('accepts a YAML file upload and displays it as a removable row', async () => {
+    it('swaps the drop zone for the uploaded file, and brings it back once the file is removed', async () => {
       const { user } = render(
         <TestWrapper defaultValues={{ notificationsSource: 'yaml' }}>
           <Step1Content {...defaultStep1Props} />
@@ -203,8 +203,12 @@ describe('Step1AlertmanagerResources', () => {
       await user.upload(input, new File(['route:\n  receiver: default\n'], 'am.yaml', { type: 'application/yaml' }));
 
       expect(await screen.findByText('am.yaml')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /remove am\.yaml/i })).toBeInTheDocument();
-      // The dropzone itself stays put, so a new drop can still replace the file.
+      // Only one config file can be imported, so the drop zone makes way for it.
+      expect(screen.queryByText(/drop yaml file here or click to upload/i)).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /remove am\.yaml/i }));
+
+      expect(screen.queryByText('am.yaml')).not.toBeInTheDocument();
       expect(screen.getByText(/drop yaml file here or click to upload/i)).toBeInTheDocument();
     });
 
