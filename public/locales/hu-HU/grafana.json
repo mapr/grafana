@@ -357,10 +357,6 @@
     },
     "ai": {
       "error-boundary": {
-        "alert-rule-button": "Nem sikerült betölteni az AI-alapú riasztási szabály gombját",
-        "feedback-button": "Nem sikerült betölteni az AI-alapú visszajelzés gombját",
-        "improve-annotations-button": "Nem sikerült betölteni az AI-alapú annotációjavító gombját",
-        "improve-labels-button": "Nem sikerült betölteni az AI-alapú címkejavító gombját",
         "template-button": "Nem sikerült betölteni az AI-alapú sablon gombját",
         "triage-button": "Nem sikerült betölteni az AI-alapú prioritási sorrend gombját"
       }
@@ -453,6 +449,11 @@
       "text-loading-rules": "Szabályok betöltése…",
       "title-search-alert-rule": "Keresési riasztási szabály",
       "title-select-alert-instances": "Riasztáspéldányok kiválasztása"
+    },
+    "alert-instance-silence-action": {
+      "silence": "",
+      "subtitle": "",
+      "title": ""
     },
     "alert-instance-state-filter": {
       "state": "Állapot"
@@ -1143,6 +1144,8 @@
       }
     },
     "editor": {
+      "duplicate-alert-rule": "",
+      "duplicate-recording-rule": "",
       "edit-alert-rule": "Riasztási szabály szerkesztése",
       "edit-recording-rule": "Rögzítési szabály szerkesztése",
       "new-alert-rule": "Új riasztási szabály",
@@ -1763,7 +1766,7 @@
         "datasource": "Riasztáskezelési adatforrás",
         "datasource-autosync-badge": "Automatikus szinkronizálás",
         "heading": "Értesítési erőforrások importálása",
-        "next-disabled-tooltip": "Töltse ki a kötelező mezőket, és várja meg az érvényesítés sikeres befejezését, mielőtt folytatná.",
+        "next-disabled-tooltip": "",
         "no-datasources": "Nem található riasztáskezelési adatforrás",
         "no-permission-desc": "Nincs engedélye értesítési erőforrások importálására. Az <strong>alerting.notifications:write</strong> engedélyre van szüksége. Ezt a lépést kihagyhatja.",
         "no-permission-title": "Elégtelen engedélyek",
@@ -1801,6 +1804,7 @@
         "yaml-desc": "Elfogadott fájltípusok: {{extensions}}",
         "yaml-file": "Riasztáskezelési konfigurációs YAML",
         "yaml-invalid-type": "A fájlnak YAML-fájlnak kell lennie ({{extensions}})",
+        "yaml-parse-error": "",
         "yaml-remove": "{{name}} eltávolítása",
         "templates-added-title_one": "Sablonfájl hozzáadva",
         "templates-added-title_other": "Sablonfájlok hozzáadva"
@@ -2114,8 +2118,8 @@
       "add-matcher": "Egyezés hozzáadása",
       "aria-label-operator": "operátor",
       "aria-label-remove-matcher": "Egyezések eltávolítása",
-      "label-alert-rule": "Riasztási szabály",
       "label-label": "Címke",
+      "label-matching-labels": "",
       "label-operator": "Műveleti jel",
       "label-refine-affected-alerts": "Érintett riasztások pontosítása",
       "label-value": "Érték",
@@ -3419,6 +3423,7 @@
       "schedule": "Ütemezés"
     },
     "silence-grafana-rule-drawer": {
+      "subtitle": "",
       "title-silence-alert-rule": "Némítási riasztási szabály"
     },
     "silence-period": {
@@ -3467,7 +3472,11 @@
       "preview-affected-instances": "Tekintse meg a némítás által érintett riasztáspéldányok előnézetét."
     },
     "silences-editor": {
+      "alert-rule-unavailable": "",
       "comment-placeholder-details-about-the-silence": "Részletek a némításról",
+      "description-alert-rule-scope": "",
+      "description-alert-rule-unavailable": "",
+      "label-alert-rule": "",
       "label-comment": "Megjegyzés",
       "label-created-by": "Létrehozta:",
       "label-duration": "Időtartam",
@@ -5214,6 +5223,10 @@
   },
   "connections": {
     "add-new-connection": {
+      "add-category": "",
+      "add-type": "",
+      "all-categories": "",
+      "all-types": "",
       "category": "Kategória",
       "clear": "Törlés",
       "filter-by-category": "Szűrés kategória szerint",
@@ -5242,7 +5255,10 @@
         "by-published-date": "Közzététel dátuma szerint",
         "by-updated-date": "Frissítés dátuma szerint"
       },
+      "remove-filter-value": "",
       "reset-filters": "Szűrők törlése",
+      "selected-categories": "",
+      "selected-types": "",
       "sort": "Rendezés",
       "sort-list": "Bővítmények listájának rendezése",
       "state": "Állapot",
@@ -6139,6 +6155,17 @@
     },
     "panel-editor": {
       "ad-hoc-transformations-disabled": ""
+    },
+    "plan-building-overlay": {
+      "quip-corners": "",
+      "quip-green": "",
+      "quip-gridlines": "",
+      "quip-legend": "",
+      "quip-metrics": "",
+      "quip-pie-charts": "",
+      "quip-points": "",
+      "quip-series": "",
+      "title": ""
     },
     "plan-placeholder-badge": {
       "text": "Példaadat",
@@ -8015,7 +8042,10 @@
     "support-bundle": "A <1>támogatási csomagokról szóló részben</1> a Grafana-példányra és a konfigurált adatforrásokra vonatkozó információkat tartalmazó támogatási csomagot is lekérheti."
   },
   "dashboard-schema-editor": {
+    "editor-label": "",
     "json-disabled-tooltip": "Javítsa ki a YAML-szintaxishibákat a JSON-ra való átváltáshoz",
+    "schema-load-error": "",
+    "schema-load-error-description": "",
     "yaml-disabled-tooltip": "Javítsa ki a JSON-szintaxishibákat a YAML-ra való átváltáshoz"
   },
   "dashboard-settings": {
@@ -11203,16 +11233,11 @@
     },
     "dashboard-tabs": {
       "most-used": "A leggyakrabban használt",
-      "most-used-active": "A leggyakrabban használt irányítópultok",
       "recent": "A legutóbbi",
-      "recent-active": "A legutóbbi irányítópultok",
       "retry": "Újra",
       "starred": "Csillagozott",
-      "starred-active": "Csillagozott irányítópultok"
-    },
-    "dashboards": {
-      "title": "Irányítópultok",
-      "view-all": "Az összes megjelenítése"
+      "title": "",
+      "view-all-dashboards": ""
     },
     "firing-alerts-card": {
       "create": "Riasztási szabály létrehozása",
@@ -11389,15 +11414,25 @@
       },
       "title": "Az Ön megfigyelési stackjének áttekintése"
     },
-    "recent-dashboards-tab": {
-      "browse": "Irányítópultok böngészése",
-      "clear": "Előzmények törlése",
-      "create": "Hozza létre az első irányítópultját",
-      "empty": "Itt jelennek meg a legutóbb megtekintett irányítópultok.",
-      "empty-description": "Az adatok összekapcsolása után az irányítópultok segítségével lekérdezheti és megjelenítheti az adatait diagramokkal, statisztikákkal és táblázatokkal, vagy létrehozhat listákat, Markdown-elemeket és egyéb widgeteket.",
-      "error-title": "Nem sikerült betölteni a legutóbb megtekintett irányítópultokat",
-      "loading": "A legutóbb megtekintett irányítópultok betöltése…",
-      "reset": "A legutóbbi irányítópultok visszaállítása"
+    "recent-activity-tab": {
+      "browse": "",
+      "clear": "",
+      "create": "",
+      "empty": "",
+      "error-title": "",
+      "filter-alerting": "",
+      "filter-all": "",
+      "filter-apps": "",
+      "filter-dashboards": "",
+      "filter-explore": "",
+      "filter-label": "",
+      "filter-pages": "",
+      "kind-alerting": "",
+      "kind-app": "",
+      "kind-dashboard": "",
+      "kind-explore": "",
+      "kind-page": "",
+      "loading": ""
     },
     "recommendations": {
       "application-observability": {
@@ -11986,6 +12021,9 @@
     "signup": {
       "button-label": "Regisztráció",
       "new-to-question": "Új a Grafanában?"
+    },
+    "title": {
+      "sign-in": ""
     }
   },
   "logs": {
@@ -12129,7 +12167,8 @@
         "loading-message": ""
       },
       "trace-section": "Nyomkövetés",
-      "unpin-line": "Naplókitűzés feloldása"
+      "unpin-line": "Naplókitűzés feloldása",
+      "view-in-traces-drilldown": ""
     },
     "log-line-menu": {
       "copy-link": "Hivatkozás másolása a naplósorba",
@@ -13202,6 +13241,7 @@
       "visualization": "Vizualizáció"
     },
     "cell": {
+      "block-actions": "",
       "code": {
         "aria-label-editor": "Kód",
         "aria-label-language": "Kódnyelv",
@@ -13238,8 +13278,9 @@
       },
       "time-range": {
         "button": "Időtartomány frissítése",
+        "dialog": "",
         "locked": "Zárolva: {{range}}",
-        "sync-back": "Visszaszinkronizálás a jegyzetfüzet időtartományára",
+        "remove-lock": "",
         "tooltip-default": "Panel időtartományának zárolása"
       }
     },
@@ -13342,6 +13383,7 @@
       "add-block": "Blokk hozzáadása",
       "add-query": "Lekérdezés hozzáadása",
       "add-tag": "Címke hozzáadása",
+      "change-visualization": "",
       "delete-block": "Blokk törlése",
       "duplicate-block": "Blokk duplikálása",
       "duplicate-query": "Lekérdezés duplikálása",
@@ -13353,13 +13395,16 @@
       "remove-query": "Lekérdezés eltávolítása",
       "remove-tag": "Címke eltávolítása",
       "rename": "",
+      "rename-panel": "",
       "reset-cell-time-range": "Jegyzetfüzet időtartományának használata",
       "select-query": "Lekérdezés kijelölése",
       "set-cell-time-range": "Panel időtartományának beállítása",
       "split-block": "Blokk felosztása",
       "switch-datasource": "Adatforrásváltás",
       "undo": "Visszavonás",
-      "undo-action": "Visszavonás: {{action}}"
+      "undo-action": "Visszavonás: {{action}}",
+      "visualization-replay-error": "",
+      "visualization-rollback-error": ""
     },
     "incidents": {
       "attach-title": "Csatolás az incidenshez",
@@ -13404,6 +13449,19 @@
     },
     "new": {
       "default-title-with-date": "Jegyzetfüzet {{date}}"
+    },
+    "panel": {
+      "add-title": "",
+      "change-visualization": "",
+      "edit-query": "",
+      "hide-query": "",
+      "open-explore": "",
+      "rename": "",
+      "suggestions-empty": "",
+      "suggestions-error": "",
+      "suggestions-no-data": "",
+      "title-label": "",
+      "visualization-error": ""
     },
     "save-status": {
       "failed": "Sikertelen mentés",

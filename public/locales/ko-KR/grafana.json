@@ -357,10 +357,6 @@
     },
     "ai": {
       "error-boundary": {
-        "alert-rule-button": "AI 경고 규칙 버튼을 로드하지 못했습니다",
-        "feedback-button": "AI 피드백 버튼을 로드하지 못했습니다",
-        "improve-annotations-button": "AI 주석 개선 버튼을 로드하지 못했습니다",
-        "improve-labels-button": "AI 라벨 개선 버튼을 로드하지 못했습니다",
         "template-button": "AI 템플릿 버튼을 로드하지 못했습니다",
         "triage-button": "AI 분류 버튼을 로드하지 못했습니다"
       }
@@ -448,6 +444,11 @@
       "text-loading-rules": "규칙 로딩 중...",
       "title-search-alert-rule": "경고 규칙 검색",
       "title-select-alert-instances": "경고 인스턴스 선택"
+    },
+    "alert-instance-silence-action": {
+      "silence": "",
+      "subtitle": "",
+      "title": ""
     },
     "alert-instance-state-filter": {
       "state": "상태"
@@ -1136,6 +1137,8 @@
       }
     },
     "editor": {
+      "duplicate-alert-rule": "",
+      "duplicate-recording-rule": "",
       "edit-alert-rule": "경고 규칙 편집",
       "edit-recording-rule": "기록 규칙 편집",
       "new-alert-rule": "새 경고 규칙",
@@ -1755,7 +1758,7 @@
         "datasource": "Alertmanager 데이터 소스",
         "datasource-autosync-badge": "자동 동기화",
         "heading": "알림 리소스 가져오기",
-        "next-disabled-tooltip": "필수 필드를 입력하고 검증이 완료될 때까지 기다린 후 계속하세요.",
+        "next-disabled-tooltip": "",
         "no-datasources": "Alertmanager 데이터 소스를 찾을 수 없습니다.",
         "no-permission-desc": "알림 리소스를 가져올 수 있는 권한이 없습니다. <strong>alerting.notifications:write</strong> 권한이 필요합니다. 이 단계를 건너뛸 수 있습니다.",
         "no-permission-title": "권한 부족",
@@ -1793,6 +1796,7 @@
         "yaml-desc": "허용되는 파일 유형: {{extensions}}",
         "yaml-file": "Alertmanager 구성 YAML",
         "yaml-invalid-type": "파일은 YAML 파일({{extensions}})이어야 합니다.",
+        "yaml-parse-error": "",
         "yaml-remove": "{{name}} 삭제",
         "templates-added-title_other": "템플릿 파일 추가됨"
       },
@@ -2101,8 +2105,8 @@
       "add-matcher": "일치 조건 추가",
       "aria-label-operator": "연산자",
       "aria-label-remove-matcher": "일치 조건 제거",
-      "label-alert-rule": "경고 규칙",
       "label-label": "라벨",
+      "label-matching-labels": "",
       "label-operator": "작업 수행자",
       "label-refine-affected-alerts": "영향을 받는 경고 수정",
       "label-value": "값",
@@ -3386,6 +3390,7 @@
       "schedule": "일정 예약"
     },
     "silence-grafana-rule-drawer": {
+      "subtitle": "",
       "title-silence-alert-rule": "경고 규칙 끄기"
     },
     "silence-period": {
@@ -3434,7 +3439,11 @@
       "preview-affected-instances": "이 알림 끄기의 영향을 받는 경고 인스턴스를 미리보기합니다."
     },
     "silences-editor": {
+      "alert-rule-unavailable": "",
       "comment-placeholder-details-about-the-silence": "알림 끄기에 대한 세부 정보",
+      "description-alert-rule-scope": "",
+      "description-alert-rule-unavailable": "",
+      "label-alert-rule": "",
       "label-comment": "코멘트",
       "label-created-by": "생성자",
       "label-duration": "지속 시간",
@@ -5167,6 +5176,10 @@
   },
   "connections": {
     "add-new-connection": {
+      "add-category": "",
+      "add-type": "",
+      "all-categories": "",
+      "all-types": "",
       "category": "카테고리",
       "clear": "지우기",
       "filter-by-category": "카테고리별 필터링",
@@ -5195,7 +5208,10 @@
         "by-published-date": "게시일순",
         "by-updated-date": "업데이트 날짜순"
       },
+      "remove-filter-value": "",
       "reset-filters": "필터 재설정",
+      "selected-categories": "",
+      "selected-types": "",
       "sort": "정렬",
       "sort-list": "플러그인 목록 정렬",
       "state": "상태",
@@ -6091,6 +6107,17 @@
     },
     "panel-editor": {
       "ad-hoc-transformations-disabled": ""
+    },
+    "plan-building-overlay": {
+      "quip-corners": "",
+      "quip-green": "",
+      "quip-gridlines": "",
+      "quip-legend": "",
+      "quip-metrics": "",
+      "quip-pie-charts": "",
+      "quip-points": "",
+      "quip-series": "",
+      "title": ""
     },
     "plan-placeholder-badge": {
       "text": "샘플 데이터",
@@ -7955,7 +7982,10 @@
     "support-bundle": "<1>지원 번들 섹션</1>에서 Grafana 인스턴스 및 구성된 데이터 소스에 대한 정보가 포함된 지원 번들을 검색할 수도 있습니다."
   },
   "dashboard-schema-editor": {
+    "editor-label": "",
     "json-disabled-tooltip": "YAML 구문 오류를 수정하여 JSON으로 전환",
+    "schema-load-error": "",
+    "schema-load-error-description": "",
     "yaml-disabled-tooltip": "JSON 구문 오류를 수정하여 YAML로 전환"
   },
   "dashboard-settings": {
@@ -11125,16 +11155,11 @@
     },
     "dashboard-tabs": {
       "most-used": "가장 많이 사용",
-      "most-used-active": "가장 많이 사용된 대시보드",
       "recent": "최근",
-      "recent-active": "최근 대시보드",
       "retry": "다시 시도",
       "starred": "별표 표시",
-      "starred-active": "별표 표시된 대시보드"
-    },
-    "dashboards": {
-      "title": "대시보드",
-      "view-all": "모두 보기"
+      "title": "",
+      "view-all-dashboards": ""
     },
     "firing-alerts-card": {
       "create": "알림 규칙 생성",
@@ -11309,15 +11334,25 @@
       },
       "title": "옵저버빌리티 스택 개요"
     },
-    "recent-dashboards-tab": {
-      "browse": "대시보드 찾아보기",
-      "clear": "기록 지우기",
-      "create": "첫 번째 대시보드 만들기",
-      "empty": "최근에 본 대시보드가 여기에 표시됩니다.",
-      "empty-description": "데이터를 연결한 후 대시보드를 사용하여 차트, 통계, 표로 데이터를 쿼리하고 시각화하거나 목록, 마크다운 및 기타 위젯을 생성할 수 있습니다.",
-      "error-title": "최근 본 대시보드를 불러올 수 없습니다",
-      "loading": "최근 본 대시보드 로드 중...",
-      "reset": "최근 대시보드 재설정"
+    "recent-activity-tab": {
+      "browse": "",
+      "clear": "",
+      "create": "",
+      "empty": "",
+      "error-title": "",
+      "filter-alerting": "",
+      "filter-all": "",
+      "filter-apps": "",
+      "filter-dashboards": "",
+      "filter-explore": "",
+      "filter-label": "",
+      "filter-pages": "",
+      "kind-alerting": "",
+      "kind-app": "",
+      "kind-dashboard": "",
+      "kind-explore": "",
+      "kind-page": "",
+      "loading": ""
     },
     "recommendations": {
       "application-observability": {
@@ -11887,6 +11922,9 @@
     "signup": {
       "button-label": "회원 가입",
       "new-to-question": "Grafana를 처음 사용하시나요?"
+    },
+    "title": {
+      "sign-in": ""
     }
   },
   "logs": {
@@ -12027,7 +12065,8 @@
         "loading-message": "트레이스를 불러오는 중…"
       },
       "trace-section": "",
-      "unpin-line": "로그 고정 해제"
+      "unpin-line": "로그 고정 해제",
+      "view-in-traces-drilldown": ""
     },
     "log-line-menu": {
       "copy-link": "링크를 로그 라인에 복사",
@@ -13095,6 +13134,7 @@
       "visualization": "시각화"
     },
     "cell": {
+      "block-actions": "",
       "code": {
         "aria-label-editor": "코드",
         "aria-label-language": "코드 언어",
@@ -13131,8 +13171,9 @@
       },
       "time-range": {
         "button": "시간 범위 업데이트",
+        "dialog": "",
         "locked": "잠김: {{range}}",
-        "sync-back": "노트북 시간 범위로 다시 동기화",
+        "remove-lock": "",
         "tooltip-default": "패널 시간 범위 잠그기"
       }
     },
@@ -13235,6 +13276,7 @@
       "add-block": "블록 추가",
       "add-query": "쿼리 추가",
       "add-tag": "태그 추가",
+      "change-visualization": "",
       "delete-block": "블록 삭제",
       "duplicate-block": "블록 복제",
       "duplicate-query": "쿼리 복제",
@@ -13246,13 +13288,16 @@
       "remove-query": "쿼리 제거",
       "remove-tag": "태그 제거",
       "rename": "",
+      "rename-panel": "",
       "reset-cell-time-range": "노트북 시간 범위 사용",
       "select-query": "쿼리 선택",
       "set-cell-time-range": "패널 시간 범위 설정",
       "split-block": "블록 분할",
       "switch-datasource": "데이터 소스 전환",
       "undo": "실행 취소",
-      "undo-action": "실행 취소: {{action}}"
+      "undo-action": "실행 취소: {{action}}",
+      "visualization-replay-error": "",
+      "visualization-rollback-error": ""
     },
     "incidents": {
       "attach-title": "인시던트에 첨부",
@@ -13296,6 +13341,19 @@
     },
     "new": {
       "default-title-with-date": "{{date}} 노트북"
+    },
+    "panel": {
+      "add-title": "",
+      "change-visualization": "",
+      "edit-query": "",
+      "hide-query": "",
+      "open-explore": "",
+      "rename": "",
+      "suggestions-empty": "",
+      "suggestions-error": "",
+      "suggestions-no-data": "",
+      "title-label": "",
+      "visualization-error": ""
     },
     "save-status": {
       "failed": "저장 실패",
