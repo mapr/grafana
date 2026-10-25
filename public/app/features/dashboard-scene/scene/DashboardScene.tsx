@@ -114,6 +114,11 @@ import { djb2Hash } from '../utils/djb2Hash';
 import { getDashboardUrl } from '../utils/getDashboardUrl';
 import { getLayoutManagerFor } from '../utils/getLayoutManagerFor';
 import { DashboardInteractions } from '../utils/interactions';
+import {
+  isMobileEditDeprecated,
+  notifyMobileEditNotAvailable,
+  redirectAwayFromMobileEdit,
+} from '../utils/mobileEditDeprecation';
 import { getPanelStyleConfig, type PanelStyleConfig } from '../utils/panelStyleConfigs';
 import { persistUseCrossDashboardVariables } from '../utils/persistUseCrossDashboardVariables';
 import { fetchPredefinedVariables, isPredefinedOrigin } from '../utils/predefinedVariables';
@@ -482,6 +487,9 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> impleme
         if (pendingBuild) {
           this.setState({ planning: { phase: 'building', ...pendingBuild } });
         }
+      } else if (isMobileEditDeprecated()) {
+        // Building a new dashboard requires edit mode, which is unavailable on mobile.
+        redirectAwayFromMobileEdit();
       } else {
         // Silent CUJ signal so the dashboard_edit journey starts on /dashboard/new
         // (the regular `dashboards_edit_button_clicked` doesn't fire here — auto-edit
@@ -660,10 +668,16 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> impleme
     this.setState({ links: nonDefaultLinks });
   }
 
+  /** Returns false if entering edit mode (or switching mode while already editing) was blocked, e.g. on mobile. */
   public onEnterEditMode = (
     source: 'user' | 'assistant' = 'user',
     trigger: DashboardModeTrigger = source === 'assistant' ? 'assistant' : 'navigation'
-  ) => {
+  ): boolean => {
+    if (isMobileEditDeprecated()) {
+      notifyMobileEditNotAvailable();
+      return false;
+    }
+
     const currentMode = getDashboardMode(this.state);
     if (trigger !== 'restore') {
       this.startEditPeriod(source);
@@ -702,6 +716,7 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> impleme
       this.applyDashboardMode();
       this.reportModeChange(currentMode, trigger);
     }
+    return true;
   };
 
   public setDashboardMode(mode: DashboardMode, trigger: DashboardModeTrigger = 'navigation'): boolean {
@@ -713,7 +728,8 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> impleme
       this.state.editPanel ||
       this.state.editview ||
       (this.state.viewPanel && mode !== 'edit') ||
-      this.state.layoutOrchestrator.isDragging()
+      this.state.layoutOrchestrator.isDragging() ||
+      (mode !== 'view' && isMobileEditDeprecated())
     ) {
       return false;
     }
@@ -787,15 +803,17 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> impleme
     sidebar.openPane(saved.openPane.clone());
   }
 
-  public openFullEditor() {
-    if (!this.state.isEditing) {
-      this.onEnterEditMode();
+  /** Returns false if editing could not actually be entered (e.g. blocked on mobile), so callers know not to proceed into the editor. */
+  public openFullEditor(): boolean {
+    if (!this.state.isEditing && !this.onEnterEditMode()) {
+      return false;
     }
     if (dashboardModesEnabled()) {
       this.setDashboardMode('edit');
     } else {
       this.applyDashboardMode();
     }
+    return true;
   }
 
   public applyDashboardMode() {
@@ -1293,8 +1311,10 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> impleme
   }
 
   public addPanel(vizPanel: VizPanel): void {
-    if (!this.state.isEditing) {
-      this.onEnterEditMode();
+    // onEnterEditMode can no-op without throwing (e.g. blocked on mobile) -- its return value is
+    // the only reliable signal that it actually happened.
+    if (!this.state.isEditing && !this.onEnterEditMode()) {
+      return;
     }
 
     // Add panel to layout
