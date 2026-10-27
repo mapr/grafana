@@ -9,6 +9,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/datasources"
+	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/grafana/grafana/pkg/storage/legacysql"
 	"github.com/grafana/grafana/pkg/util/testutil"
 )
@@ -20,7 +21,6 @@ func TestIntegrationStoreUsesProvidedTableName(t *testing.T) {
 
 	sqlStore := db.InitTestDB(t) //nolint:staticcheck // legacy shared-DB test setup; migrate to NewTestStore
 	ss := SqlStore{
-		db:     sqlStore,
 		logger: log.NewNopLogger(),
 		dbProvider: func(ctx context.Context) (*legacysql.LegacyDatabaseHelper, error) {
 			return &legacysql.LegacyDatabaseHelper{
@@ -88,4 +88,52 @@ func TestIntegrationStoreUsesProvidedTableName(t *testing.T) {
 			require.ErrorContains(t, err, "tenant_data_source")
 		})
 	}
+}
+
+// TestIntegrationStoreUsesProvidedDatabase asserts every query runs on the connection
+// from the LegacyDatabaseProvider. The store holds no connection of its own, so a tenant
+// whose tables live on another server is queried on that server.
+func TestIntegrationStoreUsesProvidedDatabase(t *testing.T) {
+	testutil.SkipIntegrationTestInShortMode(t)
+
+	tenant := db.NewTestStore(t)
+	ss := CreateStore(log.NewNopLogger(), legacysql.NewDatabaseProvider(tenant))
+
+	ctx := context.Background()
+	countInTenant := func(t *testing.T) int64 {
+		t.Helper()
+		var count int64
+		require.NoError(t, tenant.WithDbSession(ctx, func(sess *db.Session) error {
+			var err error
+			count, err = sess.Table("data_source").Count(&datasources.DataSource{})
+			return err
+		}))
+		return count
+	}
+
+	ds, err := ss.AddDataSource(ctx, &datasources.AddDataSourceCommand{OrgID: 1, Name: "ds", Type: "prometheus"})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), countInTenant(t))
+
+	got, err := ss.GetDataSource(ctx, &datasources.GetDataSourceQuery{OrgID: 1, UID: ds.UID})
+	require.NoError(t, err)
+	require.Equal(t, ds.ID, got.ID) //nolint:staticcheck // Preserve legacy field compatibility.
+
+	all, err := ss.GetDataSources(ctx, &datasources.GetDataSourcesQuery{OrgID: 1})
+	require.NoError(t, err)
+	require.Len(t, all, 1)
+
+	quotas, err := ss.Count(ctx, &quota.ScopeParameters{OrgID: 1})
+	require.NoError(t, err)
+	orgTag, err := quota.NewTag(datasources.QuotaTargetSrv, datasources.QuotaTarget, quota.OrgScope)
+	require.NoError(t, err)
+	orgCount, ok := quotas.Get(orgTag)
+	require.True(t, ok)
+	require.Equal(t, int64(1), orgCount)
+
+	_, err = ss.UpdateDataSource(ctx, &datasources.UpdateDataSourceCommand{ID: ds.ID, OrgID: 1, Name: "renamed", Type: "prometheus"}) //nolint:staticcheck // Preserve legacy field compatibility.
+	require.NoError(t, err)
+
+	require.NoError(t, ss.DeleteDataSource(ctx, &datasources.DeleteDataSourceCommand{UID: ds.UID, OrgID: 1}))
+	require.Zero(t, countInTenant(t))
 }

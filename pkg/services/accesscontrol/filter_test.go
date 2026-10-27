@@ -234,7 +234,7 @@ func TestIntegrationFilter_Datasources(t *testing.T) {
 			err := store.WithDbSession(context.Background(), func(sess *db.Session) error {
 				// seed 10 data sources
 				for i := 1; i <= 10; i++ {
-					dsStore := dsService.CreateStore(store, log.New("accesscontrol.test"), legacysql.NewDatabaseProvider(store))
+					dsStore := dsService.CreateStore(log.New("accesscontrol.test"), legacysql.NewDatabaseProvider(store))
 					_, err := dsStore.AddDataSource(context.Background(), &datasources.AddDataSourceCommand{Name: fmt.Sprintf("ds:%d", i), UID: fmt.Sprintf("uid%d", i)})
 					require.NoError(t, err)
 				}

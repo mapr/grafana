@@ -55,7 +55,7 @@ func benchmarkFilter(b *testing.B, numDs, numPermissions int) {
 func setupFilterBenchmark(b *testing.B, numDs, numPermissions int) (db.DB, []accesscontrol.Permission) {
 	b.Helper()
 	sqlStore := db.InitTestDB(b) //nolint:staticcheck // legacy shared-DB test setup; migrate to NewTestStore
-	store := dsService.CreateStore(sqlStore, log.New("accesscontrol.test"), legacysql.NewDatabaseProvider(sqlStore))
+	store := dsService.CreateStore(log.New("accesscontrol.test"), legacysql.NewDatabaseProvider(sqlStore))
 	for i := 1; i <= numDs; i++ {
 		_, err := store.AddDataSource(context.Background(), &datasources.AddDataSourceCommand{
 			Name:  fmt.Sprintf("ds:%d", i),

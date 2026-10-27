@@ -3,10 +3,8 @@ package service
 import (
 	"context"
 
-	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/datasources"
-	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/storage/legacysql"
 )
 
@@ -18,9 +16,9 @@ type DataSourceRetrieverImpl struct {
 var _ DataSourceRetriever = (*DataSourceRetrieverImpl)(nil)
 
 // ProvideDataSourceRetriever creates a DataSourceRetriever for wire injection.
-func ProvideDataSourceRetriever(db db.DB, dbProvider legacysql.LegacyDatabaseProvider, features featuremgmt.FeatureToggles) DataSourceRetriever {
+func ProvideDataSourceRetriever(dbProvider legacysql.LegacyDatabaseProvider) DataSourceRetriever {
 	dslogger := log.New("datasources-retriever")
-	store := &SqlStore{db: db, logger: dslogger, features: features, dbProvider: dbProvider}
+	store := &SqlStore{logger: dslogger, dbProvider: dbProvider}
 	return &DataSourceRetrieverImpl{store: store}
 }
 

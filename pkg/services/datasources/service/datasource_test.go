@@ -836,7 +836,7 @@ func TestIntegrationService_DeleteDataSource(t *testing.T) {
 		permissionSvc := acmock.NewMockedPermissionsService()
 		permissionSvc.On("DeleteResourcePermissions", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, &setting.Cfg{}, features, acmock.New(), permissionSvc, quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -862,7 +862,7 @@ func TestIntegrationService_DeleteDataSource(t *testing.T) {
 		cfg := &setting.Cfg{}
 		enableRBACManagedPermissions(t, cfg)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), permissionSvc, quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1131,7 +1131,7 @@ func TestIntegrationService_GetHttpTransport(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1170,7 +1170,7 @@ func TestIntegrationService_GetHttpTransport(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1223,7 +1223,7 @@ func TestIntegrationService_GetHttpTransport(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1273,7 +1273,7 @@ func TestIntegrationService_GetHttpTransport(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1331,7 +1331,7 @@ func TestIntegrationService_GetHttpTransport(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1368,7 +1368,7 @@ func TestIntegrationService_GetHttpTransport(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1439,7 +1439,7 @@ func TestIntegrationService_GetHttpTransport(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1520,7 +1520,7 @@ func TestIntegrationService_GetHttpTransport(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1553,7 +1553,7 @@ func TestIntegrationService_GetDataSourcesByType(t *testing.T) {
 		},
 	}
 	features := featuremgmt.WithFeatures()
-	dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+	dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, &setting.Cfg{}, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, plgs, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 	require.NoError(t, err)
 
@@ -1677,7 +1677,7 @@ func TestIntegrationService_getConnections(t *testing.T) {
 		},
 	}
 	features := featuremgmt.WithFeatures()
-	dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+	dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, &setting.Cfg{}, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, plugins, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 	require.NoError(t, err)
 
@@ -1814,7 +1814,7 @@ func TestIntegrationService_getProxySettings(t *testing.T) {
 	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 	quotaService := quotatest.New(false, nil)
 	features := featuremgmt.WithFeatures()
-	dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+	dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, &setting.Cfg{}, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 	require.NoError(t, err)
 
@@ -1914,7 +1914,7 @@ func TestIntegrationService_getTimeout(t *testing.T) {
 	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 	quotaService := quotatest.New(false, nil)
 	features := featuremgmt.WithFeatures()
-	dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+	dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 	require.NoError(t, err)
 
@@ -1941,7 +1941,7 @@ func TestIntegrationService_GetDecryptedValues(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, nil, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1971,7 +1971,7 @@ func TestIntegrationService_GetDecryptedValues(t *testing.T) {
 		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		features := featuremgmt.WithFeatures()
-		dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+		dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 		dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, nil, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 		require.NoError(t, err)
 
@@ -1999,7 +1999,7 @@ func TestIntegrationDataSource_CustomHeaders(t *testing.T) {
 	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 	quotaService := quotatest.New(false, nil)
 	features := featuremgmt.WithFeatures()
-	dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+	dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, nil, features, acmock.New(), acmock.NewMockedPermissionsService(), quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, nil, dsRetriever)
 	require.NoError(t, err)
 
@@ -2090,7 +2090,7 @@ func initDSService(t *testing.T) *Service {
 	mockPermission := acmock.NewMockedPermissionsService()
 	mockPermission.On("SetPermissions", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]accesscontrol.ResourcePermission{}, nil)
 	features := featuremgmt.WithFeatures()
-	dsRetriever := ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+	dsRetriever := ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	dsService, err := ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, actest.FakeAccessControl{}, mockPermission, quotaService, &pluginstore.FakePluginStore{
 		PluginList: []pluginstore.Plugin{{
 			JSONData: plugins.JSONData{

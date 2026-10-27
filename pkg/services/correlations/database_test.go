@@ -27,7 +27,7 @@ func TestIntegrationCorrelationsServiceHandleDatasourceDeletion(t *testing.T) {
 	const orgID int64 = 1
 
 	sqlStore := db.NewTestStore(t)
-	datasourceStore := datasourceservice.CreateStore(sqlStore, log.NewNopLogger(), legacysql.NewDatabaseProvider(sqlStore))
+	datasourceStore := datasourceservice.CreateStore(log.NewNopLogger(), legacysql.NewDatabaseProvider(sqlStore))
 	addDatasource := func(uid string) *datasources.DataSource {
 		datasource, err := datasourceStore.AddDataSource(ctx, &datasources.AddDataSourceCommand{
 			OrgID: orgID,

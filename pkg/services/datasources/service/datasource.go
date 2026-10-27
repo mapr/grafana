@@ -89,7 +89,7 @@ func ProvideService(
 	retriever DataSourceRetriever,
 ) (*Service, error) {
 	dslogger := log.New("datasources")
-	store := &SqlStore{db: db, logger: dslogger, features: features, dbProvider: dbProvider}
+	store := &SqlStore{logger: dslogger, dbProvider: dbProvider}
 	s := &Service{
 		SQLStore:       store,
 		SecretsStore:   secretsStore,

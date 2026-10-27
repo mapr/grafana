@@ -16,7 +16,6 @@ import (
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/metrics"
 	"github.com/grafana/grafana/pkg/services/datasources"
-	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/storage/legacysql"
@@ -39,14 +38,12 @@ type Store interface {
 }
 
 type SqlStore struct {
-	db         db.DB
 	logger     log.Logger
-	features   featuremgmt.FeatureToggles
 	dbProvider legacysql.LegacyDatabaseProvider
 }
 
-func CreateStore(db db.DB, logger log.Logger, dbProvider legacysql.LegacyDatabaseProvider) *SqlStore {
-	return &SqlStore{db: db, logger: logger, dbProvider: dbProvider}
+func CreateStore(logger log.Logger, dbProvider legacysql.LegacyDatabaseProvider) *SqlStore {
+	return &SqlStore{logger: logger, dbProvider: dbProvider}
 }
 
 // quoteTable resolves a table name and quotes it for use in raw SQL.
@@ -59,17 +56,19 @@ func quoteTable(dbHelper *legacysql.LegacyDatabaseHelper, name string) string {
 func (ss *SqlStore) GetDataSource(ctx context.Context, query *datasources.GetDataSourceQuery) (*datasources.DataSource, error) {
 	metrics.MDBDataSourceQueryByID.Inc()
 
-	var (
-		dataSource *datasources.DataSource
-		err        error
-	)
-	return dataSource, ss.db.WithDbSession(ctx, func(sess *db.Session) error {
-		dataSource, err = ss.getDataSource(ctx, query, sess)
+	dbHelper, err := ss.dbProvider(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var dataSource *datasources.DataSource
+	return dataSource, dbHelper.DB.WithDbSession(ctx, func(sess *db.Session) error {
+		dataSource, err = ss.getDataSource(dbHelper, query, sess)
 		return err
 	})
 }
 
-func (ss *SqlStore) getDataSource(ctx context.Context, query *datasources.GetDataSourceQuery, sess *db.Session) (*datasources.DataSource, error) {
+func (ss *SqlStore) getDataSource(dbHelper *legacysql.LegacyDatabaseHelper, query *datasources.GetDataSourceQuery, sess *db.Session) (*datasources.DataSource, error) {
 	if query.OrgID == 0 || (query.ID == 0 && len(query.Name) == 0 && len(query.UID) == 0) { // nolint:staticcheck
 		return nil, datasources.ErrDataSourceIdentifierNotSet
 	}
@@ -78,11 +77,6 @@ func (ss *SqlStore) getDataSource(ctx context.Context, query *datasources.GetDat
 		if err := util.ValidateUID(query.UID); err != nil {
 			logDeprecatedInvalidDsUid(ss.logger, query.UID, query.Name, "read", fmt.Errorf("invalid UID")) // nolint:staticcheck
 		}
-	}
-
-	dbHelper, err := ss.dbProvider(ctx)
-	if err != nil {
-		return nil, err
 	}
 
 	datasource := &datasources.DataSource{
@@ -106,27 +100,24 @@ func (ss *SqlStore) getDataSource(ctx context.Context, query *datasources.GetDat
 }
 
 func (ss *SqlStore) GetDataSourceInNamespace(ctx context.Context, namespace, name, group string) (*datasources.DataSource, error) {
-	var (
-		dataSource *datasources.DataSource
-		err        error
-	)
 	ns, err := types.ParseNamespace(namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	return dataSource, ss.db.WithDbSession(ctx, func(sess *db.Session) error {
-		dataSource, err = ss.getDataSourceInGroup(ctx, ns.OrgID, name, group, sess)
-		return err
-	})
-}
-
-func (ss *SqlStore) getDataSourceInGroup(ctx context.Context, orgID int64, name, group string, sess *db.Session) (*datasources.DataSource, error) {
 	dbHelper, err := ss.dbProvider(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	var dataSource *datasources.DataSource
+	return dataSource, dbHelper.DB.WithDbSession(ctx, func(sess *db.Session) error {
+		dataSource, err = ss.getDataSourceInGroup(dbHelper, ns.OrgID, name, group, sess)
+		return err
+	})
+}
+
+func (ss *SqlStore) getDataSourceInGroup(dbHelper *legacysql.LegacyDatabaseHelper, orgID int64, name, group string, sess *db.Session) (*datasources.DataSource, error) {
 	datasource := &datasources.DataSource{
 		OrgID: orgID,
 		Type:  group,
@@ -155,7 +146,7 @@ func (ss *SqlStore) GetDataSources(ctx context.Context, query *datasources.GetDa
 		sess        *xorm.Session
 		dataSources []*datasources.DataSource
 	)
-	return dataSources, ss.db.WithDbSession(ctx, func(dbSess *db.Session) error {
+	return dataSources, dbHelper.DB.WithDbSession(ctx, func(dbSess *db.Session) error {
 		sess = dbSess.Table(dbHelper.Table("data_source"))
 		if query.DataSourceLimit <= 0 {
 			sess = sess.Where("org_id=?", query.OrgID).Asc("name")
@@ -173,7 +164,7 @@ func (ss *SqlStore) GetAllDataSources(ctx context.Context, query *datasources.Ge
 		return nil, err
 	}
 
-	err = ss.db.WithDbSession(ctx, func(sess *db.Session) error {
+	err = dbHelper.DB.WithDbSession(ctx, func(sess *db.Session) error {
 		res = make([]*datasources.DataSource, 0)
 		return sess.Table(dbHelper.Table("data_source")).Asc("name").Find(&res)
 	})
@@ -200,7 +191,7 @@ func (ss *SqlStore) GetDataSourcesByType(ctx context.Context, query *datasources
 	}
 
 	dataSources := make([]*datasources.DataSource, 0)
-	return dataSources, ss.db.WithDbSession(ctx, func(sess *db.Session) error {
+	return dataSources, dbHelper.DB.WithDbSession(ctx, func(sess *db.Session) error {
 		dsSess := sess.Table(dbHelper.Table("data_source"))
 		if query.OrgID > 0 {
 			args = append([]interface{}{query.OrgID}, args...)
@@ -220,8 +211,8 @@ func (ss *SqlStore) GetPrunableProvisionedDataSources(ctx context.Context) ([]*d
 	}
 
 	dataSources := make([]*datasources.DataSource, 0)
-	return dataSources, ss.db.WithDbSession(ctx, func(sess *db.Session) error {
-		return sess.Table(dbHelper.Table("data_source")).Where(prunableQuery, ss.db.GetDialect().BooleanValue(true)).Asc("id").Find(&dataSources)
+	return dataSources, dbHelper.DB.WithDbSession(ctx, func(sess *db.Session) error {
+		return sess.Table(dbHelper.Table("data_source")).Where(prunableQuery, dbHelper.DB.GetDialect().BooleanValue(true)).Asc("id").Find(&dataSources)
 	})
 }
 
@@ -233,9 +224,9 @@ func (ss *SqlStore) DeleteDataSource(ctx context.Context, cmd *datasources.Delet
 		return err
 	}
 
-	return ss.db.WithTransactionalDbSession(ctx, func(sess *db.Session) error {
+	return dbHelper.DB.WithTransactionalDbSession(ctx, func(sess *db.Session) error {
 		dsQuery := &datasources.GetDataSourceQuery{ID: cmd.ID, UID: cmd.UID, Name: cmd.Name, OrgID: cmd.OrgID} //nolint:staticcheck // Preserve legacy field compatibility.
-		ds, errGettingDS := ss.getDataSource(ctx, dsQuery, sess)
+		ds, errGettingDS := ss.getDataSource(dbHelper, dsQuery, sess)
 
 		if errGettingDS != nil && !errors.Is(errGettingDS, datasources.ErrDataSourceNotFound) {
 			return errGettingDS
@@ -287,7 +278,7 @@ func (ss *SqlStore) Count(ctx context.Context, scopeParams *quota.ScopeParameter
 	}
 
 	r := result{}
-	if err := ss.db.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
+	if err := dbHelper.DB.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
 		rawSQL := fmt.Sprintf("SELECT COUNT(*) AS count FROM %s", quoteTable(dbHelper, "data_source"))
 		if _, err := sess.SQL(rawSQL).Get(&r); err != nil {
 			return err
@@ -304,7 +295,7 @@ func (ss *SqlStore) Count(ctx context.Context, scopeParams *quota.ScopeParameter
 	}
 
 	if scopeParams != nil && scopeParams.OrgID != 0 {
-		if err := ss.db.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
+		if err := dbHelper.DB.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
 			rawSQL := fmt.Sprintf("SELECT COUNT(*) AS count FROM %s WHERE org_id=?", quoteTable(dbHelper, "data_source"))
 			if _, err := sess.SQL(rawSQL, scopeParams.OrgID).Get(&r); err != nil {
 				return err
@@ -332,7 +323,7 @@ func (ss *SqlStore) AddDataSource(ctx context.Context, cmd *datasources.AddDataS
 
 	var ds *datasources.DataSource
 
-	return ds, ss.db.WithTransactionalDbSession(ctx, func(sess *db.Session) error {
+	return ds, dbHelper.DB.WithTransactionalDbSession(ctx, func(sess *db.Session) error {
 		existing := datasources.DataSource{OrgID: cmd.OrgID, Name: cmd.Name}
 		has, err := sess.Table(dbHelper.Table("data_source")).Get(&existing)
 		if err != nil {
@@ -386,7 +377,7 @@ func (ss *SqlStore) AddDataSource(ctx context.Context, cmd *datasources.AddDataS
 		}
 
 		if _, err := sess.Table(dbHelper.Table("data_source")).Insert(ds); err != nil {
-			if ss.db.GetDialect().IsUniqueConstraintViolation(err) && strings.Contains(strings.ToLower(ss.db.GetDialect().ErrorMessage(err)), "uid") {
+			if dbHelper.DB.GetDialect().IsUniqueConstraintViolation(err) && strings.Contains(strings.ToLower(dbHelper.DB.GetDialect().ErrorMessage(err)), "uid") {
 				return datasources.ErrDataSourceUidExists
 			}
 			return err
@@ -423,7 +414,7 @@ func (ss *SqlStore) UpdateDataSource(ctx context.Context, cmd *datasources.Updat
 	}
 
 	var ds *datasources.DataSource
-	return ds, ss.db.WithTransactionalDbSession(ctx, func(sess *db.Session) error {
+	return ds, dbHelper.DB.WithTransactionalDbSession(ctx, func(sess *db.Session) error {
 		if cmd.JsonData == nil {
 			cmd.JsonData = simplejson.New()
 		}

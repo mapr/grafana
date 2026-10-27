@@ -621,7 +621,7 @@ func setupEnv(t *testing.T, sqlStore db.DB, cfg *setting.Cfg, b bus.Bus, quotaSe
 	dashService.RegisterDashboardPermissions(acmock.NewMockedPermissionsService())
 	secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
 	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
-	dsRetriever := dsservice.ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), featuremgmt.WithFeatures())
+	dsRetriever := dsservice.ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	_, err = dsservice.ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(),
 		quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{}, plugincontext.
 			ProvideBaseService(cfg, pluginconfig.NewFakePluginRequestConfigProvider()), dsRetriever)

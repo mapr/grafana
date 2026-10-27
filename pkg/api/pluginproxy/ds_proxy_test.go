@@ -1248,7 +1248,7 @@ func getDatasourceProxiedRequest(t *testing.T, ctx *contextmodel.ReqContext, pro
 	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 	features := featuremgmt.WithFeatures()
 	quotaService := quotatest.New(false, nil)
-	dsRetriever := datasourceservice.ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+	dsRetriever := datasourceservice.ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	dsService, err := datasourceservice.ProvideService(nil, legacysql.NewDatabaseProvider(nil), secretsService, secretsStore, cfg, features, acimpl.ProvideAccessControl(features),
 		&actest.FakePermissionsService{}, quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{},
 		plugincontext.ProvideBaseService(cfg, pluginconfig.NewFakePluginRequestConfigProvider()), dsRetriever)
@@ -1379,7 +1379,7 @@ func runDatasourceAuthTest(t *testing.T,
 	features := featuremgmt.WithFeatures()
 	quotaService := quotatest.New(false, nil)
 	var sqlStore db.DB = nil
-	dsRetriever := datasourceservice.ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+	dsRetriever := datasourceservice.ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	dsService, err := datasourceservice.ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acimpl.ProvideAccessControl(features),
 		&actest.FakePermissionsService{}, quotaService, &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{},
 		plugincontext.ProvideBaseService(cfg, pluginconfig.NewFakePluginRequestConfigProvider()), dsRetriever)
@@ -1441,7 +1441,7 @@ func setupDSProxyTest(t *testing.T, ctx *contextmodel.ReqContext, ds *datasource
 	secretsStore := secretskvs.NewSQLSecretsKVStore(dbtest.NewFakeDB(), secretsService, log.NewNopLogger())
 	features := featuremgmt.WithFeatures()
 	var sqlStore db.DB = nil
-	dsRetriever := datasourceservice.ProvideDataSourceRetriever(sqlStore, legacysql.NewDatabaseProvider(sqlStore), features)
+	dsRetriever := datasourceservice.ProvideDataSourceRetriever(legacysql.NewDatabaseProvider(sqlStore))
 	dsService, err := datasourceservice.ProvideService(sqlStore, legacysql.NewDatabaseProvider(sqlStore), secretsService, secretsStore, cfg, features, acimpl.ProvideAccessControl(features),
 		&actest.FakePermissionsService{}, quotatest.New(false, nil), &pluginstore.FakePluginStore{}, &pluginfakes.FakePluginClient{},
 		plugincontext.ProvideBaseService(cfg, pluginconfig.NewFakePluginRequestConfigProvider()), dsRetriever)
