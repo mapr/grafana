@@ -2,12 +2,13 @@ import { render, screen } from 'test/test-utils';
 
 import { RuleSearchInput } from './RuleSearchInput';
 import { alertFilters } from './alertFilters';
+import { type FilterIssue } from './parser';
 
-function renderInput(query = '') {
+function renderInput(query = '', issues: FilterIssue[] = []) {
   const onApply = jest.fn();
   const view = render(
     <>
-      <RuleSearchInput query={query} onApply={onApply} filters={alertFilters} />
+      <RuleSearchInput query={query} onApply={onApply} filters={alertFilters} issues={issues} />
       <button>elsewhere</button>
     </>
   );
@@ -69,5 +70,18 @@ describe('RuleSearchInput', () => {
     expect(screen.getAllByText('Available')).toHaveLength(12);
     expect(screen.getByText("Filtering by the default policy isn't available yet.")).toBeInTheDocument();
     expect(screen.getByText("Filtering by not paused isn't available yet.")).toBeInTheDocument();
+  });
+
+  it('names the filters of each message in the order the help lists them', () => {
+    const { input } = renderInput('', [
+      { key: 'paused', reason: 'unavailable' },
+      { key: 'folder', reason: 'invalid' },
+      { key: 'policy', reason: 'unavailable' },
+      { key: 'label', reason: 'invalid' },
+    ]);
+
+    expect(input).toHaveAccessibleDescription(
+      'Some filters could not be applied: label, folder Some filters are not available yet: policy, paused'
+    );
   });
 });

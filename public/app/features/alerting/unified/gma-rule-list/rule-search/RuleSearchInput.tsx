@@ -90,9 +90,12 @@ export function RuleSearchInput({ query, onApply, filters, issues = [] }: RuleSe
 }
 
 function describeIssues(issues: FilterIssue[], filters: FilterDefinition[]): string[] {
-  const keysWith = (reason: 'invalid' | 'unavailable') => [
-    ...new Set(issues.flatMap((issue) => (issue.key !== null && issue.reason === reason ? [issue.key] : []))),
-  ];
+  const helpOrder = new Map<string, number>(filters.map(({ key }, index) => [key, index]));
+  // Keys follow the help's order, so a message doesn't depend on the order the issues were found in.
+  const keysWith = (reason: 'invalid' | 'unavailable') =>
+    [...new Set(issues.flatMap((issue) => (issue.key !== null && issue.reason === reason ? [issue.key] : [])))].sort(
+      (a, b) => (helpOrder.get(a) ?? 0) - (helpOrder.get(b) ?? 0)
+    );
   const has = (reason: FilterIssue['reason']) => issues.some((issue) => issue.reason === reason);
   const valuesByKey = new Map<string, string[] | undefined>(filters.map(({ key, values }) => [key, values]));
   const messages: string[] = [];
