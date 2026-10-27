@@ -5,10 +5,10 @@ import { generatedAPI } from '@grafana/api-clients/rtkq/rules.alerting/v0alpha1'
 
 import { type ResultTotal } from '../rule-row/ResultCount';
 import { type FilterIssue } from '../rule-search/parser';
-import { type RuleSearchFilter } from '../rule-search/ruleSearchFilter';
 import { getRejectionIssues } from '../rule-search/searchRejection';
 import { type PagedFailure } from '../shared/PagedFailureAlert';
 
+import { type AlertRuleFilter } from './alertRuleFilters';
 import { type AlertRuleSearchHit, alertRuleSearchHitSchema } from './alertRuleSearchHit';
 import { buildAlertRuleLeaves, buildAlertRuleSearchQuery } from './alertRuleSearchQuery';
 
@@ -36,7 +36,7 @@ type AlertRuleSearchResponse = z.infer<typeof alertRuleSearchResponseSchema>;
  */
 const alertRuleSearchAPI = generatedAPI.injectEndpoints({
   endpoints: (build) => ({
-    searchAlertRules: build.infiniteQuery<AlertRuleSearchPage, RuleSearchFilter, string | undefined>({
+    searchAlertRules: build.infiniteQuery<AlertRuleSearchPage, AlertRuleFilter, string | undefined>({
       infiniteQueryOptions: {
         initialPageParam: undefined,
         getNextPageParam: (lastPage) => lastPage.continueToken || undefined,
@@ -63,7 +63,7 @@ const alertRuleSearchAPI = generatedAPI.injectEndpoints({
 
 const { useSearchAlertRulesInfiniteQuery } = alertRuleSearchAPI;
 
-export function useAlertRuleSearch(filter: RuleSearchFilter) {
+export function useAlertRuleSearch(filter: AlertRuleFilter) {
   const query = useSearchAlertRulesInfiniteQuery(filter);
   const { currentData, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } = query;
   // Missing from the result type of a query that has not started.
@@ -100,7 +100,7 @@ export function useAlertRuleSearch(filter: RuleSearchFilter) {
  * The issues of a search the rule search refused as invalid, for the search input. It reads the same cached
  * search as the list, so it sends no request of its own.
  */
-export function useAlertRuleSearchRejection(filter: RuleSearchFilter, { skip }: { skip: boolean }): FilterIssue[] {
+export function useAlertRuleSearchRejection(filter: AlertRuleFilter, { skip }: { skip: boolean }): FilterIssue[] {
   const { error } = useSearchAlertRulesInfiniteQuery(filter, { skip });
   return useMemo(
     () => (skip ? [] : (getRejectionIssues(error, buildAlertRuleLeaves(filter)) ?? [])),

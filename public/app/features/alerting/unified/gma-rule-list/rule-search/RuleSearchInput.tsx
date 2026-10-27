@@ -5,7 +5,7 @@ import { Divider, FilterInput, Grid, Icon, Label, Stack, Text } from '@grafana/u
 
 import { PopupCard } from '../../components/HoverCard';
 
-import { type FilterDefinition } from './filterDefinitions';
+import { type FilterHelp } from './filterDefinitions';
 import { type FilterIssue } from './parser';
 
 export interface RuleSearchInputProps {
@@ -13,7 +13,7 @@ export interface RuleSearchInputProps {
   query: string;
   /** Also called with the applied query itself, for example on blur after Enter. */
   onApply: (query: string) => void;
-  filters: FilterDefinition[];
+  filters: FilterHelp[];
   issues?: FilterIssue[];
 }
 
@@ -89,7 +89,7 @@ export function RuleSearchInput({ query, onApply, filters, issues = [] }: RuleSe
   );
 }
 
-function describeIssues(issues: FilterIssue[], filters: FilterDefinition[]): string[] {
+function describeIssues(issues: FilterIssue[], filters: FilterHelp[]): string[] {
   const helpOrder = new Map<string, number>(filters.map(({ key }, index) => [key, index]));
   // Keys follow the help's order, so a message doesn't depend on the order the issues were found in.
   const keysWith = (reason: 'invalid' | 'unavailable') =>
@@ -164,7 +164,7 @@ function describeIssues(issues: FilterIssue[], filters: FilterDefinition[]): str
   return messages;
 }
 
-function SearchHelp({ filters }: { filters: FilterDefinition[] }) {
+function SearchHelp({ filters }: { filters: FilterHelp[] }) {
   return (
     <Stack direction="column" gap={1}>
       <Text element="p">
@@ -191,7 +191,7 @@ function SearchHelp({ filters }: { filters: FilterDefinition[] }) {
   );
 }
 
-function HelpRow({ definition }: { definition: FilterDefinition }) {
+function HelpRow({ definition }: { definition: FilterHelp }) {
   return (
     <>
       <Stack direction="column" gap={0.25}>
@@ -206,7 +206,7 @@ function HelpRow({ definition }: { definition: FilterDefinition }) {
   );
 }
 
-function HelpAvailability({ definition }: { definition: FilterDefinition }) {
+function HelpAvailability({ definition }: { definition: FilterHelp }) {
   const { unavailableValues = [] } = definition;
 
   return (

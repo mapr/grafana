@@ -8,10 +8,11 @@ import { useRuleListSearchState } from '../rule-search/useRuleListSearchState';
 import { useTrackRuleListPageView } from '../shared/analytics';
 
 import { AlertRulesListView } from './AlertRulesListView';
+import { alertRuleSearchSchema } from './alertRuleFilters';
 import { useAlertRuleSearchRejection } from './alertRuleSearch';
 
 function AlertRulesPage() {
-  const { query, filter, parseIssues, filters, applyQuery } = useRuleListSearchState('alert');
+  const { query, filter, parseIssues, filters, applyQuery } = useRuleListSearchState(alertRuleSearchSchema);
   const rejectionIssues = useAlertRuleSearchRejection(filter, { skip: parseIssues.length > 0 });
   const issues = parseIssues.length > 0 ? parseIssues : rejectionIssues;
 

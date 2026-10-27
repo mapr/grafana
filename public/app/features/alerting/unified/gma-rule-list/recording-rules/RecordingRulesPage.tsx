@@ -8,10 +8,11 @@ import { useRuleListSearchState } from '../rule-search/useRuleListSearchState';
 import { useTrackRuleListPageView } from '../shared/analytics';
 
 import { RecordingRulesListView } from './RecordingRulesListView';
+import { recordingRuleSearchSchema } from './recordingRuleFilters';
 import { useRecordingRuleSearchRejection } from './recordingRuleSearch';
 
 function RecordingRulesPage() {
-  const { query, filter, parseIssues, filters, applyQuery } = useRuleListSearchState('recording');
+  const { query, filter, parseIssues, filters, applyQuery } = useRuleListSearchState(recordingRuleSearchSchema);
   const rejectionIssues = useRecordingRuleSearchRejection(filter, { skip: parseIssues.length > 0 });
   const issues = parseIssues.length > 0 ? parseIssues : rejectionIssues;
 
