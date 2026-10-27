@@ -2,11 +2,18 @@ package rbac
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"sync/atomic"
 	"testing"
+	"testing/synctest"
+
+	"golang.org/x/sync/singleflight"
 
 	"github.com/grafana/authlib/types"
 	"github.com/grafana/grafana/pkg/registry/apis/iam/common"
 	"github.com/grafana/grafana/pkg/registry/apis/iam/legacy"
+	"github.com/grafana/grafana/pkg/services/authz/rbac/store"
 	"github.com/grafana/grafana/pkg/services/team"
 	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/stretchr/testify/require"
@@ -263,4 +270,121 @@ func TestService_fetchPagination(t *testing.T) {
 		require.Len(t, got, 5)
 		require.Equal(t, 3, store.calls)
 	})
+}
+
+func TestReportNameResolverSingleflight(t *testing.T) {
+	for _, lookupErr := range []error{nil, errors.New("report lookup unavailable")} {
+		name := "success"
+		if lookupErr != nil {
+			name = "lookup error"
+		}
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				type target struct {
+					namespace types.NamespaceInfo
+					id        int64
+				}
+				targets := []target{
+					{types.NamespaceInfo{Value: "default", OrgID: 1}, 17},
+					{types.NamespaceInfo{Value: "default", OrgID: 1}, 18},
+					{types.NamespaceInfo{Value: "org-2", OrgID: 2}, 17},
+				}
+				calls := make(map[target]*atomic.Int64)
+				for _, key := range targets {
+					calls[key] = new(atomic.Int64)
+				}
+				release := make(chan struct{})
+				backendErr := lookupErr
+				s := &Service{
+					sf: new(singleflight.Group),
+					store: &reportLookupStore{lookup: func(_ context.Context, ns types.NamespaceInfo, id int64) (string, bool, error) {
+						calls[target{ns, id}].Add(1)
+						<-release
+						return fmt.Sprintf("%s-report-%d", ns.Value, id), true, backendErr
+					}},
+				}
+				type result struct {
+					key target
+					uid string
+					err error
+				}
+				const perTarget = 8
+				results := make(chan result, len(targets)*perTarget)
+				for _, key := range targets {
+					for range perTarget {
+						go func() {
+							resolver, err := s.newReportNameResolver(t.Context(), key.namespace)
+							uid := ""
+							if err == nil {
+								uid, err = resolver(fmt.Sprintf("reports:id:%d", key.id))
+							}
+							results <- result{key: key, uid: uid, err: err}
+						}()
+					}
+				}
+				// All callers have reached either the blocked store or singleflight wait.
+				synctest.Wait()
+				counts := make([]int64, len(targets))
+				for i, key := range targets {
+					counts[i] = calls[key].Load()
+				}
+				close(release)
+				for range len(targets) * perTarget {
+					got := <-results
+					if lookupErr != nil {
+						require.ErrorIs(t, got.err, lookupErr)
+						require.Empty(t, got.uid)
+					} else {
+						require.NoError(t, got.err)
+						require.Equal(t, fmt.Sprintf("reports:uid:%s-report-%d", got.key.namespace.Value, got.key.id), got.uid)
+					}
+				}
+				require.Equal(t, []int64{1, 1, 1}, counts, "deduplicate only matching namespace and report ID")
+
+				// Reusing a resolver after the flight finishes must query again.
+				backendErr = nil
+				resolver, err := s.newReportNameResolver(t.Context(), targets[0].namespace)
+				require.NoError(t, err)
+				for range 2 {
+					uid, err := resolver("reports:id:17")
+					require.NoError(t, err)
+					require.Equal(t, "reports:uid:default-report-17", uid)
+				}
+				require.Equal(t, int64(3), calls[targets[0]].Load())
+			})
+		})
+	}
+}
+
+func TestReportNameResolverMissingAndInvalid(t *testing.T) {
+	calls := 0
+	found := false
+	s := &Service{sf: new(singleflight.Group), store: &reportLookupStore{lookup: func(context.Context, types.NamespaceInfo, int64) (string, bool, error) {
+		calls++
+		return "weekly", found, nil
+	}}}
+	resolver, err := s.newReportNameResolver(t.Context(), types.NamespaceInfo{Value: "default", OrgID: 1})
+	require.NoError(t, err)
+	require.Zero(t, calls, "constructing a resolver must not query reports")
+	for _, scope := range []string{"reports:id:", "reports:id:NaN", "reports:id:0", "reports:id:-1"} {
+		_, err := resolver(scope)
+		require.Error(t, err)
+	}
+	require.Zero(t, calls, "invalid IDs must not reach the database")
+	_, err = resolver("reports:id:17")
+	require.Error(t, err)
+	found = true
+	uid, err := resolver("reports:id:17")
+	require.NoError(t, err)
+	require.Equal(t, "reports:uid:weekly", uid)
+	require.Equal(t, 2, calls, "missing results must not be cached")
+}
+
+type reportLookupStore struct {
+	store.Store
+	lookup func(context.Context, types.NamespaceInfo, int64) (string, bool, error)
+}
+
+func (s *reportLookupStore) GetReportUIDByID(ctx context.Context, ns types.NamespaceInfo, id int64) (string, bool, error) {
+	return s.lookup(ctx, ns, id)
 }
