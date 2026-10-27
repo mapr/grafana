@@ -488,6 +488,7 @@ export {
   type RestrictedGrafanaApisContextType,
   type RestrictedGrafanaApisAllowList,
   type DashboardMutationAPI,
+  type ExtensionSidebarAPI,
   type DashboardMutationResult,
   RestrictedGrafanaApisContext,
   RestrictedGrafanaApisContextProvider,

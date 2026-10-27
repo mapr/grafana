@@ -854,7 +854,6 @@ export interface DataSourceInstanceSettings<T extends DataSourceJsonData = DataS
 export interface DataSourceInstanceListItem {
   uid: string;
   type: string;
-  apiVersion?: string;
   name: string;
   meta: DataSourcePluginMeta;
 }
