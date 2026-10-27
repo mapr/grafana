@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures';
+import { expect, test } from '../fixtures';
 import { expectRowVisibility, expectTabVisibility, flows } from '../helpers';
 
 import dashboardEditMode from './fixtures/dashboard-edit-mode.json';
@@ -11,12 +11,6 @@ import dashboardVariableValueJSON from './fixtures/dashboard-variable-value.json
 
 const HIDDEN_WRAPPER_SELECTOR = '.dashboard-visible-hidden-element';
 const HIDDEN_ICON_TEST_ID = 'icon-eye-slash';
-
-test.use({
-  featureToggles: {
-    dashboardNewLayouts: true,
-  },
-});
 
 test.describe(
   'Dashboard - Conditional Rendering - Rules creation',
