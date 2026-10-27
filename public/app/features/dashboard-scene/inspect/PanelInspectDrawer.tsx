@@ -1,4 +1,4 @@
-import { LoadingState } from '@grafana/data';
+import { type DataSourceApi, LoadingState, type PanelData } from '@grafana/data';
 import { Trans, t } from '@grafana/i18n';
 import {
   type SceneComponentProps,
@@ -51,27 +51,27 @@ export class PanelInspectDrawer extends SceneObjectBase<PanelInspectDrawerState>
   private _activationHandler() {
     const panel = this.state.panelRef.resolve();
     const context = panel.getPanelContext();
-    const deactivate = context.activateNotices?.();
+    const deactivateNotices = context.activateNotices?.();
     let discoveryVersion = 0;
-    let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let provider = sceneGraph.getData(panel);
     const reconcile = () => this.reconcileTabs();
     const discoverInspectors = async () => {
       const version = ++discoveryVersion;
       const data = provider.state.data;
-      const [metadata, notices] = await Promise.all([
+      const [metadataDataSource, noticesDataSource] = await Promise.all([
         getDataSourceWithInspector(data).catch(() => undefined),
         getDataSourceWithErrorsAndNoticesInspector(data).catch(() => undefined),
       ]);
+      // A newer result, provider replacement, or drawer close invalidates this discovery.
       if (version !== discoveryVersion) {
         return;
       }
-      const { panelRef } = this.state;
-      if (this.metadataTab?.state.dataSource !== metadata && (metadata || data?.state !== LoadingState.Loading)) {
-        this.metadataTab = metadata ? new InspectMetaDataTab({ panelRef, dataSource: metadata }) : undefined;
-      }
-      if (!this.noticesTab || this.noticesTab.state.dataSource !== notices) {
-        this.noticesTab = new InspectErrorsAndNoticesTab({ panelRef, dataSource: notices });
+      this.updateMetadataTab(metadataDataSource, data);
+      if (!this.noticesTab || this.noticesTab.state.dataSource !== noticesDataSource) {
+        this.noticesTab = new InspectErrorsAndNoticesTab({
+          panelRef: this.state.panelRef,
+          dataSource: noticesDataSource,
+        });
       }
       reconcile();
     };
@@ -85,17 +85,9 @@ export class PanelInspectDrawer extends SceneObjectBase<PanelInspectDrawerState>
           updateData();
         }
       });
-    // Plugin availability has no awaitable API; notice updates must not restart this timeout.
-    const checkPlugin = (elapsed = 0) => {
-      clearTimeout(retryTimer);
-      this.setState({ pluginNotLoaded: !panel.getPlugin() && elapsed >= 2000 });
-      reconcile();
-      if (!panel.getPlugin() && elapsed < 2000) {
-        retryTimer = setTimeout(() => checkPlugin(elapsed + 100), 100);
-      }
-    };
     let dataSubscription = subscribeToData();
-    const unsubscribe = context.notices?.subscribe(reconcile);
+    const unsubscribeNotices = context.notices?.subscribe(reconcile);
+    const pluginPolling = this.createPluginPolling(panel);
     const panelSubscription = panel.subscribeToState((state, previous) => {
       if (state.$data !== previous.$data) {
         dataSubscription.unsubscribe();
@@ -104,21 +96,63 @@ export class PanelInspectDrawer extends SceneObjectBase<PanelInspectDrawerState>
         updateData();
       }
       if (state.pluginId !== previous.pluginId) {
-        checkPlugin();
+        pluginPolling.check();
       } else if (state._pluginLoadError !== previous._pluginLoadError) {
         reconcile();
       }
     });
-    checkPlugin();
+    pluginPolling.check();
     void discoverInspectors();
     return () => {
       discoveryVersion++;
-      clearTimeout(retryTimer);
-      unsubscribe?.();
+      pluginPolling.stop();
+      unsubscribeNotices?.();
       dataSubscription.unsubscribe();
       panelSubscription.unsubscribe();
-      deactivate?.();
+      deactivateNotices?.();
     };
+  }
+
+  private createPluginPolling(panel: VizPanel) {
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+    // Plugin availability has no awaitable API; notice updates must not restart this timeout.
+    const check = (elapsed = 0) => {
+      clearTimeout(retryTimer);
+      this.setState({ pluginNotLoaded: !panel.getPlugin() && elapsed >= 2000 });
+      this.reconcileTabs();
+      if (!panel.getPlugin() && elapsed < 2000) {
+        retryTimer = setTimeout(() => check(elapsed + 100), 100);
+      }
+    };
+
+    return { check, stop: () => clearTimeout(retryTimer) };
+  }
+
+  private updateMetadataTab(dataSource: DataSourceApi | undefined, data: PanelData | undefined) {
+    if (this.metadataTab?.state.dataSource === dataSource) {
+      return;
+    }
+
+    if (dataSource) {
+      this.metadataTab = new InspectMetaDataTab({ panelRef: this.state.panelRef, dataSource });
+      return;
+    }
+
+    // A refresh can temporarily clear results. Keep the existing tab until results settle.
+    if (data?.state !== LoadingState.Loading) {
+      this.metadataTab = undefined;
+    }
+  }
+
+  private hasNotices(panel: VizPanel, panelData: PanelData | undefined) {
+    const snapshot = panel.getPanelContext().notices?.getSnapshot();
+    // An initialized host snapshot is authoritative, including an empty result.
+    if (snapshot?.hostInitialized) {
+      return snapshot.items.length > 0;
+    }
+
+    return hasErrorsOrNotices(panelData) || Boolean(panel.state._pluginLoadError) || Boolean(snapshot?.items.length);
   }
 
   private reconcileTabs() {
@@ -137,25 +171,36 @@ export class PanelInspectDrawer extends SceneObjectBase<PanelInspectDrawerState>
       }
     }
     const panelData = sceneGraph.getData(panel).state.data;
-    const snapshot = panel.getPanelContext().notices?.getSnapshot();
-    const hasNotices = snapshot?.hostInitialized
-      ? snapshot.items.length > 0
-      : hasErrorsOrNotices(panelData) || Boolean(panel.state._pluginLoadError) || Boolean(snapshot?.items.length);
+    // Avoid removing the visible notices tab while a refresh temporarily clears errors.
     const retainNoticesWhileLoading =
       panelData?.state === LoadingState.Loading &&
       Boolean(this.noticesTab && this.state.tabs?.includes(this.noticesTab));
-    if (hasNotices || retainNoticesWhileLoading) {
+    if (this.hasNotices(panel, panelData) || retainNoticesWhileLoading) {
       this.noticesTab ??= new InspectErrorsAndNoticesTab({ panelRef });
       tabs.push(this.noticesTab);
     }
     this.jsonTab ??= new InspectJsonTab({ panelRef, onClose: this.onClose });
     tabs.push(this.jsonTab);
-    if (tabs.length !== this.state.tabs?.length || tabs.some((tab, index) => tab !== this.state.tabs?.[index])) {
-      const selectedTabRemoved =
-        this.state.tabs?.some((tab) => tab.getTabValue() === this.state.currentTab) &&
-        !tabs.some((tab) => tab.getTabValue() === this.state.currentTab);
-      this.setState({ tabs, ...(selectedTabRemoved && { currentTab: tabs[0].getTabValue() }) });
+    this.publishTabs(tabs);
+  }
+
+  private publishTabs(tabs: SceneInspectTab[]) {
+    const { tabs: previousTabs, currentTab } = this.state;
+    const tabsUnchanged =
+      tabs.length === previousTabs?.length && tabs.every((tab, index) => tab === previousTabs[index]);
+    if (tabsUnchanged) {
+      return;
     }
+
+    const selectedTabWasVisible = previousTabs?.some((tab) => tab.getTabValue() === currentTab);
+    const selectedTabIsVisible = tabs.some((tab) => tab.getTabValue() === currentTab);
+    if (selectedTabWasVisible && !selectedTabIsVisible) {
+      this.setState({ tabs, currentTab: tabs[0].getTabValue() });
+      return;
+    }
+
+    // Preserve an initial requested tab while datasource discovery may still make it available.
+    this.setState({ tabs });
   }
 
   getDrawerTitle() {

@@ -81,50 +81,6 @@ function setup() {
   return { store, data, panel, drawer, tabs: () => drawer.state.tabs?.map((tab) => tab.getTabValue()) };
 }
 
-it('shows an existing panel notice on a non-query panel', async () => {
-  plugin.meta.skipDataQuery = true;
-  const { store, drawer, tabs } = setup();
-  store.createSource().set([{ id: 'panel', severity: 'warning', text: 'Choose field' }]);
-
-  const deactivate = drawer.activate();
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.ErrorsAndNotices, InspectTab.JSON]));
-  expect(drawer.state.tabs?.[0]).toBeInstanceOf(InspectErrorsAndNoticesTab);
-  deactivate();
-});
-
-it('shows only JSON for an empty panel and reacts to notices appearing and clearing', async () => {
-  plugin.meta.skipDataQuery = true;
-  const { store, drawer, tabs } = setup();
-  const deactivate = drawer.activate();
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.JSON]));
-  const source = store.createSource();
-  source.set([{ id: 'panel', severity: 'warning', text: 'Choose field' }]);
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.ErrorsAndNotices, InspectTab.JSON]));
-  const noticeTab = drawer.state.tabs![0];
-  source.set([{ id: 'panel', severity: 'warning', text: 'Updated notice' }]);
-  await waitFor(() => expect(drawer.state.tabs![0]).toBe(noticeTab));
-  source.set([]);
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.JSON]));
-  deactivate();
-  source.set([{ id: 'late', severity: 'info', text: 'Late notice' }]);
-  expect(tabs()).toEqual([InspectTab.JSON]);
-});
-
-it('uses query and plugin-load fallback but respects an initialized empty snapshot', async () => {
-  plugin.meta.skipDataQuery = true;
-  const { store, drawer, tabs, data, panel } = setup();
-  data.setState({ data: { ...data.state.data!, errors: [{ message: 'Query failed' }] } });
-  const deactivate = drawer.activate();
-  expect(tabs()).toEqual([InspectTab.ErrorsAndNotices, InspectTab.JSON]);
-  store.setExternal([]);
-  expect(tabs()).toEqual([InspectTab.JSON]);
-  store.clear();
-  data.setState({ data: { ...data.state.data!, errors: [] } });
-  panel.setState({ _pluginLoadError: 'Plugin failed' });
-  expect(tabs()).toEqual([InspectTab.ErrorsAndNotices, InspectTab.JSON]);
-  deactivate();
-});
-
 function withQueryData() {
   plugin.meta.skipDataQuery = false;
   const result = setup();
@@ -138,308 +94,362 @@ function withQueryData() {
   return result;
 }
 
-it('shows all applicable tabs when query data is already loaded', async () => {
-  jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
-  const { data, drawer, tabs } = setup();
-  data.setState({
-    data: {
-      ...data.state.data!,
-      series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })],
-      errors: [{ message: 'Query failed' }],
-    },
+describe('Tab availability', () => {
+  it('shows an existing panel notice on a non-query panel', async () => {
+    plugin.meta.skipDataQuery = true;
+    const { store, drawer, tabs } = setup();
+    store.createSource().set([{ id: 'panel', severity: 'warning', text: 'Choose field' }]);
+
+    const deactivate = drawer.activate();
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.ErrorsAndNotices, InspectTab.JSON]));
+    expect(drawer.state.tabs?.[0]).toBeInstanceOf(InspectErrorsAndNoticesTab);
+    deactivate();
   });
 
-  const deactivate = drawer.activate();
-  await waitFor(() =>
+  it('shows only JSON for an empty panel and reacts to notices appearing and clearing', async () => {
+    plugin.meta.skipDataQuery = true;
+    const { store, drawer, tabs } = setup();
+    const deactivate = drawer.activate();
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.JSON]));
+    const source = store.createSource();
+    source.set([{ id: 'panel', severity: 'warning', text: 'Choose field' }]);
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.ErrorsAndNotices, InspectTab.JSON]));
+    const noticeTab = drawer.state.tabs![0];
+    source.set([{ id: 'panel', severity: 'warning', text: 'Updated notice' }]);
+    await waitFor(() => expect(drawer.state.tabs![0]).toBe(noticeTab));
+    source.set([]);
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.JSON]));
+    deactivate();
+    source.set([{ id: 'late', severity: 'info', text: 'Late notice' }]);
+    expect(tabs()).toEqual([InspectTab.JSON]);
+  });
+
+  it('uses query and plugin-load fallback but respects an initialized empty snapshot', async () => {
+    plugin.meta.skipDataQuery = true;
+    const { store, drawer, tabs, data, panel } = setup();
+    data.setState({ data: { ...data.state.data!, errors: [{ message: 'Query failed' }] } });
+    const deactivate = drawer.activate();
+    expect(tabs()).toEqual([InspectTab.ErrorsAndNotices, InspectTab.JSON]);
+    store.setExternal([]);
+    expect(tabs()).toEqual([InspectTab.JSON]);
+    store.clear();
+    data.setState({ data: { ...data.state.data!, errors: [] } });
+    panel.setState({ _pluginLoadError: 'Plugin failed' });
+    expect(tabs()).toEqual([InspectTab.ErrorsAndNotices, InspectTab.JSON]);
+    deactivate();
+  });
+
+  it('shows all applicable tabs when query data is already loaded', async () => {
+    jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
+    const { data, drawer, tabs } = setup();
+    data.setState({
+      data: {
+        ...data.state.data!,
+        series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })],
+        errors: [{ message: 'Query failed' }],
+      },
+    });
+
+    const deactivate = drawer.activate();
+    await waitFor(() =>
+      expect(tabs()).toEqual([
+        InspectTab.Data,
+        InspectTab.Stats,
+        InspectTab.Query,
+        InspectTab.Meta,
+        InspectTab.ErrorsAndNotices,
+        InspectTab.JSON,
+      ])
+    );
+    deactivate();
+  });
+
+  it('shows only JSON for a non-query panel without status', async () => {
+    plugin.meta.skipDataQuery = true;
+    const { data, drawer, tabs } = setup();
+    data.setState({
+      data: {
+        ...data.state.data!,
+        series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })],
+      },
+    });
+
+    const deactivate = drawer.activate();
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.JSON]));
+    deactivate();
+  });
+
+  it('adds Meta data when query results arrive after inspector opens', async () => {
+    jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
+    const { data, drawer, tabs } = withQueryData();
+    data.setState({ data: { ...data.state.data!, series: [], errors: [] } });
+    const deactivate = drawer.activate();
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
+
+    data.setState({
+      data: { ...data.state.data!, series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })] },
+    });
+
+    await waitFor(() =>
+      expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.Meta, InspectTab.JSON])
+    );
+    deactivate();
+  });
+
+  it('shows and removes Errors and notices as query results change', async () => {
+    jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
+    const { data, drawer, tabs } = withQueryData();
+    data.setState({ data: { ...data.state.data!, series: [], errors: [] } });
+    const deactivate = drawer.activate();
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
+
+    data.setState({ data: { ...data.state.data!, errors: [{ message: 'Query failed' }] } });
+    await waitFor(() => expect(tabs()).toContain(InspectTab.ErrorsAndNotices));
+    data.setState({ data: { ...data.state.data!, errors: [] } });
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
+    deactivate();
+  });
+
+  it('keeps standard notices available when datasource discovery fails', async () => {
+    jest.mocked(getDataSourceInstance).mockRejectedValue(new Error('Unavailable'));
+    const { drawer, tabs } = withQueryData();
+    const deactivate = drawer.activate();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(tabs()).toEqual([
+      InspectTab.Data,
+      InspectTab.Stats,
+      InspectTab.Query,
+      InspectTab.ErrorsAndNotices,
+      InspectTab.JSON,
+    ]);
+    expect(
+      drawer.state.tabs?.find((tab) => tab instanceof InspectErrorsAndNoticesTab)?.state.dataSource
+    ).toBeUndefined();
+    deactivate();
+  });
+});
+
+describe('Loading and selection', () => {
+  it('keeps result tabs visible while a refresh is loading', async () => {
+    jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
+    const { store, data, drawer, tabs } = withQueryData();
+    store.setExternal(getPanelDataStatusItems(data.state.data));
+    const deactivate = drawer.activate();
+    const loadedTabs = [
       InspectTab.Data,
       InspectTab.Stats,
       InspectTab.Query,
       InspectTab.Meta,
       InspectTab.ErrorsAndNotices,
       InspectTab.JSON,
-    ])
-  );
-  deactivate();
-});
+    ];
+    await waitFor(() => expect(tabs()).toEqual(loadedTabs));
+    const original = drawer.state.tabs;
 
-it('shows only JSON for a non-query panel without status', async () => {
-  plugin.meta.skipDataQuery = true;
-  const { data, drawer, tabs } = setup();
-  data.setState({
-    data: {
-      ...data.state.data!,
-      series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })],
-    },
+    data.setState({ data: { ...data.state.data!, state: LoadingState.Loading, series: [], errors: [] } });
+    store.setExternal([]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(tabs()).toEqual(loadedTabs);
+    expect(drawer.state.tabs).toBe(original);
+
+    data.setState({ data: { ...data.state.data!, state: LoadingState.Done } });
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
+    deactivate();
   });
 
-  const deactivate = drawer.activate();
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.JSON]));
-  deactivate();
-});
+  it('selects a remaining tab when the active result tab disappears', async () => {
+    jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
+    const { data, drawer, tabs } = withQueryData();
+    const deactivate = drawer.activate();
+    await waitFor(() => expect(tabs()).toContain(InspectTab.ErrorsAndNotices));
+    drawer.setState({ currentTab: InspectTab.ErrorsAndNotices });
 
-it('adds Meta data when query results arrive after inspector opens', async () => {
-  jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
-  const { data, drawer, tabs } = withQueryData();
-  data.setState({ data: { ...data.state.data!, series: [], errors: [] } });
-  const deactivate = drawer.activate();
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
+    data.setState({ data: { ...data.state.data!, series: [], errors: [] } });
+    await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
+    expect(drawer.state.currentTab).toBe(InspectTab.Data);
 
-  data.setState({
-    data: { ...data.state.data!, series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })] },
+    data.setState({ data: { ...data.state.data!, errors: [{ message: 'New error' }] } });
+    await waitFor(() => expect(tabs()).toContain(InspectTab.ErrorsAndNotices));
+    expect(drawer.state.currentTab).toBe(InspectTab.Data);
+    deactivate();
   });
 
-  await waitFor(() =>
-    expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.Meta, InspectTab.JSON])
-  );
-  deactivate();
-});
+  it('keeps a requested tab selected while datasource discovery is pending', async () => {
+    jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
+    const { data, drawer, tabs } = setup();
+    data.setState({
+      data: { ...data.state.data!, series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })] },
+    });
+    drawer.setState({ currentTab: InspectTab.Meta });
 
-it('shows and removes Errors and notices as query results change', async () => {
-  jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
-  const { data, drawer, tabs } = withQueryData();
-  data.setState({ data: { ...data.state.data!, series: [], errors: [] } });
-  const deactivate = drawer.activate();
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
-
-  data.setState({ data: { ...data.state.data!, errors: [{ message: 'Query failed' }] } });
-  await waitFor(() => expect(tabs()).toContain(InspectTab.ErrorsAndNotices));
-  data.setState({ data: { ...data.state.data!, errors: [] } });
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
-  deactivate();
-});
-
-it('keeps result tabs visible while a refresh is loading', async () => {
-  jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
-  const { store, data, drawer, tabs } = withQueryData();
-  store.setExternal(getPanelDataStatusItems(data.state.data));
-  const deactivate = drawer.activate();
-  const loadedTabs = [
-    InspectTab.Data,
-    InspectTab.Stats,
-    InspectTab.Query,
-    InspectTab.Meta,
-    InspectTab.ErrorsAndNotices,
-    InspectTab.JSON,
-  ];
-  await waitFor(() => expect(tabs()).toEqual(loadedTabs));
-  const original = drawer.state.tabs;
-
-  data.setState({ data: { ...data.state.data!, state: LoadingState.Loading, series: [], errors: [] } });
-  store.setExternal([]);
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  expect(tabs()).toEqual(loadedTabs);
-  expect(drawer.state.tabs).toBe(original);
-
-  data.setState({ data: { ...data.state.data!, state: LoadingState.Done } });
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
-  deactivate();
-});
-
-it('selects a remaining tab when the active result tab disappears', async () => {
-  jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
-  const { data, drawer, tabs } = withQueryData();
-  const deactivate = drawer.activate();
-  await waitFor(() => expect(tabs()).toContain(InspectTab.ErrorsAndNotices));
-  drawer.setState({ currentTab: InspectTab.ErrorsAndNotices });
-
-  data.setState({ data: { ...data.state.data!, series: [], errors: [] } });
-  await waitFor(() => expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]));
-  expect(drawer.state.currentTab).toBe(InspectTab.Data);
-
-  data.setState({ data: { ...data.state.data!, errors: [{ message: 'New error' }] } });
-  await waitFor(() => expect(tabs()).toContain(InspectTab.ErrorsAndNotices));
-  expect(drawer.state.currentTab).toBe(InspectTab.Data);
-  deactivate();
-});
-
-it('keeps a requested tab selected while datasource discovery is pending', async () => {
-  jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
-  const { data, drawer, tabs } = setup();
-  data.setState({
-    data: { ...data.state.data!, series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })] },
+    const deactivate = drawer.activate();
+    expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]);
+    await waitFor(() => expect(tabs()).toContain(InspectTab.Meta));
+    expect(drawer.state.currentTab).toBe(InspectTab.Meta);
+    deactivate();
   });
-  drawer.setState({ currentTab: InspectTab.Meta });
-
-  const deactivate = drawer.activate();
-  expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]);
-  await waitFor(() => expect(tabs()).toContain(InspectTab.Meta));
-  expect(drawer.state.currentTab).toBe(InspectTab.Meta);
-  deactivate();
 });
 
-it('preserves tabs and skips datasource discovery when notices or actions change', async () => {
-  jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
-  const { drawer, store, tabs } = withQueryData();
-  const deactivate = drawer.activate();
-  await waitFor(() =>
-    expect(tabs()).toEqual([
-      InspectTab.Data,
-      InspectTab.Stats,
-      InspectTab.Query,
-      InspectTab.Meta,
-      InspectTab.ErrorsAndNotices,
-      InspectTab.JSON,
-    ])
-  );
-  const original = drawer.state.tabs;
-  const calls = jest.mocked(getDataSourceInstance).mock.calls.length;
-  const source = store.createSource();
-  source.set([{ id: 'notice', severity: 'warning', text: 'Warning' }]);
-  source.set([
-    {
-      id: 'notice',
-      severity: 'warning',
-      text: 'Warning',
-      actions: [{ id: 'retry', label: 'Retry', onClick: jest.fn() }],
-    },
-  ]);
-  await Promise.resolve();
-  expect(drawer.state.tabs).toBe(original);
-  expect(getDataSourceInstance).toHaveBeenCalledTimes(calls);
-  deactivate();
-});
-
-it('ignores stale discovery after provider replacement and preserves unrelated tabs', async () => {
-  const first = datasource('first');
-  const second = datasource('second');
-  let resolveFirst!: (value: DataSourceApi) => void;
-  const pending = new Promise<DataSourceApi>((resolve) => {
-    resolveFirst = resolve;
+describe('Tab identity and discovery lifecycle', () => {
+  it('preserves tabs and skips datasource discovery when notices or actions change', async () => {
+    jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
+    const { drawer, store, tabs } = withQueryData();
+    const deactivate = drawer.activate();
+    await waitFor(() =>
+      expect(tabs()).toEqual([
+        InspectTab.Data,
+        InspectTab.Stats,
+        InspectTab.Query,
+        InspectTab.Meta,
+        InspectTab.ErrorsAndNotices,
+        InspectTab.JSON,
+      ])
+    );
+    const original = drawer.state.tabs;
+    const calls = jest.mocked(getDataSourceInstance).mock.calls.length;
+    const source = store.createSource();
+    source.set([{ id: 'notice', severity: 'warning', text: 'Warning' }]);
+    source.set([
+      {
+        id: 'notice',
+        severity: 'warning',
+        text: 'Warning',
+        actions: [{ id: 'retry', label: 'Retry', onClick: jest.fn() }],
+      },
+    ]);
+    await Promise.resolve();
+    expect(drawer.state.tabs).toBe(original);
+    expect(getDataSourceInstance).toHaveBeenCalledTimes(calls);
+    deactivate();
   });
-  jest
-    .mocked(getDataSourceInstance)
-    .mockImplementation(async (ref) => (typeof ref === 'object' && ref?.uid === 'second' ? second : pending));
-  const { drawer, data, panel, tabs } = withQueryData();
-  const deactivate = drawer.activate();
-  const dataTab = drawer.state.tabs![0];
-  const replacement = new SceneDataNode({
-    data: {
-      ...data.state.data!,
-      request: { ...data.state.data!.request!, targets: [{ refId: 'A', datasource: { uid: 'second' } }] },
-    },
+
+  it('ignores stale discovery after provider replacement and preserves unrelated tabs', async () => {
+    const first = datasource('first');
+    const second = datasource('second');
+    let resolveFirst!: (value: DataSourceApi) => void;
+    const pending = new Promise<DataSourceApi>((resolve) => {
+      resolveFirst = resolve;
+    });
+    jest
+      .mocked(getDataSourceInstance)
+      .mockImplementation(async (ref) => (typeof ref === 'object' && ref?.uid === 'second' ? second : pending));
+    const { drawer, data, panel, tabs } = withQueryData();
+    const deactivate = drawer.activate();
+    const dataTab = drawer.state.tabs![0];
+    const replacement = new SceneDataNode({
+      data: {
+        ...data.state.data!,
+        request: { ...data.state.data!.request!, targets: [{ refId: 'A', datasource: { uid: 'second' } }] },
+      },
+    });
+    panel.setState({ $data: replacement });
+    await waitFor(() =>
+      expect(drawer.state.tabs?.find((tab) => tab instanceof InspectErrorsAndNoticesTab)?.state).toMatchObject({
+        dataSource: second,
+      })
+    );
+    const latest = drawer.state.tabs;
+    resolveFirst(first);
+    await pending;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(drawer.state.tabs).toBe(latest);
+    expect(drawer.state.tabs![0]).toBe(dataTab);
+    data.setState({ data: { ...data.state.data!, errors: [] } });
+    expect(tabs()).toContain(InspectTab.ErrorsAndNotices);
+    deactivate();
   });
-  panel.setState({ $data: replacement });
-  await waitFor(() =>
-    expect(drawer.state.tabs?.find((tab) => tab instanceof InspectErrorsAndNoticesTab)?.state).toMatchObject({
-      dataSource: second,
-    })
-  );
-  const latest = drawer.state.tabs;
-  resolveFirst(first);
-  await pending;
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  expect(drawer.state.tabs).toBe(latest);
-  expect(drawer.state.tabs![0]).toBe(dataTab);
-  data.setState({ data: { ...data.state.data!, errors: [] } });
-  expect(tabs()).toContain(InspectTab.ErrorsAndNotices);
-  deactivate();
-});
 
-it('keeps standard notices available when datasource discovery fails', async () => {
-  jest.mocked(getDataSourceInstance).mockRejectedValue(new Error('Unavailable'));
-  const { drawer, tabs } = withQueryData();
-  const deactivate = drawer.activate();
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  expect(tabs()).toEqual([
-    InspectTab.Data,
-    InspectTab.Stats,
-    InspectTab.Query,
-    InspectTab.ErrorsAndNotices,
-    InspectTab.JSON,
-  ]);
-  expect(drawer.state.tabs?.find((tab) => tab instanceof InspectErrorsAndNoticesTab)?.state.dataSource).toBeUndefined();
-  deactivate();
-});
+  it('preserves active tab and tab instances across equivalent data and provider changes', async () => {
+    jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
+    const { data, panel, drawer, tabs } = setup();
+    data.setState({
+      data: { ...data.state.data!, series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })] },
+    });
+    const deactivate = drawer.activate();
+    await waitFor(() => expect(tabs()).toContain(InspectTab.Meta));
+    drawer.setState({ currentTab: InspectTab.Query });
+    const original = drawer.state.tabs;
 
-it('does not extend plugin timeout on notice updates and cancels polling on close', () => {
-  jest.useFakeTimers();
-  const { drawer, panel, store } = setup();
-  jest.spyOn(panel, 'getPlugin').mockReturnValue(undefined);
-  const deactivate = drawer.activate();
-  jest.advanceTimersByTime(1900);
-  store.createSource().set([{ id: 'notice', text: 'Warning', severity: 'warning' }]);
-  jest.advanceTimersByTime(100);
-  expect(drawer.state.pluginNotLoaded).toBe(true);
-  panel.setState({ pluginId: 'another' });
-  expect(drawer.state.pluginNotLoaded).toBe(false);
-  deactivate();
-  jest.advanceTimersByTime(2000);
-  expect(drawer.state.pluginNotLoaded).toBe(false);
-});
+    data.setState({ data: { ...data.state.data! } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(drawer.state.tabs).toBe(original);
 
-it('preserves active tab and tab instances across equivalent data and provider changes', async () => {
-  jest.mocked(getDataSourceInstance).mockResolvedValue(datasource('first'));
-  const { data, panel, drawer, tabs } = setup();
-  data.setState({
-    data: { ...data.state.data!, series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })] },
+    panel.setState({ $data: new SceneDataNode({ data: data.state.data }) });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(drawer.state.tabs).toBe(original);
+    expect(drawer.state.currentTab).toBe(InspectTab.Query);
+    deactivate();
   });
-  const deactivate = drawer.activate();
-  await waitFor(() => expect(tabs()).toContain(InspectTab.Meta));
-  drawer.setState({ currentTab: InspectTab.Query });
-  const original = drawer.state.tabs;
 
-  data.setState({ data: { ...data.state.data! } });
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  expect(drawer.state.tabs).toBe(original);
+  it('ignores datasource discovery that finishes after the drawer closes', async () => {
+    let resolve!: (value: DataSourceApi) => void;
+    const pending = new Promise<DataSourceApi>((done) => {
+      resolve = done;
+    });
+    jest.mocked(getDataSourceInstance).mockReturnValue(pending);
+    const { data, drawer, tabs } = setup();
+    data.setState({
+      data: { ...data.state.data!, series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })] },
+    });
+    const deactivate = drawer.activate();
+    expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]);
+    const original = drawer.state.tabs;
 
-  panel.setState({ $data: new SceneDataNode({ data: data.state.data }) });
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  expect(drawer.state.tabs).toBe(original);
-  expect(drawer.state.currentTab).toBe(InspectTab.Query);
-  deactivate();
-});
+    deactivate();
+    resolve(datasource('first'));
+    await pending;
+    await new Promise((done) => setTimeout(done, 0));
 
-it('ignores datasource discovery that finishes after the drawer closes', async () => {
-  let resolve!: (value: DataSourceApi) => void;
-  const pending = new Promise<DataSourceApi>((done) => {
-    resolve = done;
+    expect(drawer.state.tabs).toBe(original);
   });
-  jest.mocked(getDataSourceInstance).mockReturnValue(pending);
-  const { data, drawer, tabs } = setup();
-  data.setState({
-    data: { ...data.state.data!, series: [toDataFrame({ fields: [], meta: { custom: { detail: true } } })] },
+});
+
+describe('Plugin availability', () => {
+  it('does not extend plugin timeout on notice updates and cancels polling on close', () => {
+    jest.useFakeTimers();
+    const { drawer, panel, store } = setup();
+    jest.spyOn(panel, 'getPlugin').mockReturnValue(undefined);
+    const deactivate = drawer.activate();
+    jest.advanceTimersByTime(1900);
+    store.createSource().set([{ id: 'notice', text: 'Warning', severity: 'warning' }]);
+    jest.advanceTimersByTime(100);
+    expect(drawer.state.pluginNotLoaded).toBe(true);
+    panel.setState({ pluginId: 'another' });
+    expect(drawer.state.pluginNotLoaded).toBe(false);
+    deactivate();
+    jest.advanceTimersByTime(2000);
+    expect(drawer.state.pluginNotLoaded).toBe(false);
   });
-  const deactivate = drawer.activate();
-  expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]);
-  const original = drawer.state.tabs;
 
-  deactivate();
-  resolve(datasource('first'));
-  await pending;
-  await new Promise((done) => setTimeout(done, 0));
+  it('adds query tabs when a panel plugin becomes available during retry', () => {
+    jest.useFakeTimers();
+    const { panel, drawer, tabs } = setup();
+    const getPlugin = jest.spyOn(panel, 'getPlugin').mockReturnValue(undefined);
+    const deactivate = drawer.activate();
+    expect(tabs()).toEqual([InspectTab.JSON]);
 
-  expect(drawer.state.tabs).toBe(original);
-});
+    getPlugin.mockReturnValue(plugin);
+    jest.advanceTimersByTime(100);
 
-it('adds query tabs when a panel plugin becomes available during retry', () => {
-  jest.useFakeTimers();
-  const { panel, drawer, tabs } = setup();
-  const getPlugin = jest.spyOn(panel, 'getPlugin').mockReturnValue(undefined);
-  const deactivate = drawer.activate();
-  expect(tabs()).toEqual([InspectTab.JSON]);
+    expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]);
+    expect(drawer.state.pluginNotLoaded).toBe(false);
+    deactivate();
+  });
 
-  getPlugin.mockReturnValue(plugin);
-  jest.advanceTimersByTime(100);
+  it('shows plugin load failure after the timeout and clears it on plugin replacement', () => {
+    jest.useFakeTimers();
+    const { panel, drawer, tabs } = setup();
+    const getPlugin = jest.spyOn(panel, 'getPlugin').mockReturnValue(undefined);
+    const deactivate = drawer.activate();
+    expect(tabs()).toEqual([InspectTab.JSON]);
 
-  expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]);
-  expect(drawer.state.pluginNotLoaded).toBe(false);
-  deactivate();
-});
+    jest.advanceTimersByTime(2000);
+    expect(drawer.state.pluginNotLoaded).toBe(true);
+    getPlugin.mockReturnValue(plugin);
+    panel.setState({ pluginId: 'loaded' });
 
-it('shows plugin load failure after the timeout and clears it on plugin replacement', () => {
-  jest.useFakeTimers();
-  const { panel, drawer, tabs } = setup();
-  const getPlugin = jest.spyOn(panel, 'getPlugin').mockReturnValue(undefined);
-  const deactivate = drawer.activate();
-  expect(tabs()).toEqual([InspectTab.JSON]);
-
-  jest.advanceTimersByTime(2000);
-  expect(drawer.state.pluginNotLoaded).toBe(true);
-  getPlugin.mockReturnValue(plugin);
-  panel.setState({ pluginId: 'loaded' });
-
-  expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]);
-  expect(drawer.state.pluginNotLoaded).toBe(false);
-  deactivate();
+    expect(tabs()).toEqual([InspectTab.Data, InspectTab.Stats, InspectTab.Query, InspectTab.JSON]);
+    expect(drawer.state.pluginNotLoaded).toBe(false);
+    deactivate();
+  });
 });
