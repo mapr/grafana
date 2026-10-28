@@ -230,7 +230,13 @@ const coreKindInfos: ResourceKindInfo[] = Object.values(resourceKindInfos);
 const discoveredKindInfos: ResourceKindInfo[] = [];
 
 function knownKindInfos(): ResourceKindInfo[] {
-  return [...coreKindInfos, ...discoveredKindInfos];
+  const pluginKinds = [...discoveredKindInfos];
+  for (const k of kindOverrides.values()) {
+    if (![...coreKindInfos, ...discoveredKindInfos].some((info) => info.group === k.group && info.kind === k.kind)) {
+      pluginKinds.push(getDefaultKindInfo(k.group, k.kind, k.resource));
+    }
+  }
+  return [...coreKindInfos, ...pluginKinds.map(withOverride)];
 }
 
 export function resolveKindInfo(group: string, kind: string): ResourceKindInfo {
@@ -269,7 +275,7 @@ function addDiscoveredKinds({ metadata, versions }: APIGroupDiscovery) {
   }
   for (const { resource, responseKind } of versions?.[0]?.resources ?? []) {
     const kind = responseKind?.kind;
-    if (kind && !knownKindInfos().some((info) => info.group === group && info.kind === kind)) {
+    if (kind && ![...coreKindInfos, ...discoveredKindInfos].some((info) => info.group === group && info.kind === kind)) {
       discoveredKindInfos.push(getDefaultKindInfo(group, kind, resource));
     }
   }
@@ -292,26 +298,29 @@ export function getDefaultKindInfo(group: string, kind: string, resource = `${ki
   };
 }
 
+const kindOverrides = new Map<string, ResourceKindDisplay>();
+
 export function addResourceKinds(kinds: ResourceKindDisplay[]) {
   for (const k of kinds) {
-    if (!allKindInfos.some((c) => c.group === k.group && c.kind === k.kind)) {
-      allKindInfos.push(toKindInfo(k));
-    }
+    kindOverrides.set(`${k.group}/${k.kind}`, k);
   }
 }
 
-function toKindInfo(k: ResourceKindDisplay): ResourceKindInfo {
-  const info = getDefaultKindInfo(k.group, k.kind, k.resource);
-  const label = k.label ?? k.kind;
+function withOverride(info: ResourceKindInfo): ResourceKindInfo {
+  const k = kindOverrides.get(`${info.group}/${info.kind}`);
+  if (!k) {
+    return info;
+  }
+  const { label } = k;
   return {
     ...info,
-    key: `${k.group}/${k.kind}`,
-    getLabel: () => label,
-    pluralLabel: () => label,
+    resource: k.resource ?? info.resource,
+    getLabel: label ? () => label : info.getLabel,
+    pluralLabel: label ? () => label : info.pluralLabel,
     icon: isIconName(k.icon) ? k.icon : info.icon,
-    getRoute: k.getRoute,
-    listRoute: k.listRoute ?? '',
-    folderScoped: k.folderScoped ?? true,
+    getRoute: k.getRoute ?? info.getRoute,
+    listRoute: k.listRoute ?? info.listRoute,
+    folderScoped: k.folderScoped ?? info.folderScoped,
   };
 }
 

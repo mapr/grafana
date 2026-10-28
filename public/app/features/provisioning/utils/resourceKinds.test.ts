@@ -15,6 +15,8 @@ import {
   getRepositoryRoute,
   isResourceKindAvailable,
   loadDiscoveredKinds,
+  addResourceKinds,
+  resolveKindInfo,
   readImmediateParent,
 } from './resourceKinds';
 
@@ -346,5 +348,24 @@ describe('loadDiscoveredKinds', () => {
     });
     expect(getKindInfoByStat({ group, resource: 'otherkinds' })).toBeUndefined();
     expect(getMigratableKinds().map((k) => k.kind)).not.toContain('FolderKind');
+  });
+});
+
+describe('addResourceKinds', () => {
+  it('overrides the discovered details and keeps the rest', () => {
+    const group = 'examplegitsyncapp.ext.grafana.app';
+    addResourceKinds([{ group, kind: 'FolderlessKind', label: 'Tag', icon: 'tag-alt' }]);
+
+    expect(resolveKindInfo(group, 'FolderlessKind')).toMatchObject({
+      icon: 'tag-alt',
+      resource: 'folderlesskinds',
+    });
+    expect(resolveKindInfo(group, 'FolderlessKind').getLabel()).toBe('Tag');
+  });
+
+  it('adds a kind that discovery does not have', () => {
+    addResourceKinds([{ group: 'other.ext.grafana.app', kind: 'Thing', listRoute: '/a/other-app' }]);
+
+    expect(getKindInfoByGroupKind('other.ext.grafana.app', 'Thing')).toMatchObject({ listRoute: '/a/other-app' });
   });
 });
