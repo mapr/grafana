@@ -56,6 +56,7 @@ import {
   setManagedBadge,
   setReadOnlyBadge,
   setPullRequestBanner,
+  setRegisterResourceKinds,
   setRepositorySelect,
   setSaveResourceDrawer,
   setPanelRenderer,
@@ -130,6 +131,7 @@ import { ReadOnlyBadge } from './features/provisioning/components/ReadOnlyBadge'
 import { LazySaveProvisionedResourceDrawer } from './features/provisioning/components/Shared/LazySaveProvisionedResourceDrawer';
 import { PreviewBannerViewPR } from './features/provisioning/components/Shared/PreviewBannerViewPR';
 import { RepositorySelectForKind } from './features/provisioning/components/Shared/RepositorySelectForKind';
+import { addResourceKinds } from './features/provisioning/utils/resourceKinds';
 import { QueryRunner } from './features/query/state/QueryRunner';
 import { runRequest } from './features/query/state/runRequest';
 import { initWindowRuntime } from './features/runtime/init';
@@ -241,6 +243,7 @@ export class GrafanaApp {
       setReadOnlyBadge(ReadOnlyBadge);
       setPullRequestBanner(PreviewBannerViewPR);
       setSaveResourceDrawer(LazySaveProvisionedResourceDrawer);
+      setRegisterResourceKinds(addResourceKinds);
       setRepositorySelect(RepositorySelectForKind);
       setFolderPicker(LazyFolderPicker);
       setDataSourcePicker(RuntimeDataSourcePickerShim);
