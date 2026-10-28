@@ -354,13 +354,14 @@ describe('loadDiscoveredKinds', () => {
 describe('addResourceKinds', () => {
   it('overrides the discovered details and keeps the rest', () => {
     const group = 'examplegitsyncapp.ext.grafana.app';
-    addResourceKinds([{ group, kind: 'FolderlessKind', label: 'Tag', icon: 'tag-alt' }]);
+    addResourceKinds([{ group, kind: 'FolderlessKind', label: 'Tag', pluralLabel: 'Tags', icon: 'tag-alt' }]);
 
     expect(resolveKindInfo(group, 'FolderlessKind')).toMatchObject({
       icon: 'tag-alt',
       resource: 'folderlesskinds',
     });
     expect(resolveKindInfo(group, 'FolderlessKind').getLabel()).toBe('Tag');
+    expect(resolveKindInfo(group, 'FolderlessKind').pluralLabel()).toBe('Tags');
   });
 
   it('adds a kind that discovery does not have', () => {

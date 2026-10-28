@@ -311,12 +311,12 @@ function withOverride(info: ResourceKindInfo): ResourceKindInfo {
   if (!k) {
     return info;
   }
-  const { label } = k;
+  const { label, pluralLabel } = k;
   return {
     ...info,
     resource: k.resource ?? info.resource,
     getLabel: label ? () => label : info.getLabel,
-    pluralLabel: label ? () => label : info.pluralLabel,
+    pluralLabel: pluralLabel ? () => pluralLabel : label ? () => label : info.pluralLabel,
     icon: isIconName(k.icon) ? k.icon : info.icon,
     getRoute: k.getRoute ?? info.getRoute,
     listRoute: k.listRoute ?? info.listRoute,

@@ -6,6 +6,7 @@ export interface ResourceKindDisplay {
   kind: string;
   resource?: string;
   label?: string;
+  pluralLabel?: string;
   icon?: string;
   getRoute?: (name: string) => string;
   listRoute?: string;
