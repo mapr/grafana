@@ -1,9 +1,11 @@
 package schedule
 
 import (
+	"cmp"
 	"encoding/json"
 	"math/rand"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 	"uuid"
@@ -11,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/grafana/grafana/pkg/expr"
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
 )
 
@@ -399,6 +402,104 @@ func TestRuleWithFolderFingerprint(t *testing.T) {
 		execErr := models.CopyRule(base)
 		execErr.ExecErrState = models.OkErrState
 		require.NotEqual(t, fBase, ruleWithFolder{rule: execErr, folderTitle: title}.Fingerprint())
+	})
+
+	t.Run("threshold evaluators should be excluded from fingerprint", func(t *testing.T) {
+		const (
+			gt10   = `{"type":"gt","params":[10]}`
+			gt20   = `{"type":"gt","params":[20]}`
+			lt10   = `{"type":"lt","params":[10]}`
+			within = `{"type":"within_range","params":[1,5]}`
+			sqlRaw = `{"refId":"S","type":"sql","expression":"SELECT * FROM C"}`
+		)
+		// threshold builds a threshold model with the given conditions array.
+		threshold := func(conditions string) string {
+			return `{"refId":"C","type":"threshold","expression":"B","datasource":{"type":"__expr__","uid":"__expr__"},"conditions":` + conditions + `}`
+		}
+		cond := func(evaluator, rest string) string { return `[{"evaluator":` + evaluator + rest + `}]` }
+		base := threshold(cond(gt10, ""))
+
+		cases := []struct {
+			name    string
+			uid     string // defaults to the expression datasource
+			a, b    string
+			refB    string // RefID of the second query, defaults to "C"
+			withSQL bool   // adds a SQL expression to both rules
+			equal   bool
+		}{
+			{name: "params change", a: base, b: threshold(cond(gt20, "")), equal: true},
+			{name: "evaluator type change", a: base, b: threshold(cond(lt10, "")), equal: true},
+			{name: "evaluator changes to range", a: base, b: threshold(cond(within, "")), equal: true},
+			{name: "unloadEvaluator added", a: base, b: threshold(cond(gt10, `,"unloadEvaluator":`+lt10)), equal: true},
+			{
+				name:  "unloadEvaluator changed",
+				a:     threshold(cond(gt10, `,"unloadEvaluator":`+lt10)),
+				b:     threshold(cond(gt10, `,"unloadEvaluator":`+gt20)),
+				equal: true,
+			},
+			{name: "unloadEvaluator null", a: base, b: threshold(cond(gt10, `,"unloadEvaluator":null`)), equal: true},
+			{
+				name:  "evaluators of multiple conditions",
+				a:     threshold(`[{"evaluator":` + gt10 + `},{"evaluator":` + gt10 + `}]`),
+				b:     threshold(`[{"evaluator":` + lt10 + `},{"evaluator":` + gt20 + `}]`),
+				equal: true,
+			},
+			{
+				name:  "non-object condition is kept",
+				a:     threshold(`[{"evaluator":` + gt10 + `},5]`),
+				b:     threshold(`[{"evaluator":` + gt20 + `},5]`),
+				equal: true,
+			},
+			{
+				name: "non-object condition changes",
+				a:    threshold(`[{"evaluator":` + gt10 + `},5]`),
+				b:    threshold(`[{"evaluator":` + gt10 + `},6]`),
+			},
+			{
+				name:  "key order and whitespace",
+				a:     base,
+				b:     `{ "conditions": [ { "evaluator": ` + gt10 + ` } ], "datasource": {"uid":"__expr__","type":"__expr__"}, "expression": "B", "type": "threshold", "refId": "C" }`,
+				equal: true,
+			},
+			{name: "legacy expression UID", uid: expr.OldDatasourceUID, a: base, b: threshold(cond(gt20, "")), equal: true},
+			{name: "input expression change", a: base, b: strings.Replace(base, `"expression":"B"`, `"expression":"A"`, 1)},
+			{name: "other model field change", a: base, b: strings.Replace(base, `"type":"__expr__"`, `"type":"other"`, 1)},
+			{name: "refId change", a: base, b: base, refB: "D"},
+			{
+				name: "math expression change",
+				a:    `{"refId":"C","type":"math","expression":"$B > 10"}`,
+				b:    `{"refId":"C","type":"math","expression":"$B > 20"}`,
+			},
+			{name: "data source query is hashed raw", uid: "some-ds", a: base, b: threshold(cond(gt20, ""))},
+			{
+				name: "malformed JSON is hashed raw",
+				a:    `{"type":"threshold","conditions":[{"evaluator":`,
+				b:    `{"type":"threshold","conditions":[{"evaluator":1`,
+			},
+			{name: "SQL expression in the rule disables stripping", a: base, b: threshold(cond(gt20, "")), withSQL: true},
+			{name: "no SQL expression in the rule", a: base, b: threshold(cond(gt20, "")), equal: true},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				uid := cmp.Or(tc.uid, expr.DatasourceUID)
+				fp := func(refID, model string) fingerprint {
+					cp := models.CopyRule(rule)
+					cp.Data = []models.AlertQuery{{RefID: refID, DatasourceUID: uid, Model: json.RawMessage(model)}}
+					if tc.withSQL {
+						cp.Data = append(cp.Data, models.AlertQuery{RefID: "S", DatasourceUID: expr.DatasourceUID, Model: json.RawMessage(sqlRaw)})
+					}
+					return ruleWithFolder{rule: cp, folderTitle: title}.Fingerprint()
+				}
+				require.NotPanics(t, func() {
+					fa, fb := fp("C", tc.a), fp(cmp.Or(tc.refB, "C"), tc.b)
+					if tc.equal {
+						require.Equal(t, fa, fb)
+					} else {
+						require.NotEqual(t, fa, fb)
+					}
+				})
+			})
+		}
 	})
 
 	t.Run("all other fields should be considered", func(t *testing.T) {

@@ -1,8 +1,10 @@
 package schedule
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -12,6 +14,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/grafana/grafana/pkg/expr"
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
 )
 
@@ -240,6 +243,61 @@ type ruleWithFolder struct {
 	folderTitle string
 }
 
+var (
+	thresholdMarker = []byte("threshold")
+	sqlMarker       = []byte("sql")
+)
+
+// hasSQLExpression reports whether any query is a SQL expression.
+func hasSQLExpression(data []models.AlertQuery) bool {
+	for _, q := range data {
+		// cheap checks first: this runs on every evaluation tick
+		if expr.NodeTypeFromDatasourceUID(q.DatasourceUID) != expr.TypeCMDNode || !bytes.Contains(q.Model, sqlMarker) {
+			continue
+		}
+		var m struct {
+			Type string `json:"type"`
+		}
+		if json.Unmarshal(q.Model, &m) == nil && m.Type == expr.TypeSQL.String() {
+			return true
+		}
+	}
+	return false
+}
+
+// modelForFingerprint returns the query model to hash. Threshold expressions pass input labels through,
+// so their evaluators cannot change the state cache ID and are stripped when stripThreshold is set.
+// Callers must not set it if the rule has a SQL expression, because SQL can derive labels from values.
+// Any other or unparsable model is returned as is.
+func modelForFingerprint(q models.AlertQuery, stripThreshold bool) []byte {
+	// cheap checks first: this runs on every evaluation tick
+	if !stripThreshold || expr.NodeTypeFromDatasourceUID(q.DatasourceUID) != expr.TypeCMDNode || !bytes.Contains(q.Model, thresholdMarker) {
+		return q.Model
+	}
+	dec := json.NewDecoder(bytes.NewReader(q.Model))
+	dec.UseNumber() // keep numbers as written so unrelated fields are not altered
+	var model map[string]any
+	if err := dec.Decode(&model); err != nil {
+		return q.Model
+	}
+	if t, _ := model["type"].(string); t != expr.TypeThreshold.String() {
+		return q.Model
+	}
+	conditions, _ := model["conditions"].([]any)
+	for _, c := range conditions {
+		if cond, ok := c.(map[string]any); ok {
+			delete(cond, "evaluator")
+			delete(cond, "unloadEvaluator")
+		}
+	}
+	// map keys are sorted on marshal, so the output is stable
+	b, err := json.Marshal(model)
+	if err != nil {
+		return q.Model
+	}
+	return b
+}
+
 // Fingerprint calculates a fingerprint of the fields that can change the state cache ID.
 // Changing any other field keeps the fingerprint, so the state of the rule is not reset.
 func (r ruleWithFolder) Fingerprint() fingerprint {
@@ -293,6 +351,7 @@ func (r ruleWithFolder) Fingerprint() fingerprint {
 		}
 	}
 	writeQuery := func() {
+		stripThreshold := !hasSQLExpression(rule.Data)
 		// The order of queries is not important as they represent an expression tree.
 		// Therefore, the order of elements should not change the hash. Sort by RefID because it is the unique key.
 		for i, q := range rule.Data {
@@ -308,7 +367,7 @@ func (r ruleWithFolder) Fingerprint() fingerprint {
 					writeString(q.QueryType)
 					writeInt(int64(q.RelativeTimeRange.From))
 					writeInt(int64(q.RelativeTimeRange.To))
-					writeBytes(q.Model)
+					writeBytes(modelForFingerprint(q, stripThreshold))
 					break
 				}
 			}
