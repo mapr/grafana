@@ -11,8 +11,6 @@ import {
 import { getAPIBaseURL } from 'app/api/utils';
 import { AnnoKeySourcePath } from 'app/features/apiserver/types';
 
-import { addResourceKinds, getKindInfoByGroupKind } from '../../utils/resourceKinds';
-
 export interface InterceptedWriteDrawerProps {
   url: string;
   action: 'create' | 'update' | 'delete';
@@ -47,14 +45,6 @@ function mergePatch(target: unknown, patch: unknown): unknown {
     }
   }
   return result;
-}
-
-function ensureKindRegistered(url: string, resource: SaveResourceDrawerResource) {
-  const group = resource.apiVersion?.split('/')[0];
-  const kind = resource.kind;
-  if (group && kind && !getKindInfoByGroupKind(group, kind)) {
-    addResourceKinds([{ group, kind, resource: url.replace(/^\//, '').split('/')[5] }]);
-  }
 }
 
 export function InterceptedWriteDrawer({
@@ -119,7 +109,6 @@ export function InterceptedWriteDrawer({
   if (!resource || directory === undefined) {
     return null;
   }
-  ensureKindRegistered(url, resource);
 
   const spec = resource.spec ?? {};
   const handlers = {
