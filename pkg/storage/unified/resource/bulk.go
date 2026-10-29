@@ -331,6 +331,14 @@ func (b *batchRunner) Next() bool {
 }
 
 func (b *batchRunner) NextBatch() bool {
+	return b.NextBatchContext(context.Background())
+}
+
+// NextBatchContext lets storage lease loss interrupt a wait for client input.
+func (b *batchRunner) NextBatchContext(ctx context.Context) bool {
+	if ctx.Err() != nil {
+		return false
+	}
 	if b.rollback {
 		return true
 	}
@@ -353,7 +361,7 @@ func (b *batchRunner) NextBatch() bool {
 		return false
 	}
 
-	result := b.readNextResult()
+	result := b.readNextResult(ctx)
 	switch {
 	case result.eof:
 		return false
@@ -407,6 +415,8 @@ func (b *batchRunner) NextBatch() bool {
 			}
 		case <-timerC:
 			return true
+		case <-ctx.Done():
+			return false
 		}
 	}
 }
@@ -443,18 +453,22 @@ func (b *batchRunner) recvChannel() <-chan batchStreamResult {
 	return b.recvCh
 }
 
-func (b *batchRunner) readNextResult() batchStreamResult {
+func (b *batchRunner) readNextResult(ctx context.Context) batchStreamResult {
 	if b.pending != nil {
 		result := *b.pending
 		b.pending = nil
 		return result
 	}
 
-	result, ok := <-b.recvChannel()
-	if !ok {
-		return batchStreamResult{eof: true}
+	select {
+	case result, ok := <-b.recvChannel():
+		if !ok {
+			return batchStreamResult{eof: true}
+		}
+		return result
+	case <-ctx.Done():
+		return batchStreamResult{err: ctx.Err(), rollback: true}
 	}
-	return result
 }
 
 func (b *batchRunner) recvLoop() {
