@@ -100,7 +100,6 @@ declare module "@openfeature/core" {
     | "datasourceConnectionsTab"
     | "connectionsFilterSidebar"
     | "alertingJiraIntegration"
-    | "useScopesNavigationEndpoint"
     | "scopeSearchAllLevels"
     | "alertRuleRestore"
     | "alertingMigrationWizardUI"
