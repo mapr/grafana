@@ -1,11 +1,18 @@
+import { lastValueFrom, of, toArray } from 'rxjs';
+
 import {
   type AnnotationQueryRequest,
   type DataQueryRequest,
   type DataSourceInstanceSettings,
   dateTime,
+  LoadingState,
+  toDataFrame,
 } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 import { backendSrv } from 'app/core/services/backend_srv'; // will use the version in __mocks__
+import * as annotationApi from 'app/features/annotations/api';
+
+import * as dashboardSrvModule from '../../../features/dashboard/services/DashboardSrv';
 
 import { GrafanaDatasource } from './datasource';
 import { type GrafanaAnnotationQuery, GrafanaAnnotationType, type GrafanaQuery, GrafanaQueryType } from './types';
@@ -114,6 +121,41 @@ describe('grafana data source', () => {
           );
         }
       );
+    });
+
+    describe('when annotation sources settle at different times', () => {
+      it('emits each partial result as Loading, then Done, and surfaces source errors', async () => {
+        const partial = toDataFrame({ fields: [{ name: 'text', values: ['manual'] }] });
+        const error = new Error('alert history unavailable');
+        const serverSpy = jest.spyOn(annotationApi, 'annotationServer').mockReturnValue({
+          query: () => of({ frame: partial, errors: [], done: false }, { frame: partial, errors: [error], done: true }),
+        } as unknown as annotationApi.AnnotationServer);
+
+        const request = {
+          range: { from: dateTime(1), to: dateTime(2), raw: { from: 'now-1h', to: 'now' } },
+          targets: [
+            {
+              refId: 'Anno',
+              queryType: GrafanaQueryType.Annotations,
+              target: { type: GrafanaAnnotationType.Dashboard },
+            },
+          ],
+        } as unknown as DataQueryRequest<GrafanaQuery>;
+        // dashboard uid is required for dashboard-scoped annotations
+        const dashboardSpy = jest
+          .spyOn(dashboardSrvModule, 'getDashboardSrv')
+          .mockReturnValue({ getCurrent: () => ({ uid: 'd' }) } as never);
+
+        const responses = await lastValueFrom(ds.query(request).pipe(toArray())).finally(() => {
+          serverSpy.mockRestore();
+          dashboardSpy.mockRestore();
+        });
+
+        expect(responses.map((r) => r.state)).toEqual([LoadingState.Loading, LoadingState.Done]);
+        expect(responses[0].errors).toBeUndefined();
+        expect(responses[1].errors).toHaveLength(1);
+        expect(responses[1].data).toEqual([partial]);
+      });
     });
 
     describe('with the disableAlertHistory URL parameter', () => {

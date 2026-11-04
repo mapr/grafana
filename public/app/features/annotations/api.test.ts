@@ -1,3 +1,5 @@
+import { lastValueFrom, toArray } from 'rxjs';
+
 import { type BackendSrv, config, setBackendSrv } from '@grafana/runtime';
 import { FlagKeys, getFeatureFlagClient } from '@grafana/runtime/internal';
 
@@ -194,9 +196,11 @@ describe('annotationServer with FE flag ON and API group available', () => {
       return Promise.resolve(null);
     });
 
-    const frame = await annotationServer().query(
-      { from: 1, to: 2, dashboardUID: 'd', limit: 100, matchAny: false, scopes: ['s-1'] },
-      'req-1'
+    const { frame, errors, done } = await lastValueFrom(
+      annotationServer().query(
+        { from: 1, to: 2, dashboardUID: 'd', limit: 100, matchAny: false, scopes: ['s-1'] },
+        'req-1'
+      )
     );
 
     expect(getFn).toHaveBeenCalledWith(
@@ -212,11 +216,126 @@ describe('annotationServer with FE flag ON and API group available', () => {
     expect(frame.length).toBe(2);
     const texts = frame.fields.find((f) => f.name === 'text')?.values;
     expect(texts).toEqual(['manual', 'alerting']);
+    expect(errors).toEqual([]);
+    expect(done).toBe(true);
+  });
+
+  describe('query with independently settling sources', () => {
+    const searchResponse = {
+      kind: 'AnnotationList',
+      items: [
+        {
+          apiVersion: 'annotation.grafana.app/v0alpha1',
+          kind: 'Annotation',
+          metadata: { name: 'a-7', resourceVersion: '1', creationTimestamp: '' },
+          spec: { text: 'manual', time: 100, dashboardUID: 'd' },
+        },
+      ],
+    };
+    const alertResponse = [{ id: 9, text: 'alerting', time: 200, dashboardUID: 'd', newState: 'alerting' }];
+    const textsOf = (frame: { fields: Array<{ name: string; values: unknown[] }> }) =>
+      frame.fields.find((f) => f.name === 'text')?.values;
+
+    // Lets a test decide when each source settles.
+    function deferSources() {
+      let resolveManual!: (v: typeof searchResponse) => void;
+      let resolveAlert!: (v: typeof alertResponse) => void;
+      const manualPromise = new Promise<typeof searchResponse>((r) => (resolveManual = r));
+      const alertPromise = new Promise<typeof alertResponse>((r) => (resolveAlert = r));
+      getFn.mockImplementation((url: string) => (url === `${baseURL}/search` ? manualPromise : alertPromise));
+      return {
+        manual: { next: resolveManual },
+        alert: { next: resolveAlert },
+      };
+    }
+
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    it('emits manual annotations without waiting for the alert request', async () => {
+      const { manual } = deferSources();
+      const emissions: Array<{ texts: unknown; done: boolean }> = [];
+      annotationServer()
+        .query({ from: 1, to: 2, dashboardUID: 'd' }, 'req-1')
+        .subscribe(({ frame, done }) => emissions.push({ texts: textsOf(frame), done }));
+
+      manual.next(searchResponse);
+      await flush();
+
+      expect(emissions).toEqual([{ texts: ['manual'], done: false }]);
+    });
+
+    it('emits alert annotations without waiting for the manual request', async () => {
+      const { alert } = deferSources();
+      const emissions: Array<{ texts: unknown; done: boolean }> = [];
+      annotationServer()
+        .query({ from: 1, to: 2, dashboardUID: 'd' }, 'req-1')
+        .subscribe(({ frame, done }) => emissions.push({ texts: textsOf(frame), done }));
+
+      alert.next(alertResponse);
+      await flush();
+
+      expect(emissions).toEqual([{ texts: ['alerting'], done: false }]);
+    });
+
+    it('keeps source order in the final frame regardless of arrival order', async () => {
+      const { manual, alert } = deferSources();
+      const results = lastValueFrom(annotationServer().query({ from: 1, to: 2, dashboardUID: 'd' }, 'req-1'));
+
+      alert.next(alertResponse);
+      await flush();
+      manual.next(searchResponse);
+
+      const { frame, done } = await results;
+      expect(textsOf(frame)).toEqual(['manual', 'alerting']);
+      expect(done).toBe(true);
+    });
+
+    it('keeps manual annotations and reports the error when the alert request fails', async () => {
+      const alertError = new Error('alert history unavailable');
+      getFn.mockImplementation((url: string) =>
+        url === `${baseURL}/search` ? Promise.resolve(searchResponse) : Promise.reject(alertError)
+      );
+
+      const emissions = await lastValueFrom(
+        annotationServer().query({ from: 1, to: 2, dashboardUID: 'd' }, 'req-1').pipe(toArray())
+      );
+
+      const last = emissions[emissions.length - 1];
+      expect(textsOf(last.frame)).toEqual(['manual']);
+      expect(last.errors).toEqual([alertError]);
+      expect(last.done).toBe(true);
+    });
+
+    it('keeps alert annotations and reports the error when the manual request fails', async () => {
+      const searchError = new Error('search unavailable');
+      getFn.mockImplementation((url: string) =>
+        url === `${baseURL}/search` ? Promise.reject(searchError) : Promise.resolve(alertResponse)
+      );
+
+      const { frame, errors, done } = await lastValueFrom(
+        annotationServer().query({ from: 1, to: 2, dashboardUID: 'd' }, 'req-1')
+      );
+
+      expect(textsOf(frame)).toEqual(['alerting']);
+      expect(errors).toEqual([searchError]);
+      expect(done).toBe(true);
+    });
+
+    it('errors when every source fails', async () => {
+      const searchError = new Error('search unavailable');
+      getFn.mockImplementation((url: string) =>
+        url === `${baseURL}/search` ? Promise.reject(searchError) : Promise.reject(new Error('alert unavailable'))
+      );
+
+      await expect(
+        lastValueFrom(annotationServer().query({ from: 1, to: 2, dashboardUID: 'd' }, 'req-1'))
+      ).rejects.toBe(searchError); // the user-annotation error takes precedence
+    });
   });
 
   it('query skips the alert fetch when caller explicitly filters to type=annotation', async () => {
     getFn.mockResolvedValue({ kind: 'AnnotationList', items: [] });
-    await annotationServer().query({ from: 1, to: 2, dashboardUID: 'd', type: 'annotation' }, 'req-1');
+    await lastValueFrom(annotationServer().query({ from: 1, to: 2, dashboardUID: 'd', type: 'annotation' }, 'req-1'));
 
     expect(getFn).toHaveBeenCalledTimes(1);
     expect(getFn).toHaveBeenCalledWith(`${baseURL}/search`, expect.any(Object), 'req-1');
