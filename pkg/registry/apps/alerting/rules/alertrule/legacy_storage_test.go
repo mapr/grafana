@@ -24,7 +24,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/folder"
 	"github.com/grafana/grafana/pkg/services/folder/foldertest"
 	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
-	"github.com/grafana/grafana/pkg/services/ngalert/provisioning"
+	"github.com/grafana/grafana/pkg/services/ngalert/rules/legacy"
 	rulestore "github.com/grafana/grafana/pkg/services/ngalert/store/rules"
 	"github.com/grafana/grafana/pkg/services/ngalert/tests/fakes"
 	"github.com/grafana/grafana/pkg/services/user"
@@ -135,18 +135,18 @@ func (fakeRuleAccessControl) HasAccessInFolder(context.Context, identity.Request
 	return true, nil
 }
 
-func newTestLegacyStorage(t *testing.T, validator provisioning.RuleMutationValidator) *legacyStorage {
+func newTestLegacyStorage(t *testing.T, validator legacy.RuleMutationValidator) *legacyStorage {
 	t.Helper()
 	ruleStore := fakes.NewRuleStore(t)
 	provenanceStore := fakes.NewFakeProvisioningStore()
-	quotas := provisioning.MockQuotaChecker{}
+	quotas := legacy.MockQuotaChecker{}
 	quotas.EXPECT().LimitOK()
 	folderService := foldertest.NewFakeService()
 	folderService.ExpectedFolder = &folder.Folder{UID: "test-folder-uid", Title: "Test Folder"}
 
-	svc := provisioning.NewAlertRuleService(
+	svc := legacy.NewLegacyRuleService(
 		ruleStore, provenanceStore, folderService, &quotas, ruleStore,
-		60, 10, 100, log.NewNopLogger(), nil, fakeRuleAccessControl{}, validator,
+		60, log.NewNopLogger(), nil, fakeRuleAccessControl{}, validator,
 	)
 	return &legacyStorage{service: *svc, namespacer: nsMapperForTest()}
 }
