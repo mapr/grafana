@@ -32,6 +32,42 @@ tests dashboards.
 Please update these dashboards or make new ones as new panels and dashboards features are developed or new bugs are
 found. The dashboards are located in the `devenv/dev-dashboards` folder.
 
+## Provisioning bootstrap
+
+`devenv/provisioning-bootstrap` is the same idea as the dashboard provisioning above, through the
+provisioning system that also backs Git Sync: `[provisioning] bootstrap_path` points at a local
+directory, and Grafana registers a local repository over it at startup. Nothing here talks to
+Git. It declares a playlist, a folder tree, two dashboards and a library panel.
+
+```bash
+./setup.sh provisioning-bootstrap
+```
+
+This symlinks `devenv/provisioning-bootstrap.ini` to `conf/custom.ini` and links
+`devenv/datasources.yaml` for the datasource the dashboards query. It changes the instance in
+three ways, so read them before running it against anything you care about:
+
+- Library panel storage is rerouted instance-wide, so it asks first: panels held only in the
+  legacy table stop being listed while it is in place, though nothing is deleted. Set
+  `BOOTSTRAP_FORCE=1` to answer non-interactively.
+- Linking `devenv/datasources.yaml` is not scoped to `gdev-testdata`: Grafana deletes the
+  datasources named in its `deleteDatasources` list, overwrites same-named ones, and makes
+  `gdev-testdata` the default. `undev` does not undo those database changes.
+- It assumes the default org is org 1, since the datasource is always created there while the
+  repository follows `auto_assign_org_id`. Setup refuses a non-org-1 instance when it can see it.
+
+After restarting the Grafana server (`make run`) the resources appear under **Administration →
+Provisioning**, managed by a repository named `bootstrap`. See
+`devenv/provisioning-bootstrap/README.md` for what each file does.
+
+`./setup.sh undev` cleans up in two steps, because clearing `bootstrap_path` deletes the
+repository and everything it provisioned, and that deletion needs the unified storage settings
+still in place. The first run switches `conf/custom.ini` to `provisioning-bootstrap-cleanup.ini`
+(no `bootstrap_path`); restart Grafana, then run `./setup.sh undev` again to remove the link. That
+second run only unlinks once Grafana confirms the repository is gone, since the restart starts the
+deletion but finalizers finish it asynchronously. A `conf/custom.ini` symlink that points
+elsewhere is left untouched.
+
 ## docker-compose with databases
 
 This command creates a docker-compose file with specified databases configured and ready to run. Each database has
