@@ -121,6 +121,7 @@ declare module "@openfeature/core" {
     | "heatmapNegativeLogBuckets"
     | "pieChartGradientColorScheme"
     | "dataviz.reverseColorScheme"
+    | "dataviz.colorByValue"
     | "pluginInsights"
     | "transformationsEmptyPlaceholder"
     | "plugins.useMTPlugins"
