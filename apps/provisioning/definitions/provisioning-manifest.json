@@ -333,6 +333,13 @@
                                 ],
                                 "type": "object"
                             },
+                            "HealthFailureType": {
+                                "enum": [
+                                    "hook",
+                                    "health"
+                                ],
+                                "type": "string"
+                            },
                             "HealthStatus": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -341,12 +348,8 @@
                                         "type": "integer"
                                     },
                                     "error": {
-                                        "description": "The type of the error",
-                                        "enum": [
-                                            "hook",
-                                            "health"
-                                        ],
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/HealthFailureType",
+                                        "description": "The type of the error"
                                     },
                                     "healthy": {
                                         "description": "When not healthy, requests will not be executed",
@@ -1091,6 +1094,13 @@
                                 ],
                                 "type": "object"
                             },
+                            "HealthFailureType": {
+                                "enum": [
+                                    "hook",
+                                    "health"
+                                ],
+                                "type": "string"
+                            },
                             "HealthStatus": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -1099,12 +1109,8 @@
                                         "type": "integer"
                                     },
                                     "error": {
-                                        "description": "The type of the error",
-                                        "enum": [
-                                            "hook",
-                                            "health"
-                                        ],
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/HealthFailureType",
+                                        "description": "The type of the error"
                                     },
                                     "healthy": {
                                         "description": "When not healthy, requests will not be executed",
@@ -1460,16 +1466,6 @@
                                 },
                                 "type": "object"
                             },
-                            "JobState": {
-                                "enum": [
-                                    "pending",
-                                    "working",
-                                    "success",
-                                    "warning",
-                                    "error"
-                                ],
-                                "type": "string"
-                            },
                             "MigrateJobOptions": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -1597,6 +1593,16 @@
                                 },
                                 "type": "object"
                             },
+                            "State": {
+                                "enum": [
+                                    "pending",
+                                    "working",
+                                    "success",
+                                    "warning",
+                                    "error"
+                                ],
+                                "type": "string"
+                            },
                             "SyncJobOptions": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -1715,7 +1721,7 @@
                                         "type": "integer"
                                     },
                                     "state": {
-                                        "$ref": "#/components/schemas/JobState"
+                                        "$ref": "#/components/schemas/State"
                                     },
                                     "summary": {
                                         "description": "Summary of processed actions",
@@ -1891,16 +1897,6 @@
                                 },
                                 "type": "object"
                             },
-                            "JobState": {
-                                "enum": [
-                                    "pending",
-                                    "working",
-                                    "success",
-                                    "warning",
-                                    "error"
-                                ],
-                                "type": "string"
-                            },
                             "MigrateJobOptions": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -2028,6 +2024,16 @@
                                 },
                                 "type": "object"
                             },
+                            "State": {
+                                "enum": [
+                                    "pending",
+                                    "working",
+                                    "success",
+                                    "warning",
+                                    "error"
+                                ],
+                                "type": "string"
+                            },
                             "SyncJobOptions": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -2146,7 +2152,7 @@
                                         "type": "integer"
                                     },
                                     "state": {
-                                        "$ref": "#/components/schemas/JobState"
+                                        "$ref": "#/components/schemas/State"
                                     },
                                     "summary": {
                                         "description": "Summary of processed actions",
@@ -2497,6 +2503,13 @@
                                 ],
                                 "type": "object"
                             },
+                            "HealthFailureType": {
+                                "enum": [
+                                    "hook",
+                                    "health"
+                                ],
+                                "type": "string"
+                            },
                             "HealthStatus": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -2505,12 +2518,8 @@
                                         "type": "integer"
                                     },
                                     "error": {
-                                        "description": "The type of the error",
-                                        "enum": [
-                                            "hook",
-                                            "health"
-                                        ],
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/HealthFailureType",
+                                        "description": "The type of the error"
                                     },
                                     "healthy": {
                                         "description": "When not healthy, requests will not be executed",
@@ -3255,6 +3264,13 @@
                                 ],
                                 "type": "object"
                             },
+                            "HealthFailureType": {
+                                "enum": [
+                                    "hook",
+                                    "health"
+                                ],
+                                "type": "string"
+                            },
                             "HealthStatus": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -3263,12 +3279,8 @@
                                         "type": "integer"
                                     },
                                     "error": {
-                                        "description": "The type of the error",
-                                        "enum": [
-                                            "hook",
-                                            "health"
-                                        ],
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/HealthFailureType",
+                                        "description": "The type of the error"
                                     },
                                     "healthy": {
                                         "description": "When not healthy, requests will not be executed",
@@ -3624,16 +3636,6 @@
                                 },
                                 "type": "object"
                             },
-                            "JobState": {
-                                "enum": [
-                                    "pending",
-                                    "working",
-                                    "success",
-                                    "warning",
-                                    "error"
-                                ],
-                                "type": "string"
-                            },
                             "MigrateJobOptions": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -3761,6 +3763,16 @@
                                 },
                                 "type": "object"
                             },
+                            "State": {
+                                "enum": [
+                                    "pending",
+                                    "working",
+                                    "success",
+                                    "warning",
+                                    "error"
+                                ],
+                                "type": "string"
+                            },
                             "SyncJobOptions": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -3879,7 +3891,7 @@
                                         "type": "integer"
                                     },
                                     "state": {
-                                        "$ref": "#/components/schemas/JobState"
+                                        "$ref": "#/components/schemas/State"
                                     },
                                     "summary": {
                                         "description": "Summary of processed actions",
@@ -4055,16 +4067,6 @@
                                 },
                                 "type": "object"
                             },
-                            "JobState": {
-                                "enum": [
-                                    "pending",
-                                    "working",
-                                    "success",
-                                    "warning",
-                                    "error"
-                                ],
-                                "type": "string"
-                            },
                             "MigrateJobOptions": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -4192,6 +4194,16 @@
                                 },
                                 "type": "object"
                             },
+                            "State": {
+                                "enum": [
+                                    "pending",
+                                    "working",
+                                    "success",
+                                    "warning",
+                                    "error"
+                                ],
+                                "type": "string"
+                            },
                             "SyncJobOptions": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -4310,7 +4322,7 @@
                                         "type": "integer"
                                     },
                                     "state": {
-                                        "$ref": "#/components/schemas/JobState"
+                                        "$ref": "#/components/schemas/State"
                                     },
                                     "summary": {
                                         "description": "Summary of processed actions",
