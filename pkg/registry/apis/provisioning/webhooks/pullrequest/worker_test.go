@@ -227,8 +227,8 @@ func TestPullRequestWorker_Process(t *testing.T) {
 			setupMocks: func(evaluator *MockEvaluator, commenter *MockCommenter, repo *mockPullRequestRepo, progress *jobs.MockJobProgressRecorder) {
 				repo.MockRepository.On("Config").Return(&provisioning.Repository{
 					Spec: provisioning.RepositorySpec{
-						Type:   provisioning.GitHubRepositoryType,
-						GitHub: &provisioning.GitHubRepositoryConfig{Branch: "main"},
+						Type:   provisioning.RepositorySpecTypeGithub,
+						Github: &provisioning.RepositoryGitHubRepositoryConfig{Branch: "main"},
 					},
 				})
 				progress.On("SetMessage", mock.Anything, "listing pull request files").Return()
@@ -435,8 +435,8 @@ func TestPullRequestWorker_Process_StopsWhenHeadRefIsMissing(t *testing.T) {
 
 	repo.MockRepository.On("Config").Return(&provisioning.Repository{
 		Spec: provisioning.RepositorySpec{
-			Type:   provisioning.GitHubRepositoryType,
-			GitHub: &provisioning.GitHubRepositoryConfig{Branch: "main"},
+			Type:   provisioning.RepositorySpecTypeGithub,
+			Github: &provisioning.RepositoryGitHubRepositoryConfig{Branch: "main"},
 		},
 	})
 	progress.On("SetMessage", mock.Anything, "listing pull request files").Return()
@@ -496,8 +496,8 @@ func TestPullRequestWorker_Process_MissingBaseRefRemainsError(t *testing.T) {
 
 	repo.MockRepository.On("Config").Return(&provisioning.Repository{
 		Spec: provisioning.RepositorySpec{
-			Type:   provisioning.GitHubRepositoryType,
-			GitHub: &provisioning.GitHubRepositoryConfig{Branch: "main"},
+			Type:   provisioning.RepositorySpecTypeGithub,
+			Github: &provisioning.RepositoryGitHubRepositoryConfig{Branch: "main"},
 		},
 	})
 	progress.On("SetMessage", mock.Anything, "listing pull request files").Return()
@@ -588,8 +588,8 @@ type mockPullRequestRepo struct {
 func mainBranchConfig() *provisioning.Repository {
 	return &provisioning.Repository{
 		Spec: provisioning.RepositorySpec{
-			Type:   provisioning.GitHubRepositoryType,
-			GitHub: &provisioning.GitHubRepositoryConfig{Branch: "main"},
+			Type:   provisioning.RepositorySpecTypeGithub,
+			Github: &provisioning.RepositoryGitHubRepositoryConfig{Branch: "main"},
 		},
 	}
 }
