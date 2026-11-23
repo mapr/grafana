@@ -1,34 +1,13 @@
 import { skipToken } from '@reduxjs/toolkit/query';
 import { useCallback, useMemo } from 'react';
 
-import { useAddStarMutation, useRemoveStarMutation, useListStarsQuery } from 'app/api/clients/collections/v1alpha1';
-import { contextSrv } from 'app/core/services/context_srv';
+import { useListStarsQuery } from 'app/api/clients/collections/v1alpha1';
 import { type DashboardQueryResult } from 'app/features/search/service/types';
 import { useDispatch, useSelector } from 'app/types/store';
 
 import { refetchStarred, useSearchStarredQuery } from './api';
 import { selectStarredKinds, starsHoldAppKind, useDiscoverAppKindsQuery } from './kinds';
 import { canUseStars, findStarredNames, userStarsFieldSelector } from './utils';
-
-/** Star or unstar the item with this id. Every starred view follows the `Stars` cache the mutation invalidates. */
-export const useStarItem = (group: string, kind: string) => {
-  const [addStar] = useAddStarMutation();
-  const [removeStar] = useRemoveStarMutation();
-
-  return async (id: string, newStarredState: boolean) => {
-    const name = `user-${contextSrv.user.uid}`;
-    const mutationArgs = { id, name, group, kind };
-    try {
-      if (newStarredState) {
-        await addStar(mutationArgs).unwrap();
-      } else {
-        await removeStar(mutationArgs).unwrap();
-      }
-    } catch {
-      // The mutation's own onQueryStarted reports the failure, and the star set keeps the value the server kept.
-    }
-  };
-};
 
 /**
  * Get starred items from the app platform API

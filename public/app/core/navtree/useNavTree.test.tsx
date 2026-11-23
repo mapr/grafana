@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { testWithStarsUser } from 'test/helpers/testWithStarsUser';
 import { render, screen, waitFor } from 'test/test-utils';
 
-import { config, setBackendSrv } from '@grafana/runtime';
+import { config, getStarsSrv, setBackendSrv, setStarsSrv } from '@grafana/runtime';
 import { getKindDiscoveryHandler, getKindSearchHandler, kindSearchRoute } from '@grafana/test-utils/handlers';
 import server, { setupMockServer } from '@grafana/test-utils/server';
 import {
@@ -15,9 +15,11 @@ import {
   setMockStarredPluginKind,
 } from '@grafana/test-utils/unstable';
 import { backendSrv } from 'app/core/services/backend_srv';
+import { contextSrv } from 'app/core/services/context_srv';
 import { getGrafanaSearcher } from 'app/features/search/service/searcher';
 import { type GrafanaSearcher, type SearchQuery } from 'app/features/search/service/types';
-import { useStarItem, useStarredSearch } from 'app/features/stars/hooks';
+import { useStarredSearch } from 'app/features/stars/hooks';
+import { CollectionsStarsSrv } from 'app/features/stars/service';
 
 import { useNavTree } from './useNavTree';
 
@@ -35,6 +37,9 @@ const { group: THING_GROUP, kind: THING_KIND } = MOCK_STARRED_KIND_SERVED;
 const THING_ROW = `synced-starred/${THING_GROUP}/${THING_KIND}/${THING_UUID}`;
 
 setBackendSrv(backendSrv);
+// Stars go through the runtime service, which refuses signed-out callers
+setStarsSrv(new CollectionsStarsSrv());
+contextSrv.isSignedIn = true;
 setupMockServer();
 
 /** Serves the Thing kind through discovery, so its plugin page is found and it resolves through its own search. */
@@ -63,9 +68,8 @@ const TestHarness = () => {
   );
 };
 
-/** Renders the folder star callback plus a read-only list of nav starred children */
+/** Renders a folder star button plus a read-only list of nav starred children */
 const StarFolderHarness = ({ uid }: { uid: string }) => {
-  const starItem = useStarItem('folder.grafana.app', 'Folder');
   const [starDone, setStarDone] = useState(false);
   const navTree = useNavTree();
   const starred = navTree.find((item) => item.id === 'starred');
@@ -74,7 +78,11 @@ const StarFolderHarness = ({ uid }: { uid: string }) => {
     <>
       <button
         onClick={async () => {
-          await starItem(uid, true);
+          try {
+            await getStarsSrv().star({ group: 'folder.grafana.app', kind: 'Folder', name: uid });
+          } catch {
+            // The collections client reports the failure
+          }
           setStarDone(true);
         }}
       >
@@ -265,6 +273,27 @@ describe('useNavTree', () => {
     });
     expect(screen.getByTestId(THING_ROW)).toHaveAttribute('data-url', THING_URL);
     expect(screen.getByTestId(THING_ROW)).toHaveAttribute('data-icon', 'cube');
+  });
+
+  it('re-searches a starred plugin object its plugin reports saved, and shows the saved title', async () => {
+    setMockStarredDashboards([]);
+    setMockStarredPluginKind(THING_GROUP, THING_KIND, [THING_UUID]);
+    installThingsApp();
+    server.use(getKindSearchHandler(MOCK_STARRED_KIND_SERVED, [{ name: THING_UUID, title: 'Old title' }]));
+    setupSearchMock([]);
+
+    render(<TestHarness />);
+    await waitFor(() => {
+      expect(screen.getByTestId(THING_ROW)).toHaveTextContent('Old title');
+    });
+
+    // The plugin saved the object under a new title, then tells Grafana
+    server.use(getKindSearchHandler(MOCK_STARRED_KIND_SERVED, [{ name: THING_UUID, title: 'New title' }]));
+    getStarsSrv().resourceUpdated(THING_UUID);
+
+    await waitFor(() => {
+      expect(screen.getByTestId(THING_ROW)).toHaveTextContent('New title');
+    });
   });
 
   it('lists a starred plugin object when the instance also serves a version with routes only', async () => {
