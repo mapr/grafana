@@ -180,8 +180,8 @@ func TestAdmissionValidator_Validate(t *testing.T) {
 					Title: "Test Connection",
 					Type:  provisioning.ConnectionTypeGithub,
 				},
-				Secure: provisioning.ConnectionSecure{
-					Token: resource.InlineSecureValue{Name: "old-token"},
+				Secure: resource.InlineSecureValues{
+					provisioning.ConnectionSecureToken: resource.InlineSecureValue{Name: "old-token"},
 				},
 			},
 			operation:     admission.Update,
@@ -307,7 +307,7 @@ func TestAdmissionValidator_Validate(t *testing.T) {
 			if tt.old != nil && tt.obj != nil {
 				if newConn, ok := tt.obj.(*provisioning.Connection); ok {
 					if oldConn, ok := tt.old.(*provisioning.Connection); ok {
-						if !oldConn.Secure.Token.IsZero() && newConn.Secure.Token.IsZero() {
+						if !oldConn.Secure[provisioning.ConnectionSecureToken].IsZero() && newConn.Secure[provisioning.ConnectionSecureToken].IsZero() {
 							t.Error("expected token to be copied from old connection")
 						}
 					}
@@ -474,10 +474,10 @@ func TestAdmissionValidator_CopiesSecureValuesOnUpdate(t *testing.T) {
 			Title: "Test Connection",
 			Type:  provisioning.ConnectionTypeGithub,
 		},
-		Secure: provisioning.ConnectionSecure{
-			Token:        resource.InlineSecureValue{Name: "old-token"},
-			PrivateKey:   resource.InlineSecureValue{Name: "old-key"},
-			ClientSecret: resource.InlineSecureValue{Name: "old-secret"},
+		Secure: resource.InlineSecureValues{
+			provisioning.ConnectionSecureToken:        resource.InlineSecureValue{Name: "old-token"},
+			provisioning.ConnectionSecurePrivateKey:   resource.InlineSecureValue{Name: "old-key"},
+			provisioning.ConnectionSecureClientSecret: resource.InlineSecureValue{Name: "old-secret"},
 		},
 	}
 
@@ -496,9 +496,9 @@ func TestAdmissionValidator_CopiesSecureValuesOnUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify all secure values were copied
-	assert.Equal(t, "old-token", newConn.Secure.Token.Name)
-	assert.Equal(t, "old-key", newConn.Secure.PrivateKey.Name)
-	assert.Equal(t, "old-secret", newConn.Secure.ClientSecret.Name)
+	assert.Equal(t, "old-token", newConn.Secure[provisioning.ConnectionSecureToken].Name)
+	assert.Equal(t, "old-key", newConn.Secure[provisioning.ConnectionSecurePrivateKey].Name)
+	assert.Equal(t, "old-secret", newConn.Secure[provisioning.ConnectionSecureClientSecret].Name)
 }
 
 func TestAdmissionValidator_Validate_DryRun(t *testing.T) {
@@ -526,8 +526,8 @@ func TestAdmissionValidator_Validate_DryRun(t *testing.T) {
 						ClientID: "client-123",
 					},
 				},
-				Secure: provisioning.ConnectionSecure{
-					Token: resource.InlineSecureValue{
+				Secure: resource.InlineSecureValues{
+					provisioning.ConnectionSecureToken: resource.InlineSecureValue{
 						Create: resource.NewSecretValue("test-token"),
 					},
 				},
@@ -550,8 +550,8 @@ func TestAdmissionValidator_Validate_DryRun(t *testing.T) {
 						InstallationID: "456",
 					},
 				},
-				Secure: provisioning.ConnectionSecure{
-					Token: resource.InlineSecureValue{
+				Secure: resource.InlineSecureValues{
+					provisioning.ConnectionSecureToken: resource.InlineSecureValue{
 						Create: resource.NewSecretValue("test-token"),
 					},
 				},
@@ -578,8 +578,8 @@ func TestAdmissionValidator_Validate_DryRun(t *testing.T) {
 						InstallationID: "999",
 					},
 				},
-				Secure: provisioning.ConnectionSecure{
-					Token: resource.InlineSecureValue{
+				Secure: resource.InlineSecureValues{
+					provisioning.ConnectionSecureToken: resource.InlineSecureValue{
 						Create: resource.NewSecretValue("test-token"),
 					},
 				},
@@ -613,8 +613,8 @@ func TestAdmissionValidator_Validate_DryRun(t *testing.T) {
 						InstallationID: "456",
 					},
 				},
-				Secure: provisioning.ConnectionSecure{
-					Token: resource.InlineSecureValue{
+				Secure: resource.InlineSecureValues{
+					provisioning.ConnectionSecureToken: resource.InlineSecureValue{
 						Create: resource.NewSecretValue("test-token"),
 					},
 				},

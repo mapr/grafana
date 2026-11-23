@@ -45,6 +45,7 @@ func (m *AdmissionMutator) Mutate(ctx context.Context, a admission.Attributes, o
 	if !ok {
 		return fmt.Errorf("expected connection configuration, got %T", obj)
 	}
+	c.NormalizeSecureValues()
 
 	namePrefix := fmt.Sprintf("%s-", c.Spec.Type)
 	if a.GetOperation() == admission.Create && c.GetName() == "" {
@@ -53,7 +54,7 @@ func (m *AdmissionMutator) Mutate(ctx context.Context, a admission.Attributes, o
 
 	if a.GetOperation() == admission.Update {
 		if old, ok := a.GetOldObject().(*provisioning.Connection); ok && oauthAppChanged(c, old) {
-			c.Secure.Token = resource.InlineSecureValue{Remove: true}
+			c.SetSecureValue(provisioning.ConnectionSecureToken, resource.InlineSecureValue{Remove: true})
 		}
 	}
 
@@ -63,17 +64,13 @@ func (m *AdmissionMutator) Mutate(ctx context.Context, a admission.Attributes, o
 // CopySecureValues copies secure values from old to new connection if they are zero in the new one.
 // This preserves existing secrets during updates when they are not provided in the new object.
 func CopySecureValues(new, old *provisioning.Connection) {
-	if old == nil || old.Secure.IsZero() {
+	if old == nil {
 		return
 	}
-	if new.Secure.PrivateKey.IsZero() {
-		new.Secure.PrivateKey = old.Secure.PrivateKey
-	}
-	if new.Secure.Token.IsZero() {
-		new.Secure.Token = old.Secure.Token
-	}
-	if new.Secure.ClientSecret.IsZero() {
-		new.Secure.ClientSecret = old.Secure.ClientSecret
+	for _, key := range provisioning.ConnectionSecureKeys {
+		if new.Secure[key].IsZero() {
+			new.SetSecureValue(key, old.Secure[key])
+		}
 	}
 }
 
@@ -95,8 +92,9 @@ func oauthAppChanged(new, old *provisioning.Connection) bool {
 		!slices.Equal(gitOAuthScopes(new), gitOAuthScopes(old)) {
 		return true
 	}
-	return !new.Secure.ClientSecret.Create.IsZero() ||
-		(new.Secure.ClientSecret.Name != "" && new.Secure.ClientSecret.Name != old.Secure.ClientSecret.Name)
+	clientSecret := new.Secure[provisioning.ConnectionSecureClientSecret]
+	return !clientSecret.Create.IsZero() ||
+		(clientSecret.Name != "" && clientSecret.Name != old.Secure[provisioning.ConnectionSecureClientSecret].Name)
 }
 
 func githubEnterpriseServerURL(c *provisioning.Connection) string {
