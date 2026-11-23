@@ -5624,7 +5624,8 @@
       "metadata": {
         "name": "provisioning.routerClient",
         "resourceVersion": "1795192880924",
-        "creationTimestamp": "2026-11-20T16:41:20Z"
+        "creationTimestamp": "2026-11-20T16:41:20Z",
+        "deletionTimestamp": "2026-11-23T17:17:12Z"
       },
       "spec": {
         "description": "Sends the requests of the provisioning operators for all API groups through the router at aggregated_server_url, instead of the dedicated dashboards, folders and provisioning URLs",

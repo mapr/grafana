@@ -40,7 +40,6 @@ import (
 	gitrepo "github.com/grafana/grafana/apps/provisioning/pkg/repository/git"
 	githubrepo "github.com/grafana/grafana/apps/provisioning/pkg/repository/github"
 	"github.com/grafana/grafana/apps/provisioning/pkg/repository/local"
-	provisioningresources "github.com/grafana/grafana/apps/provisioning/pkg/resources"
 	"github.com/grafana/grafana/pkg/registry/apis/provisioning/controller"
 	"github.com/grafana/grafana/pkg/registry/apis/provisioning/informer"
 	"github.com/grafana/grafana/pkg/registry/apis/provisioning/resources"
@@ -107,8 +106,6 @@ type ControllerConfig struct {
 // [operator]
 // provisioning_server_url =
 // provisioning_server_public_url =
-// dashboards_server_url =
-// folders_server_url =
 // aggregated_server_url =
 // tls_insecure =
 // tls_cert_file =
@@ -281,74 +278,20 @@ func (c *ControllerConfig) Clients() (resources.ClientFactory, error) {
 		return nil, fmt.Errorf("failed to create token exchange client: %w", err)
 	}
 
-	dashboardsServerURL := operatorSec.Key("dashboards_server_url").String()
-	if dashboardsServerURL == "" {
-		return nil, fmt.Errorf("dashboards_server_url is required in [operator] section")
-	}
-	foldersServerURL := operatorSec.Key("folders_server_url").String()
-	if foldersServerURL == "" {
-		return nil, fmt.Errorf("folders_server_url is required in [operator] section")
-	}
-	provisioningServerURL := operatorSec.Key("provisioning_server_url").String()
-	// aggregated_server_url serves resource groups that do not have a dedicated server URL
-	// (e.g. newly provisionable kinds in their own API group). Dashboards and folders keep
-	// their dedicated URLs for backwards compatibility.
 	aggregatedServerURL := operatorSec.Key("aggregated_server_url").String()
-	apiServerURLs := map[string]string{
-		resources.DashboardResource.Group: dashboardsServerURL,
-		resources.FolderResource.Group:    foldersServerURL,
-		provisioning.GROUP:                provisioningServerURL,
-	}
 
 	supportedResourceProvider, err := c.NewSupportedResourceProvider()
 	if err != nil {
 		return nil, err
 	}
 
-	// Dashboards and folders have dedicated server URLs; every other active resource must
-	// resolve to the aggregated server — failing loudly when it is unset, rather than hitting
-	// "no clients provider for group" at request time. A collection is registered under the
-	// collection group, not its members: those cannot be discovered before there is a client to
-	// discover through.
-	for _, r := range supportedResourceProvider.Configured() {
-		if !r.IsActive() {
-			continue
-		}
-		group := provisioningresources.CollectionGroup(r.Group)
-		switch group {
-		case resources.DashboardResource.Group, resources.FolderResource.Group, provisioning.GROUP:
-			continue // built-in groups with dedicated server URLs
-		}
-		if _, ok := apiServerURLs[group]; ok {
-			continue
-		}
-		if aggregatedServerURL == "" {
-			return nil, fmt.Errorf("aggregated_server_url is required in [operator] section to serve resource %s/%s", r.Group, r.Kind)
-		}
-	}
-	if aggregatedServerURL != "" {
-		apiServerURLs[resources.AnyGroup] = aggregatedServerURL
-	}
-
-	configProviders := make(map[string]apiserver.RestConfigProvider)
-
 	tlsConfigForTransport, err := rest.TLSConfigFor(&rest.Config{TLSClientConfig: tlsConfig})
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert TLS config for transport: %w", err)
 	}
 
-	var routerConfigProvider apiserver.RestConfigProvider
-	for group, url := range apiServerURLs {
-		// Build audiences: always include the group, and add provisioning.GROUP only if different
-		audiences := []string{group}
-		if group != provisioning.GROUP {
-			audiences = append(audiences, provisioning.GROUP)
-		}
-		if group == resources.AnyGroup {
-			audiences = []string{provisioning.GROUP}
-		}
-
-		config := &rest.Config{
+	newConfigProvider := func(url string, audiences ...string) apiserver.RestConfigProvider {
+		return NewDirectConfigProvider(&rest.Config{
 			APIPath: "/apis",
 			Host:    url,
 			WrapTransport: clientauth.NewTokenExchangeTransportWrapper(
@@ -363,18 +306,13 @@ func (c *ControllerConfig) Clients() (resources.ClientFactory, error) {
 				TLSClientConfig:     tlsConfigForTransport,
 			},
 			RateLimiter: flowcontrol.NewFakeAlwaysRateLimiter(),
-		}
-		configProviders[group] = NewDirectConfigProvider(config)
-		if group == resources.AnyGroup {
-			routerConfig := rest.CopyConfig(config)
-			routerConfig.WrapTransport = clientauth.NewTokenExchangeTransportWrapper(
-				tokenExchangeClient,
-				clientauth.NewStaticAudienceProvider(provisioning.GROUP, resources.DashboardResource.Group, resources.FolderResource.Group),
-				clientauth.NewStaticNamespaceProvider(clientauth.WildcardNamespace),
-			)
-			routerConfigProvider = NewDirectConfigProvider(routerConfig)
-		}
+		})
 	}
+
+	if aggregatedServerURL == "" {
+		return nil, fmt.Errorf("aggregated_server_url is required in [operator] section")
+	}
+	clients := resources.NewClientFactory(newConfigProvider(aggregatedServerURL, provisioning.GROUP, resources.DashboardResource.Group, resources.FolderResource.Group), supportedResourceProvider)
 
 	c.manifestWatcher, err = resources.NewRemoteManifestWatcher(supportedResourceProvider, c.Registry(), resource.ManifestWatcherConfig{
 		DiscoveryURL:      aggregatedServerURL,
@@ -386,10 +324,6 @@ func (c *ControllerConfig) Clients() (resources.ClientFactory, error) {
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create manifest watcher: %w", err)
-	}
-	clients := resources.NewClientFactoryForMultipleAPIServers(configProviders, supportedResourceProvider)
-	if routerConfigProvider != nil {
-		clients = resources.NewRouterSwitchClientFactory(resources.NewClientFactory(routerConfigProvider, supportedResourceProvider), clients)
 	}
 	c.clients = clients
 	return clients, nil
